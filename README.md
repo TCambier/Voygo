@@ -1,4 +1,4 @@
-![Voygo Banner](assets/images/banner.png)
+![Voygo Banner](voygo/assets/images/banner.png)
 # Voygo
 
 ## Présentation
