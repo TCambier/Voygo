@@ -4,73 +4,74 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voygo - Tableau de bord</title>
+    <title>Voygo - Planificateur de voyages</title>
     <link rel="stylesheet" href="../assets/css/style.css">
 </head>
 <body>
-    <header class="header">
-        <div class="header-left">
+    <header class="header navbar">
+        <div class="navbar-left">
             <img src="../assets/images/banner.png" alt="Voygo" class="logo">
         </div>
-        <nav class="main-nav">
-            <a href="#" class="nav-item">Tableau</a>
-            <a href="#" class="nav-item">Agenda</a>
-            <a href="#" class="nav-item">Prix</a>
-        </nav>
-        <div class="header-right">
-            <input type="text" placeholder="Destination -" class="search-input">
-            <input type="text" placeholder="Date -" class="search-input">
+        <div class="navbar-right">
+            <a href="login.html" class="btn-connexion">Connexion</a>
         </div>
     </header>
 
-    <main class="dashboard">
-        <section class="row top-row">
-            <div class="card transport-card">
-                <h2>Transport</h2>
-                <div class="card-action">
-                    <span class="plus">+</span>
+    <main class="landing-page">
+        <!-- Section Hero -->
+        <section class="hero-section">
+            <div class="hero-content">
+                <h1>Planificateur de voyages</h1>
+                <p>Planifiez vous-mêmes vos vacances, road-trips ou tours du monde en créant votre itinéraire de voyage.</p>
+                
+                <!-- Travel Type Selection -->
+                <div class="travel-type-selector">
+                    <label class="travel-option active">
+                        <input type="radio" name="travel-type" value="nomade" checked>
+                        <span>Voyage nomade</span>
+                    </label>
+                    <label class="travel-option">
+                        <input type="radio" name="travel-type" value="sedentaire">
+                        <span>Voyage sédentaire</span>
+                    </label>
+                </div>
+
+                <!-- Trip Creation Form -->
+                <div class="trip-form">
+                    <div class="form-group">
+                        <label for="pays">Pays</label>
+                        <input type="text" id="pays" placeholder="Où allez-vous ?" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="dates">Début - Fin</label>
+                        <input type="text" id="dates" placeholder="08/03/2026 - 08/03/2026" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="voyageurs">Voyageur</label>
+                        <input type="number" id="voyageurs" value="1" min="1" class="form-input">
+                    </div>
+                    <button class="btn-creer">Créer</button>
                 </div>
             </div>
-            <div class="card logement-card">
-                <h2>Logement</h2>
-                <div class="card-action">
-                    <span class="plus">+</span>
-                </div>
+            <div class="hero-image">
+                <img src="../assets/images/hero-illus
+tration.png" alt="Illustration voyage">
             </div>
         </section>
 
-        <section class="row bottom-row">
-            <div class="card transport-sur-place">
-                <h3>Transport sur place</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Moyen de déplacement</th>
-                            <th>Temps de trajet</th>
-                            <th>Prix</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- items will go here -->
-                    </tbody>
-                </table>
+        <!-- Welcome Section -->
+        <section class="welcome-section">
+            <div class="welcome-content">
+                <h2>👋 Bienvenue sur tripkygo v2</h2>
+                <p>Totalement gratuit, tripkygo est le planificateur de voyage qu'il vous faut pour organiser vos vacances, road-trips ou tours du monde. Il permet notamment de calculer votre budget, de générer une carte et d'éditer des carnets de voyages.</p>
+                <p>En plus de l'outil de création d'itinéraires, notre site comprend une section <a href="#">Où partir ?</a>, des <a href="#">Guides par pays</a> et un <a href="#">Outil de réservation</a>.</p>
             </div>
-            <div class="card activites-a-faire">
-                <h3>Activités à faire</h3>
-                <p>Proposition d'activités à faire :</p>
-                <ul>
-                    <li>Parc de ..</li>
-                    <li>Voite de ...</li>
-                    <li>Activités 3</li>
-                    <li>Activités 4</li>
-                    <li>Activités 5</li>
-                </ul>
-                <div class="card-actions-list">
-                    <span class="plus">+</span>
-                    <span class="plus">+</span>
-                    <span class="plus">+</span>
-                </div>
-                <button class="voir-plus">Voir Plus &gt;</button>
+            <div class="gallery">
+                <img src="../assets/images/gallery-1.jpg" alt="Galerie 1" class="gallery-item">
+                <img src="../assets/images/gallery-2.jpg" alt="Galerie 2" class="gallery-item">
+                <img src="../assets/images/gallery-3.jpg" alt="Galerie 3" class="gallery-item">
+                <img src="../assets/images/gallery-4.jpg" alt="Galerie 4" class="gallery-item">
+                <img src="../assets/images/gallery-5.jpg" alt="Galerie 5" class="gallery-item">
             </div>
         </section>
     </main>
