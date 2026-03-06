@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voygo - Tableau de bord</title>
+    <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <img src="../assets/images/banner.png" alt="Voygo" class="logo">
+        </div>
+        <nav class="main-nav">
+            <a href="#" class="nav-item">Tableau</a>
+            <a href="#" class="nav-item">Agenda</a>
+            <a href="#" class="nav-item">Prix</a>
+        </nav>
+        <div class="header-right">
+            <input type="text" placeholder="Destination -" class="search-input">
+            <input type="text" placeholder="Date -" class="search-input">
+        </div>
+    </header>
+
+    <main class="dashboard">
+        <section class="row top-row">
+            <div class="card transport-card">
+                <h2>Transport</h2>
+                <div class="card-action">
+                    <span class="plus">+</span>
+                </div>
+            </div>
+            <div class="card logement-card">
+                <h2>Logement</h2>
+                <div class="card-action">
+                    <span class="plus">+</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="row bottom-row">
+            <div class="card transport-sur-place">
+                <h3>Transport sur place</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Moyen de déplacement</th>
+                            <th>Temps de trajet</th>
+                            <th>Prix</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- items will go here -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="card activites-a-faire">
+                <h3>Activités à faire</h3>
+                <p>Proposition d'activités à faire :</p>
+                <ul>
+                    <li>Parc de ..</li>
+                    <li>Voite de ...</li>
+                    <li>Activités 3</li>
+                    <li>Activités 4</li>
+                    <li>Activités 5</li>
+                </ul>
+                <div class="card-actions-list">
+                    <span class="plus">+</span>
+                    <span class="plus">+</span>
+                    <span class="plus">+</span>
+                </div>
+                <button class="voir-plus">Voir Plus &gt;</button>
+            </div>
+        </section>
+    </main>
+
+</body>
+</html>
