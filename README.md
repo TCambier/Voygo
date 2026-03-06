@@ -146,12 +146,18 @@ git clone https://github.com/TCambier/voygo.git
 
 2. Ouvrir le projet dans un éditeur de code.
 
-3. Configurer la connexion à Supabase dans le fichier :
-js/supabase.js
+3. Configurer la connexion à Supabase
+   * Ouvrez `voygo/assets/js/supabase.js` (ou `js/supabase.js` selon votre copie).
+   * Remplacez les valeurs de `SUPABASE_URL` et `SUPABASE_ANON_KEY` par celles fournies par votre projet Supabase.
+   * Vous pouvez ajouter des helpers pour vos contrôleurs directement dans ce fichier.
 
-4. Lancer le projet avec un serveur local.
+4. Assurez-vous que vos pages HTML importent le client Supabase et votre code JavaScript. Par exemple :
+   ```html
+   <script type="module" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm"></script>
+   <script type="module" src="../assets/js/app.js"></script>
+   ```
 
-Exemple avec Visual Studio Code et l’extension Live Server.
+5. Lancer le projet avec un serveur local (ex : Live Server de VS Code).
 
 ---
 
