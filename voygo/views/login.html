@@ -17,16 +17,21 @@
         <img src="../assets/images/banner.png" alt="Logo">
     </div>
 
-    <h2>Create an account</h2>
-    <p class="subtitle">Enter your email to sign up for this app</p>
+    <h2>Se connecter</h2>
+    <p class="subtitle">Entrez vos identifiants pour vous connecter</p>
 
-    <form>
-        <input type="email" placeholder="email@domain.com" required>
+    <form id="login-form">
+        <input type="email" placeholder="email@domain.com" id="email" required>
 
-        <button class="email-btn">Sign up with email</button>
+        <input type="password" placeholder="password" id="password" required>
+
+        <div class="space">
+            <span><a href="#" id="forgot-password-link">Mot de passe oublié ?</a></span>
+        </div>
+        <button class="email-btn">Se connecter</button>
 
         <div class="separator">
-            <span>or continue with</span>
+            <span>Pas de compte ? <a href="signup.html">Créer un compte</a></span>
         </div>
 
         <button class="google-btn">
@@ -42,6 +47,57 @@
     </form>
 
 </div>
+
+<!-- Modal for forgot password -->
+<div id="forgot-password-modal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Mot de passe oublié</h2>
+        <p>Entrez votre email pour recevoir un lien de réinitialisation.</p>
+        <input type="email" id="forgot-email" placeholder="email@domain.com" required>
+        <button id="send-btn">Envoyer</button>
+    </div>
+</div>
+    
+<script>
+    // Get the modal
+    var modal = document.getElementById('forgot-password-modal');
+
+    // Get the link that opens the modal
+    var link = document.getElementById('forgot-password-link');
+
+    // Get the <span> element that closes the modal
+    var span = document.getElementsByClassName('close')[0];
+
+    // When the user clicks the link, open the modal
+    link.onclick = function(event) {
+        event.preventDefault();
+        modal.style.display = 'block';
+    }
+
+    // When the user clicks on <span> (x), close the modal
+    span.onclick = function() {
+        modal.style.display = 'none';
+    }
+
+    // When the user clicks anywhere outside of the modal, close it
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    // Handle send button
+    document.getElementById('send-btn').onclick = function() {
+        var email = document.getElementById('forgot-email').value;
+        if (email) {
+            alert('Email envoyé à ' + email);
+            modal.style.display = 'none';
+        } else {
+            alert('Veuillez entrer un email valide.');
+        }
+    }
+</script>
 
 </body>
 </html>

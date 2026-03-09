@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Login</title>
+<link rel="stylesheet" href="../assets/css/login.css">
+</head>
+<body>
+
+<div class="background"></div>
+
+<div class="login-container">
+
+    <!-- Logo -->
+    <div class="logo">
+        <!-- Remplace le src par ton logo -->
+        <img src="../assets/images/banner.png" alt="Logo">
+    </div>
+
+    <h2>Créer un compte</h2>
+    <form id="signup-form">
+        <input type="text" placeholder="Prénom" id="first_name" required>
+
+        <input type="text" placeholder="Nom" id="last_name" required>
+
+        <input type="email" placeholder="Email" id="email" required>
+
+        <input type="password" placeholder="Mot de passe" id="password" required>
+
+        <button type="submit" id="signup-btn" class="email-btn">Créer un compte</button>
+
+         <div class="separator">
+            <span>Vous avez déjà un compte ? <a href="..\views\login.html">Se connecter</a></span>
+        </div>
+
+    </form>
+
+</div>
+
+<script type="module">
+import { signup } from '../controllers/userController.js';
+
+window.addEventListener('load', () => {
+    // Signup button click
+    const btn = document.getElementById('signup-btn');
+    if (btn) {
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const first_name = document.getElementById('first_name').value;
+            const last_name = document.getElementById('last_name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            const result = await signup(first_name, last_name, email, password);
+            if (result.success) {
+                alert('Compte créé avec succès!');
+                window.location.href = 'login.html';
+            } else {
+                alert('Erreur: ' + result.error);
+            }
+        });
+    }
+});
+</script>
+
+</body>
+</html>
