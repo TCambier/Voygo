@@ -10,7 +10,7 @@
 <body>
     <header class="header navbar">
         <div class="navbar-left">
-            <img src="../assets/images/banner.png" alt="Voygo" class="logo">
+            <img src="../assets/images/banner.png" alt="Voygo" class="logo" style="height: 60px;">
         </div>
         <div class="navbar-right">
             <button class="btn-theme" onclick="toggleTheme()" title="Basculer le thème">
@@ -27,18 +27,6 @@
                 <h1>Planificateur de voyages</h1>
                 <p>Planifiez vous-mêmes vos vacances, road-trips ou tours du monde en créant votre itinéraire de voyage.</p>
                 
-                <!-- Travel Type Selection -->
-                <div class="travel-type-selector">
-                    <label class="travel-option active">
-                        <input type="radio" name="travel-type" value="nomade" checked>
-                        <span>Voyage nomade</span>
-                    </label>
-                    <label class="travel-option">
-                        <input type="radio" name="travel-type" value="sedentaire">
-                        <span>Voyage sédentaire</span>
-                    </label>
-                </div>
-
                 <!-- Trip Creation Form -->
                 <div class="trip-form">
                     <div class="form-group">
@@ -46,8 +34,12 @@
                         <input type="text" id="pays" placeholder="Où allez-vous ?" class="form-input">
                     </div>
                     <div class="form-group">
-                        <label for="dates">Début - Fin</label>
-                        <input type="text" id="dates" placeholder="08/03/2026 - 08/03/2026" class="form-input">
+                        <label for="start-date">Date de début</label>
+                        <input type="date" id="start-date" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="end-date">Date de fin</label>
+                        <input type="date" id="end-date" class="form-input">
                     </div>
                     <div class="form-group">
                         <label for="voyageurs">Voyageur</label>
