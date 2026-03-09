@@ -3,6 +3,8 @@
 // from your HTML with `type="module"`.
 
 import { supabase } from './supabase.js';
+import { initCountryAutocomplete } from '../../controllers/countryController.js';
+import { initTravelerStepper } from '../../controllers/tripFormController.js';
 // import * as tripCtrl from '../controllers/tripController.js';
 // ... import other controllers as needed
 
@@ -18,6 +20,5 @@ async function testConnection() {
 }
 
 testConnection();
-
-// Add your application logic below. For example you might wire up UI
-// elements and call functions exported by the controllers.
+initCountryAutocomplete();
+initTravelerStepper();
