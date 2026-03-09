@@ -1,5 +1,5 @@
 // signup.js - Gestion de l'inscription
-import { signup, checkEmailExists } from '../controllers/userController.js';
+import { signup, checkEmailExists } from '../../controllers/userController.js';
 
 window.addEventListener('load', () => {
     const emailInput = document.getElementById('email');

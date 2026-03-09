@@ -1,5 +1,5 @@
 // login.js - Gestion de la connexion
-import { login } from '../controllers/userController.js';
+import { login } from '../../controllers/userController.js';
 
 window.addEventListener('load', () => {
     const loginForm = document.getElementById('login-form');
