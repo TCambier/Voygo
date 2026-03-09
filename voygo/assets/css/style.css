@@ -14,7 +14,7 @@
     --border-color: #e0e0e0;
     --header-bg: #ffffff;
     --header-border: #d0d0d0;
-    --accent: #e74c3c;
+    --accent: #0b5d68;
 }
 
 body.dark-theme {
@@ -83,6 +83,14 @@ body {
     transform: scale(1.2);
 }
 
+.theme-icon {
+    color: var(--text-primary);
+}
+
+body.dark-theme .theme-icon {
+    color: #ffffff;
+}
+
 .btn-connexion {
     padding: 10px 24px;
     background: var(--accent);
@@ -94,7 +102,7 @@ body {
 }
 
 .btn-connexion:hover {
-    background: #c0392b;
+    background: #073d44;
 }
 
 /* Landing Page */
@@ -114,6 +122,7 @@ body {
     background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-tertiary) 100%);
     transition: background 0.3s ease;
     min-height: 100vh;
+    overflow: hidden;
 }
 
 .hero-content {
@@ -169,7 +178,7 @@ body {
 /* Trip Form */
 .trip-form {
     position: absolute;
-    left: 10%;
+    left: 5%;
     top: 50%;
     transform: translateY(-50%);
     width: 60%;
@@ -182,6 +191,28 @@ body {
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
     transition: background 0.3s ease, box-shadow 0.3s ease;
     z-index: 1;
+}
+
+.hero-plane {
+    position: absolute;
+    left: 37%;
+    top: 47%;
+    transform: translate(-50%, -50%) rotate(-14deg);
+    z-index: 0;
+    pointer-events: none;
+}
+
+.hero-plane img {
+    width: clamp(380px, 36vw, 540px);
+    height: auto;
+    display: block;
+    opacity: 1;
+    filter: saturate(0.9);
+}
+
+body.dark-theme .hero-plane img {
+    opacity: 1;
+    filter: brightness(1.2) saturate(0.8);
 }
 
 .form-group {
@@ -226,12 +257,12 @@ body {
 }
 
 .btn-creer:hover {
-    background: #c0392b;
+    background: #073d44;
 }
 
 .hero-image {
     position: absolute;
-    left: 0%;
+    left: 40%;
     top: 50%;
     transform: translateY(-50%);
     width: 70%;
@@ -247,14 +278,18 @@ body {
 
 /* Welcome Section */
 .welcome-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 28px;
     padding: 80px 50px;
     background: var(--bg-primary);
     transition: background 0.3s ease;
 }
 
 .welcome-content {
-    max-width: 900px;
-    margin-bottom: 60px;
+    flex: 1 1 48%;
+    max-width: 760px;
 }
 
 .welcome-section h2 {
@@ -284,21 +319,46 @@ body {
 
 /* Gallery */
 .gallery {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 16px;
+    flex: 1 1 52%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    gap: 14px;
+    padding-right: 150px;
 }
 
 .gallery-item {
-    width: 100%;
-    height: 200px;
+    width: clamp(78px, 10vw, 130px);
+    height: 220px;
     object-fit: cover;
-    border-radius: 12px;
-    transition: transform 0.3s ease;
+    border-radius: 24px;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.16);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.gallery-item:nth-child(1) {
+    height: 190px;
+}
+
+.gallery-item:nth-child(2) {
+    height: 245px;
+}
+
+.gallery-item:nth-child(3) {
+    height: 280px;
+}
+
+.gallery-item:nth-child(4) {
+    height: 245px;
+}
+
+.gallery-item:nth-child(5) {
+    height: 190px;
 }
 
 .gallery-item:hover {
-    transform: scale(1.05);
+    transform: translateY(-6px);
+    box-shadow: 0 16px 30px rgba(0, 0, 0, 0.2);
 }
 
 /* Responsive */
@@ -321,9 +381,14 @@ body {
         width: auto;
         height: auto;
     }
+
+    .hero-plane {
+        display: none;
+    }
     
     .gallery {
-        grid-template-columns: repeat(3, 1fr);
+        justify-content: center;
+        flex-wrap: wrap;
     }
 }
 
@@ -345,6 +410,8 @@ body {
     }
     
     .welcome-section {
+        flex-direction: column;
+        align-items: flex-start;
         padding: 40px 20px;
     }
     
@@ -353,6 +420,29 @@ body {
     }
     
     .gallery {
-        grid-template-columns: repeat(2, 1fr);
+        width: 100%;
+        justify-content: flex-start;
+        gap: 10px;
+    }
+
+    .gallery-item {
+        width: calc((100% - 20px) / 3);
+        max-width: none;
+        min-width: 0;
+        border-radius: 18px;
+    }
+
+    .gallery-item:nth-child(1),
+    .gallery-item:nth-child(5) {
+        height: 140px;
+    }
+
+    .gallery-item:nth-child(2),
+    .gallery-item:nth-child(4) {
+        height: 180px;
+    }
+
+    .gallery-item:nth-child(3) {
+        height: 210px;
     }
 }

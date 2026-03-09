@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Voygo - Planificateur de voyages</title>
     <link rel="stylesheet" href="../assets/css/style.css">
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 </head>
 <body>
     <header class="header navbar">
@@ -14,7 +15,7 @@
         </div>
         <div class="navbar-right">
             <button class="btn-theme" onclick="toggleTheme()" title="Basculer le thème">
-                <span class="theme-icon">🌙</span>
+                <i class='bx bx-moon theme-icon' aria-hidden="true"></i>
             </button>
             <a href="login.html" class="btn-connexion">Connexion</a>
         </div>
@@ -24,8 +25,8 @@
         <!-- Section Hero -->
         <section class="hero-section">
             <div class="hero-content">
-                <h1>Planificateur de voyages</h1>
-                <p>Planifiez vous-mêmes vos vacances, road-trips ou tours du monde en créant votre itinéraire de voyage.</p>
+                <h1>Organisez vos rêves de voyage</h1>
+                <p>Créez facilement votre itinéraire personnalisé et explorez le monde en toute confiance avec nos outils intuitifs et gratuits.</p>
                 
                 <!-- Trip Creation Form -->
                 <div class="trip-form">
@@ -48,6 +49,9 @@
                     <button class="btn-creer">Créer</button>
                 </div>
             </div>
+            <div class="hero-plane" aria-hidden="true">
+                <img src="../assets/images/avion.png" alt="">
+            </div>
             <div class="hero-image">
                 <img src="../assets/images/accueil.png" alt="Illustration voyage">
             </div>
@@ -56,15 +60,15 @@
         <!-- Welcome Section -->
         <section class="welcome-section">
             <div class="welcome-content">
-                <h2>👋 Bienvenue sur Voygo</h2>
-                <p>Totalement gratuit, Voygo est le planificateur de voyage qu'il vous faut pour organiser vos vacances, road-trips ou tours du monde. Il permet notamment de calculer votre budget, de générer une carte et d'éditer des carnets de voyages.</p>
+                <h2>🌍 Voyagez sans limites</h2>
+                <p>Avec Voygo, planifiez chaque détail de votre aventure : gérez votre budget, visualisez votre trajet sur une carte interactive et documentez vos souvenirs dans vos carnets de voyage. Tout est gratuit et conçu pour vous simplifier la vie.</p>
             </div>
             <div class="gallery">
-                <img src="../assets/images/gallery-1.jpg" alt="Galerie 1" class="gallery-item">
-                <img src="../assets/images/gallery-2.jpg" alt="Galerie 2" class="gallery-item">
-                <img src="../assets/images/gallery-3.jpg" alt="Galerie 3" class="gallery-item">
-                <img src="../assets/images/gallery-4.jpg" alt="Galerie 4" class="gallery-item">
-                <img src="../assets/images/gallery-5.jpg" alt="Galerie 5" class="gallery-item">
+                <img src="../assets/images/gallery-1.png" alt="Galerie 1" class="gallery-item">
+                <img src="../assets/images/gallery-2.png" alt="Galerie 2" class="gallery-item">
+                <img src="../assets/images/gallery-3.png" alt="Galerie 3" class="gallery-item">
+                <img src="../assets/images/gallery-4.png" alt="Galerie 4" class="gallery-item">
+                <img src="../assets/images/gallery-5.png" alt="Galerie 5" class="gallery-item">
             </div>
         </section>
     </main>
@@ -74,14 +78,24 @@
     <!-- main application entrypoint; it can import controllers and the supabase client -->
     <script type="module" src="../assets/js/app.js"></script>
     <script>
+        function updateThemeIcon() {
+            const icon = document.querySelector('.theme-icon');
+            if (!icon) return;
+            const isDark = document.body.classList.contains('dark-theme');
+            icon.classList.toggle('bx-sun', isDark);
+            icon.classList.toggle('bx-moon', !isDark);
+        }
+
         function toggleTheme() {
             document.body.classList.toggle('dark-theme');
             localStorage.setItem('theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
+            updateThemeIcon();
         }
         // Restore theme preference
         if (localStorage.getItem('theme') === 'dark') {
             document.body.classList.add('dark-theme');
         }
+        updateThemeIcon();
     </script>
 </body>
 </html>
