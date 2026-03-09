@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
@@ -13,6 +13,11 @@
         <div class="navbar-left">
             <img src="../assets/images/banner.png" alt="Voygo" class="logo" style="height: 60px;">
         </div>
+        <nav class="navbar-menu" aria-label="Navigation principale">
+            <a href="index.html">Créer un voyage</a>
+            <a href="#contact">Contact</a>
+            <a href="#a-propos">À propos</a>
+        </nav>
         <div class="navbar-right">
             <button class="btn-theme" onclick="toggleTheme()" title="Basculer le thème">
                 <i class='bx bx-moon theme-icon' aria-hidden="true"></i>
@@ -32,7 +37,8 @@
                 <div class="trip-form">
                     <div class="form-group">
                         <label for="pays">Pays</label>
-                        <input type="text" id="pays" placeholder="Où allez-vous ?" class="form-input">
+                        <input type="text" id="pays" placeholder="Où allez-vous ?" class="form-input" autocomplete="off" aria-autocomplete="list" aria-controls="country-suggestions" aria-expanded="false">
+                        <ul id="country-suggestions" class="country-suggestions" role="listbox" aria-label="Suggestions de pays"></ul>
                     </div>
                     <div class="form-group">
                         <label for="start-date">Date de début</label>
@@ -43,8 +49,12 @@
                         <input type="date" id="end-date" class="form-input">
                     </div>
                     <div class="form-group">
-                        <label for="voyageurs">Voyageur</label>
-                        <input type="number" id="voyageurs" value="1" min="1" class="form-input">
+                        <label for="voyageurs">Voyageurs</label>
+                        <div class="traveler-stepper" role="group" aria-label="Nombre de voyageurs">
+                            <button type="button" id="voyageurs-minus" class="traveler-btn" aria-label="Retirer un voyageur">-</button>
+                            <input type="text" id="voyageurs" value="1" class="form-input traveler-input" readonly aria-live="polite">
+                            <button type="button" id="voyageurs-plus" class="traveler-btn" aria-label="Ajouter un voyageur">+</button>
+                        </div>
                     </div>
                     <button class="btn-creer">Créer</button>
                 </div>
@@ -58,7 +68,7 @@
         </section>
 
         <!-- Welcome Section -->
-        <section class="welcome-section">
+        <section class="welcome-section" id="a-propos">
             <div class="welcome-content">
                 <h2>🌍 Voyagez sans limites</h2>
                 <p>Avec Voygo, planifiez chaque détail de votre aventure : gérez votre budget, visualisez votre trajet sur une carte interactive et documentez vos souvenirs dans vos carnets de voyage. Tout est gratuit et conçu pour vous simplifier la vie.</p>
@@ -69,6 +79,12 @@
                 <img src="../assets/images/gallery-3.png" alt="Galerie 3" class="gallery-item">
                 <img src="../assets/images/gallery-4.png" alt="Galerie 4" class="gallery-item">
                 <img src="../assets/images/gallery-5.png" alt="Galerie 5" class="gallery-item">
+            </div>
+        </section>
+        <section class="welcome-section" id="contact">
+            <div class="welcome-content">
+                <h2>Contact</h2>
+                <p>Une question sur Voygo ? Écrivez-nous à <a href="mailto:contact@voygo.app">contact@voygo.app</a>.</p>
             </div>
         </section>
     </main>
@@ -99,3 +115,4 @@
     </script>
 </body>
 </html>
+
