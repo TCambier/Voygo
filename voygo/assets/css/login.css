@@ -65,6 +65,24 @@ input{
     border:1px solid #ccc;
     margin-bottom:15px;
     font-size:14px;
+    transition: border-color 0.3s ease;
+}
+
+input.error {
+    border-color: #dc3545;
+    background-color: #fff5f5;
+}
+
+.error-message {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: -12px;
+    margin-bottom: 12px;
+    display: none;
+}
+
+.error-message.show {
+    display: block;
 }
 
 /* Bouton email */
@@ -78,10 +96,17 @@ input{
     font-size:14px;
     cursor:pointer;
     margin-bottom:15px;
+    transition: background 0.3s ease;
 }
 
 .email-btn:hover{
     background:#0b5d68;
+}
+
+.email-btn:disabled {
+    background:#ccc;
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 
 /* Separator */
@@ -154,7 +179,7 @@ input{
 }
 
 .modal-content {
-    background: rgba(255,255,255,0.85);
+    background: rgba(255,255,255,0.95);
     backdrop-filter: blur(8px);
     padding: 32px;
     border-radius: 12px;
@@ -164,6 +189,18 @@ input{
     max-width: 400px;
     margin: 15% auto;
     position: relative;
+}
+
+.modal-content h2 {
+    color: #0d6e7a;
+    font-size: 24px;
+    margin-bottom: 16px;
+}
+
+.modal-content p {
+    color: #666;
+    margin-bottom: 24px;
+    line-height: 1.5;
 }
 
 .close {

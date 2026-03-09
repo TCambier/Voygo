@@ -24,8 +24,10 @@
         <input type="text" placeholder="Nom" id="last_name" required>
 
         <input type="email" placeholder="Email" id="email" required>
+        <div class="error-message" id="email-error-message">Cette adresse email existe déjà</div>
 
         <input type="password" placeholder="Mot de passe" id="password" required>
+        <div class="error-message" id="password-error-message">Le mot de passe doit contenir au minimum une majuscule, une minuscule, un chiffre et un symbole</div>
 
         <button type="submit" id="signup-btn" class="email-btn">Créer un compte</button>
 
@@ -37,31 +39,16 @@
 
 </div>
 
-<script type="module">
-import { signup } from '../controllers/userController.js';
+<!-- Modal de succès -->
+<div id="success-modal" class="modal">
+    <div class="modal-content">
+        <h2>🎉 Compte créé avec succès </h2>
+        <p>Votre compte a été créé avec succès. Vous pouvez maintenant vous connecter.</p>
+        <button id="login-btn" class="email-btn">Se connecter</button>
+    </div>
+</div>
 
-window.addEventListener('load', () => {
-    // Signup button click
-    const btn = document.getElementById('signup-btn');
-    if (btn) {
-        btn.addEventListener('click', async (e) => {
-            e.preventDefault();
-            const first_name = document.getElementById('first_name').value;
-            const last_name = document.getElementById('last_name').value;
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-
-            const result = await signup(first_name, last_name, email, password);
-            if (result.success) {
-                alert('Compte créé avec succès!');
-                window.location.href = 'login.html';
-            } else {
-                alert('Erreur: ' + result.error);
-            }
-        });
-    }
-});
-</script>
+<script type="module" src="../assets/js/signup.js"></script>
 
 </body>
 </html>

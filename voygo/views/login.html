@@ -21,14 +21,15 @@
     <p class="subtitle">Entrez vos identifiants pour vous connecter</p>
 
     <form id="login-form">
-        <input type="email" placeholder="email@domain.com" id="email" required>
+        <input type="email" placeholder="Email" id="email" required>
 
-        <input type="password" placeholder="password" id="password" required>
+        <input type="password" placeholder="Mot de passe" id="password" required>
 
         <div class="space">
             <span><a href="#" id="forgot-password-link">Mot de passe oublié ?</a></span>
         </div>
-        <button class="email-btn">Se connecter</button>
+        <button type="submit" class="email-btn">Se connecter</button>
+        <div class="error-message" id="login-error-message">Email ou mot de passe incorrect</div>
 
         <div class="separator">
             <span>Pas de compte ? <a href="signup.html">Créer un compte</a></span>
@@ -58,46 +59,9 @@
         <button id="send-btn">Envoyer</button>
     </div>
 </div>
-    
-<script>
-    // Get the modal
-    var modal = document.getElementById('forgot-password-modal');
 
-    // Get the link that opens the modal
-    var link = document.getElementById('forgot-password-link');
-
-    // Get the <span> element that closes the modal
-    var span = document.getElementsByClassName('close')[0];
-
-    // When the user clicks the link, open the modal
-    link.onclick = function(event) {
-        event.preventDefault();
-        modal.style.display = 'block';
-    }
-
-    // When the user clicks on <span> (x), close the modal
-    span.onclick = function() {
-        modal.style.display = 'none';
-    }
-
-    // When the user clicks anywhere outside of the modal, close it
-    window.onclick = function(event) {
-        if (event.target == modal) {
-            modal.style.display = 'none';
-        }
-    }
-
-    // Handle send button
-    document.getElementById('send-btn').onclick = function() {
-        var email = document.getElementById('forgot-email').value;
-        if (email) {
-            alert('Email envoyé à ' + email);
-            modal.style.display = 'none';
-        } else {
-            alert('Veuillez entrer un email valide.');
-        }
-    }
-</script>
+<script type="module" src="../assets/js/login.js"></script>
+<script src="../assets/js/forgot-password.js"></script>
 
 </body>
 </html>
