@@ -1,0 +1,230 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #e6e8ec;
+    color: #20242d;
+    min-height: 100vh;
+}
+
+.planning-header {
+    height: 66px;
+    background: #162342;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.logo {
+    height: 38px;
+    object-fit: contain;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.share-btn {
+    border: none;
+    border-radius: 16px;
+    padding: 8px 14px;
+    background: #48aeb2;
+    color: #ffffff;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.more-btn {
+    border: none;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #2a3858;
+    cursor: pointer;
+    font-size: 20px;
+    display: grid;
+    place-items: center;
+}
+
+.planning-page {
+    padding: 18px 24px 28px;
+    background:
+        linear-gradient(rgba(230, 232, 236, 0.32), rgba(230, 232, 236, 0.92)),
+        url('../images/background.PNG') center/cover no-repeat;
+    min-height: calc(100vh - 66px);
+}
+
+.top-strip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.tab-group {
+    display: inline-flex;
+    background: rgba(255, 255, 255, 0.75);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 4px;
+}
+
+.tab {
+    border: none;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: transparent;
+    color: #435067;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.tab.active {
+    background: #5cbec3;
+    color: #ffffff;
+}
+
+.trip-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.meta-item {
+    background: #ffffff;
+    border-radius: 6px;
+    padding: 7px 10px;
+    min-width: 160px;
+    font-size: 12px;
+    color: #425064;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.meta-label {
+    color: #7a8698;
+    margin-right: 4px;
+}
+
+.planning-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.panel {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 8px;
+    padding: 14px;
+    box-shadow: 0 4px 14px rgba(17, 27, 45, 0.12);
+    min-height: 150px;
+}
+
+.panel h3 {
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+.add-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+.add-icon {
+    margin: auto;
+    border: none;
+    background: transparent;
+    color: #64bcc1;
+    font-size: 74px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.content-panel {
+    min-height: 250px;
+}
+
+.panel-head {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 10px;
+    font-size: 12px;
+    color: #5b6678;
+    margin-bottom: 10px;
+}
+
+.panel-body {
+    font-size: 13px;
+    color: #2b3444;
+}
+
+.muted {
+    color: #6e7a8d;
+}
+
+.activity-list {
+    position: relative;
+    min-height: 170px;
+}
+
+.activity-add {
+    position: absolute;
+    top: -6px;
+    right: 0;
+    border: none;
+    background: transparent;
+    color: #64bcc1;
+    font-size: 28px;
+    cursor: pointer;
+}
+
+.activity-list ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 13px;
+    color: #2f394a;
+}
+
+.see-more {
+    margin-top: 10px;
+    margin-left: auto;
+    display: block;
+    border: none;
+    border-radius: 14px;
+    background: #4daeb4;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 20px;
+    cursor: pointer;
+}
+
+@media (max-width: 900px) {
+    .top-strip {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .trip-meta {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .planning-grid {
+        grid-template-columns: 1fr;
+    }
+}

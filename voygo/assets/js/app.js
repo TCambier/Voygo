@@ -5,6 +5,7 @@
 import { supabase } from './supabase.js';
 import { initCountryAutocomplete } from '../../controllers/countryController.js';
 import { initTravelerStepper } from '../../controllers/tripFormController.js';
+import { initLandingTripCreation } from '../../controllers/landingTripController.js';
 // import * as tripCtrl from '../controllers/tripController.js';
 // ... import other controllers as needed
 
@@ -19,6 +20,28 @@ async function testConnection() {
   }
 }
 
+async function initHeaderAccount() {
+  const accountLink = document.querySelector('#header-account-link');
+  if (!accountLink) return;
+
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data?.user) return;
+
+    const displayName =
+      data.user.user_metadata?.first_name ||
+      data.user.email ||
+      'Mon compte';
+
+    accountLink.textContent = displayName;
+    accountLink.href = 'settings.html';
+  } catch (err) {
+    console.warn('Unable to resolve auth user for header:', err);
+  }
+}
+
 testConnection();
+initHeaderAccount();
 initCountryAutocomplete();
 initTravelerStepper();
+initLandingTripCreation();

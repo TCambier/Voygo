@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voygo - Planification</title>
+    <link rel="stylesheet" href="../assets/css/planning.css">
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+</head>
+<body>
+    <header class="planning-header">
+        <div class="header-left">
+            <img src="../assets/images/banner.png" alt="Voygo" class="logo">
+        </div>
+        <div class="header-right">
+            <button type="button" class="share-btn">Partager</button>
+            <button type="button" class="more-btn" aria-label="Plus d'options">
+                <i class='bx bx-dots-horizontal-rounded'></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="planning-page">
+        <section class="top-strip">
+            <div class="tab-group">
+                <button type="button" class="tab active">Tableau</button>
+                <button type="button" class="tab">Agenda</button>
+                <button type="button" class="tab">Prix</button>
+            </div>
+            <div class="trip-meta">
+                <div class="meta-item">
+                    <span class="meta-label">Destination :</span>
+                    <span id="planning-destination">-</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Date :</span>
+                    <span id="planning-dates">-</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="planning-grid">
+            <article class="panel add-panel">
+                <h3>Transport</h3>
+                <button type="button" class="add-icon" aria-label="Ajouter un transport">
+                    <i class='bx bx-plus'></i>
+                </button>
+            </article>
+
+            <article class="panel add-panel">
+                <h3>Logement</h3>
+                <button type="button" class="add-icon" aria-label="Ajouter un logement">
+                    <i class='bx bx-plus'></i>
+                </button>
+            </article>
+
+            <article class="panel content-panel">
+                <h3>Transport sur place</h3>
+                <div class="panel-head">
+                    <span>Moyen de deplacement</span>
+                    <span>Temps de trajet</span>
+                    <span>Prix</span>
+                </div>
+                <div class="panel-body muted">Aucun transport ajoute pour le moment.</div>
+            </article>
+
+            <article class="panel content-panel">
+                <h3>Activites a faire</h3>
+                <div class="activity-list">
+                    <button type="button" class="activity-add" aria-label="Ajouter une activite">
+                        <i class='bx bx-plus'></i>
+                    </button>
+                    <ul>
+                        <li>Proposition d'activites a faire :</li>
+                        <li>- Parc de ...</li>
+                        <li>- Ville de ...</li>
+                        <li>- Activites 3</li>
+                        <li>- Activites 4</li>
+                        <li>- Activites 5</li>
+                    </ul>
+                </div>
+                <button type="button" class="see-more">Voir Plus</button>
+            </article>
+        </section>
+    </main>
+
+    <script type="module" src="../assets/js/planning.js"></script>
+</body>
+</html>
