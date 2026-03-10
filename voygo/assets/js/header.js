@@ -1,3 +1,5 @@
+import { supabase } from './supabase.js';
+
 // Loads header.html into #header-container and manages theme toggle
 async function loadHeader() {
     try {
@@ -19,8 +21,105 @@ async function loadHeader() {
         const container = document.getElementById('header-container');
         if (container) container.innerHTML = html;
         updateThemeIcon();
+        renderAccountSlot();
     } catch (err) {
         console.error('Failed to load header:', err);
+    }
+}
+
+function getStoredUser() {
+    try {
+        const raw = localStorage.getItem('voygo_auth_user');
+        if (!raw) return null;
+        const user = JSON.parse(raw);
+        if (!user || typeof user !== 'object') return null;
+        return user;
+    } catch (error) {
+        return null;
+    }
+}
+
+function renderAccountSlot() {
+    const slot = document.getElementById('header-account-slot');
+    if (!slot) return;
+
+    const user = getStoredUser();
+    if (!user) {
+        slot.innerHTML = '<a href="login.html" class="btn-connexion" id="header-login-link">Connexion</a>';
+        return;
+    }
+
+    const firstName = (user.first_name || '').trim();
+    const displayName = firstName || (user.email || 'Mon compte');
+
+    slot.innerHTML = `
+        <div class="account-menu" id="header-account-menu">
+            <button class="btn-connexion account-toggle" id="account-toggle" aria-haspopup="true" aria-expanded="false">
+                <span class="account-label" id="account-label"></span>
+                <i class='bx bx-chevron-down' aria-hidden="true"></i>
+            </button>
+            <div class="account-dropdown" id="account-dropdown" role="menu">
+                <a href="settings.html" role="menuitem">Parametres du compte</a>
+                <button type="button" class="account-logout" id="account-logout" role="menuitem">Deconnexion</button>
+            </div>
+        </div>
+    `;
+
+    const accountLabel = document.getElementById('account-label');
+    if (accountLabel) accountLabel.textContent = displayName;
+
+    setupAccountMenu();
+}
+
+function setupAccountMenu() {
+    const toggle = document.getElementById('account-toggle');
+    const dropdown = document.getElementById('account-dropdown');
+    const logoutBtn = document.getElementById('account-logout');
+
+    if (!toggle || !dropdown) return;
+
+    const closeMenu = () => {
+        dropdown.classList.remove('is-open');
+        toggle.setAttribute('aria-expanded', 'false');
+    };
+
+    const openMenu = () => {
+        dropdown.classList.add('is-open');
+        toggle.setAttribute('aria-expanded', 'true');
+    };
+
+    toggle.addEventListener('click', (event) => {
+        event.stopPropagation();
+        if (dropdown.classList.contains('is-open')) {
+            closeMenu();
+        } else {
+            openMenu();
+        }
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!dropdown.contains(event.target) && !toggle.contains(event.target)) {
+            closeMenu();
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            closeMenu();
+        }
+    });
+
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await supabase.auth.signOut();
+            } catch (error) {
+                console.warn('Supabase sign out failed:', error);
+            }
+            localStorage.removeItem('voygo_auth_user');
+            localStorage.removeItem('voygo_jwt');
+            window.location.href = 'login.html';
+        });
     }
 }
 
@@ -37,6 +136,8 @@ function toggleTheme() {
     localStorage.setItem('theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
     updateThemeIcon();
 }
+
+window.toggleTheme = toggleTheme;
 
 // restore theme preference and load header on DOM ready
 document.addEventListener('DOMContentLoaded', () => {

@@ -10,7 +10,7 @@
 </head>
 <body>
     <div id="header-container"></div>
-    <script src="../assets/js/header.js"></script>
+    <script type="module" src="../assets/js/header.js"></script>
 
     <main class="voyages-page">
         <section class="voyages-hero">
@@ -98,6 +98,11 @@
         </section>
     </main>
 
+    <script type="module">
+        import { requireAuth } from '../assets/js/auth-guard.js';
+        await requireAuth();
+    </script>
     <script type="module" src="../assets/js/voyages.js"></script>
 </body>
 </html>
+

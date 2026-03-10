@@ -170,15 +170,16 @@ window.addEventListener('load', () => {
 
         const result = await signup(first_name, last_name, email, password);
         if (result.success) {
-            // Afficher le modal de succès
+            // Afficher le modal de succes (pas de redirection automatique)
             const successModal = document.getElementById('success-modal');
             successModal.style.display = 'block';
 
-            // Gérer le clic sur le bouton "Se connecter"
-            const loginBtn = document.getElementById('login-btn');
-            loginBtn.addEventListener('click', () => {
-                window.location.href = 'login.html';
-            });
+            const closeBtn = document.getElementById('close-signup-modal');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    successModal.style.display = 'none';
+                });
+            }
         } else {
             if (isEmailConflictMessage(result.error || '')) {
                 setEmailError('Cette adresse email existe déjà');

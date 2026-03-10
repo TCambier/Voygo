@@ -2,15 +2,84 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Settings</title>
+    <title>Parametres du compte</title>
     <link rel="stylesheet" href="../assets/css/style.css">
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 </head>
 <body>
     <div id="header-container"></div>
-    <script src="../assets/js/header.js"></script>
+    <script type="module" src="../assets/js/header.js"></script>
 
-    <!-- settings page content goes here -->
+    <main class="settings-page">
+        <section class="settings-hero">
+            <div>
+                <h1>Parametres du compte</h1>
+                <p>Gerez vos informations personnelles, votre email, votre mot de passe et la suppression de votre compte.</p>
+            </div>
+        </section>
 
+        <section class="settings-grid">
+            <article class="settings-card">
+                <h2>Profil</h2>
+                <p class="settings-help">Mettez a jour votre nom et prenom.</p>
+                <form id="profile-form" class="settings-form">
+                    <div class="settings-field">
+                        <label for="first-name">Prenom</label>
+                        <input type="text" id="first-name" name="first_name" required>
+                    </div>
+                    <div class="settings-field">
+                        <label for="last-name">Nom</label>
+                        <input type="text" id="last-name" name="last_name" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Enregistrer</button>
+                    <div class="settings-feedback" id="profile-feedback" role="status" aria-live="polite"></div>
+                </form>
+            </article>
+
+            <article class="settings-card">
+                <h2>Email</h2>
+                <p class="settings-help">Modifier votre email necessite une confirmation.</p>
+                <form id="email-form" class="settings-form">
+                    <div class="settings-field">
+                        <label for="email">Nouvel email</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Mettre a jour</button>
+                    <div class="settings-feedback" id="email-feedback" role="status" aria-live="polite"></div>
+                </form>
+            </article>
+
+            <article class="settings-card">
+                <h2>Mot de passe</h2>
+                <p class="settings-help">Choisissez un mot de passe solide.</p>
+                <form id="password-form" class="settings-form">
+                    <div class="settings-field">
+                        <label for="new-password">Nouveau mot de passe</label>
+                        <input type="password" id="new-password" name="new_password" minlength="8" required>
+                    </div>
+                    <div class="settings-field">
+                        <label for="confirm-password">Confirmer le mot de passe</label>
+                        <input type="password" id="confirm-password" name="confirm_password" minlength="8" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Changer le mot de passe</button>
+                    <div class="settings-feedback" id="password-feedback" role="status" aria-live="polite"></div>
+                </form>
+            </article>
+
+            <article class="settings-card danger">
+                <h2>Supprimer le compte</h2>
+                <p class="settings-help">Cette action est definitive. Toutes vos donnees seront supprimees.</p>
+                <button id="delete-account" class="btn-danger">Supprimer mon compte</button>
+                <div class="settings-feedback" id="delete-feedback" role="status" aria-live="polite"></div>
+            </article>
+        </section>
+    </main>
+
+    <script type="module">
+        import { requireAuth } from '../assets/js/auth-guard.js';
+        await requireAuth();
+    </script>
+    <script type="module" src="../assets/js/settings.js"></script>
 </body>
 </html>
+

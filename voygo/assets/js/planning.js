@@ -30,6 +30,14 @@ function updateTripMeta({ destination, startDate, endDate }) {
 }
 
 async function initPlanningPage() {
+  const returnTo = `planning.html${window.location.search || ''}`;
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  const userId = authData?.user?.id;
+  if (authError || !userId) {
+    window.location.href = `login.html?returnTo=${encodeURIComponent(returnTo)}`;
+    return;
+  }
+
   const params = new URLSearchParams(window.location.search);
   const tripId = params.get('tripId');
   let destination = params.get('destination') || '';
