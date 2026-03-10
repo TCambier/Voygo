@@ -11,6 +11,7 @@ window.addEventListener('load', () => {
 
     let emailCheckTimeout;
     let passwordCheckTimeout;
+    let isSubmitting = false; // Flag pour éviter les soumissions multiples
 
     // Fonction pour valider le mot de passe
     function validatePassword(password = null) {
@@ -115,6 +116,8 @@ window.addEventListener('load', () => {
     signupForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
+        if (isSubmitting) return; // Éviter les soumissions multiples
+
         const first_name = document.getElementById('first_name').value.trim();
         const last_name = document.getElementById('last_name').value.trim();
         const email = emailInput.value.trim();
@@ -139,7 +142,8 @@ window.addEventListener('load', () => {
             return;
         }
 
-        // Désactiver le bouton pendant l'envoi
+        // Désactiver le bouton et marquer comme en cours
+        isSubmitting = true;
         signupBtn.disabled = true;
         signupBtn.textContent = 'Création en cours...';
 
@@ -156,6 +160,7 @@ window.addEventListener('load', () => {
             });
         } else {
             alert('Erreur: ' + result.error);
+            isSubmitting = false;
             signupBtn.disabled = false;
             signupBtn.textContent = 'Créer un compte';
         }
