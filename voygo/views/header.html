@@ -1,22 +1,16 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voygo - Planificateur de voyages</title>
-    <link rel="stylesheet" href="../assets/css/style.css">
-</head>
-<body>
-    <header class="header navbar">
-        <div class="navbar-left">
-            <img src="../assets/images/banner.png" alt="Voygo" class="logo" style="height: 60px;">
-        </div>
-        <div class="navbar-right">
-            <button class="btn-theme" onclick="toggleTheme()" title="Basculer le thème">
-                <span class="theme-icon">🌙</span>
-            </button>
-            <a href="login.html" class="btn-connexion">Connexion</a>
-        </div>
-    </header></content>
-<parameter name="filePath">c:\Users\cambier\Downloads\Voygo\Voygo\voygo\views\header.html
+<header class="header navbar">
+    <div class="navbar-left">
+        <img src="../assets/images/banner.png" alt="Voygo" class="logo" style="height: 60px;">
+    </div>
+    <nav class="navbar-menu" aria-label="Navigation principale">
+        <a href="index.html">Créer un voyage</a>
+        <a href="#contact">Contact</a>
+        <a href="#a-propos">À propos</a>
+    </nav>
+    <div class="navbar-right">
+        <button class="btn-theme" onclick="toggleTheme()" title="Basculer le thème">
+            <i class='bx bx-moon theme-icon' aria-hidden="true"></i>
+        </button>
+        <a href="login.html" class="btn-connexion" id="header-account-link">Connexion</a>
+    </div>
+</header>

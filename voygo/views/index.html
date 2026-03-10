@@ -9,22 +9,8 @@
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 </head>
 <body>
-    <header class="header navbar">
-        <div class="navbar-left">
-            <img src="../assets/images/banner.png" alt="Voygo" class="logo" style="height: 60px;">
-        </div>
-        <nav class="navbar-menu" aria-label="Navigation principale">
-            <a href="index.html">Créer un voyage</a>
-            <a href="#contact">Contact</a>
-            <a href="#a-propos">À propos</a>
-        </nav>
-        <div class="navbar-right">
-            <button class="btn-theme" onclick="toggleTheme()" title="Basculer le thème">
-                <i class='bx bx-moon theme-icon' aria-hidden="true"></i>
-            </button>
-            <a href="login.html" class="btn-connexion" id="header-account-link">Connexion</a>
-        </div>
-    </header>
+    <div id="header-container"></div>
+    <script src="../assets/js/header.js"></script>
 
     <main class="landing-page">
         <!-- Section Hero -->
@@ -93,26 +79,7 @@
     <script type="module" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm"></script>
     <!-- main application entrypoint; it can import controllers and the supabase client -->
     <script type="module" src="../assets/js/app.js"></script>
-    <script>
-        function updateThemeIcon() {
-            const icon = document.querySelector('.theme-icon');
-            if (!icon) return;
-            const isDark = document.body.classList.contains('dark-theme');
-            icon.classList.toggle('bx-sun', isDark);
-            icon.classList.toggle('bx-moon', !isDark);
-        }
 
-        function toggleTheme() {
-            document.body.classList.toggle('dark-theme');
-            localStorage.setItem('theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
-            updateThemeIcon();
-        }
-        // Restore theme preference
-        if (localStorage.getItem('theme') === 'dark') {
-            document.body.classList.add('dark-theme');
-        }
-        updateThemeIcon();
-    </script>
 </body>
 </html>
 

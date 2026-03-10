@@ -4,12 +4,17 @@
 <meta charset="UTF-8">
 <title>Login</title>
 <link rel="stylesheet" href="../assets/css/login.css">
+<link rel="stylesheet" href="../assets/css/style.css">
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 </head>
 <body>
+    <div id="header-container"></div>
+    <script src="../assets/js/header.js"></script>
 
-<div class="background"></div>
+    <div class="page-body">
+        <div class="background"></div>
 
-<div class="login-container">
+        <div class="login-container">
 
     <!-- Logo -->
     <div class="logo">
@@ -32,12 +37,13 @@
         <button type="submit" id="signup-btn" class="email-btn">Créer un compte</button>
 
          <div class="separator">
-            <span>Vous avez déjà un compte ? <a href="..\views\login.html">Se connecter</a></span>
+            <span>Vous avez déjà un compte ? <a href="login.html">Se connecter</a></span>
         </div>
 
     </form>
 
-</div>
+        </div> <!-- /.login-container -->
+    </div> <!-- /.page-body -->
 
 <!-- Modal de succès -->
 <div id="success-modal" class="modal">

@@ -8,10 +8,25 @@
 body{
     height:100vh;
     display:flex;
-    justify-content:center;
-    align-items:center;
+    flex-direction:column;
     background:#f5f5f5;
 }
+
+/* make sure header sits at the top rather than being centered */
+body > #header-container {
+    align-self:stretch; /* full width */
+    flex:0 0 auto;
+}
+
+/* wrapper for the remaining page content that should be centered */
+.page-body {
+    flex:1;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    position:relative;
+}
+
 
 /* Background flou style montagne */
 .background{
