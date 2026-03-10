@@ -1,6 +1,6 @@
 // login.js - Gestion de la connexion
-import { login } from '../../controllers/userController.js';
-import { supabase } from './supabase.js';
+import { login } from './userController.js';
+import { supabase } from '../assets/js/supabase.js';
 
 window.addEventListener('load', () => {
     const loginForm = document.getElementById('login-form');

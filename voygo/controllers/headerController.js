@@ -1,4 +1,4 @@
-import { supabase } from './supabase.js';
+import { supabase } from '../assets/js/supabase.js';
 
 // Loads header.html into #header-container and manages theme toggle
 async function loadHeader() {

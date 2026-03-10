@@ -1,4 +1,4 @@
-import { supabase } from './supabase.js';
+import { supabase } from '../assets/js/supabase.js';
 
 const profileForm = document.getElementById('profile-form');
 const emailForm = document.getElementById('email-form');
@@ -146,3 +146,4 @@ deleteButton?.addEventListener('click', async () => {
 });
 
 loadUserProfile();
+

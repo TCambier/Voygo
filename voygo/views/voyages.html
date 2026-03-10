@@ -10,7 +10,7 @@
 </head>
 <body>
     <div id="header-container"></div>
-    <script type="module" src="../assets/js/header.js"></script>
+    <script type="module" src="../controllers/headerController.js"></script>
 
     <main class="voyages-page">
         <section class="voyages-hero">
@@ -53,7 +53,7 @@
                 <label for="status-filter">Statut</label>
                 <select id="status-filter">
                     <option>Tous</option>
-                    <option>À venir</option>
+                    <option>�? venir</option>
                     <option>En cours</option>
                     <option>Terminé</option>
                 </select>
@@ -99,10 +99,11 @@
     </main>
 
     <script type="module">
-        import { requireAuth } from '../assets/js/auth-guard.js';
+        import { requireAuth } from '../controllers/authGuardController.js';
         await requireAuth();
     </script>
-    <script type="module" src="../assets/js/voyages.js"></script>
+    <script type="module" src="../controllers/voyagesController.js"></script>
 </body>
 </html>
+
 

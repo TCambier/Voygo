@@ -1,5 +1,5 @@
 // auth-guard.js - Protects pages that require authentication
-import { supabase } from './supabase.js';
+import { supabase } from '../assets/js/supabase.js';
 
 export async function requireAuth() {
   const returnTo = `${window.location.pathname.split('/').pop() || 'index.html'}${window.location.search || ''}`;

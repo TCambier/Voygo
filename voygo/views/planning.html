@@ -10,7 +10,7 @@
 </head>
 <body>
     <div id="header-container"></div>
-    <script type="module" src="../assets/js/header.js"></script>
+    <script type="module" src="../controllers/headerController.js"></script>
 
 
     <main class="planning-page">
@@ -78,10 +78,11 @@
     </main>
 
     <script type="module">
-        import { requireAuth } from '../assets/js/auth-guard.js';
+        import { requireAuth } from '../controllers/authGuardController.js';
         await requireAuth();
     </script>
-    <script type="module" src="../assets/js/planning.js"></script>
+    <script type="module" src="../controllers/planningController.js"></script>
 </body>
 </html>
+
 

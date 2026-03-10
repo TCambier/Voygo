@@ -1,4 +1,4 @@
-import { supabase } from './supabase.js';
+import { supabase } from '../assets/js/supabase.js';
 
 const grid = document.getElementById('voyages-grid');
 const emptyState = document.getElementById('voyages-empty');
@@ -259,3 +259,4 @@ statusFilter?.addEventListener('change', applyFilters);
 sortFilter?.addEventListener('change', applyFilters);
 
 initVoyagesPage();
+

@@ -1,4 +1,4 @@
-import { supabase } from './supabase.js';
+import { supabase } from '../assets/js/supabase.js';
 
 function formatDate(dateValue) {
   if (!dateValue) return '';

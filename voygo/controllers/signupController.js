@@ -1,5 +1,5 @@
 ﻿// signup.js - Gestion de l'inscription
-import { signup, checkEmailExists } from '../../controllers/userController.js';
+import { signup } from './userController.js';
 
 window.addEventListener('load', () => {
     const emailInput = document.getElementById('email');
@@ -9,7 +9,6 @@ window.addEventListener('load', () => {
     const signupBtn = document.getElementById('signup-btn');
     const signupForm = document.getElementById('signup-form');
 
-    let emailCheckTimeout;
     let passwordCheckTimeout;
     let isSubmitting = false; // Flag pour éviter les soumissions multiples
 
@@ -66,37 +65,9 @@ window.addEventListener('load', () => {
         }
     }
 
-    // Fonction pour vérifier et mettre à jour l'affichage de l'email
-    async function validateEmail(email = null) {
-        const emailToCheck = email !== null ? email : emailInput.value.trim();
-
-        if (!emailToCheck) {
-            emailInput.classList.remove('error');
-            emailErrorMessage.classList.remove('show');
-            return true;
-        }
-
-        try {
-            const result = await checkEmailExists(emailToCheck);
-
-            if (result.exists) {
-                setEmailError('Cette adresse email existe déjà');
-                signupBtn.disabled = true;
-                return false;
-            } else {
-                clearEmailError();
-                return true;
-            }
-        } catch (error) {
-            setEmailError('Impossible de vérifier cet email pour le moment');
-            signupBtn.disabled = true;
-            return false;
-        }
-    }
-
     // Fonction pour vérifier si le formulaire peut être soumis
     function updateSubmitButton() {
-        const emailValid = !emailInput.classList.contains('error') && emailInput.value.trim();
+        const emailValid = emailInput.value.trim();
         const passwordValid = !passwordInput.classList.contains('error') && passwordInput.value;
         signupBtn.disabled = !(emailValid && passwordValid);
     }
@@ -110,19 +81,8 @@ window.addEventListener('load', () => {
         }, 300);
     });
 
-    // Vérification en temps réel de l'email
     emailInput.addEventListener('input', () => {
-        clearTimeout(emailCheckTimeout);
-        emailCheckTimeout = setTimeout(() => {
-            validateEmail();
-            updateSubmitButton();
-        }, 300);
-    });
-
-    // Vérification au départ du champ email
-    emailInput.addEventListener('blur', () => {
-        clearTimeout(emailCheckTimeout);
-        validateEmail();
+        clearEmailError();
         updateSubmitButton();
     });
 
@@ -150,13 +110,7 @@ window.addEventListener('load', () => {
         }
 
         // Vérifications finales
-        const emailValid = await validateEmail(email);
         const passwordValid = validatePassword(password);
-
-        if (!emailValid) {
-            alert('Cette adresse email existe déjà');
-            return;
-        }
 
         if (!passwordValid) {
             alert('Le mot de passe n\'est pas assez robuste');
