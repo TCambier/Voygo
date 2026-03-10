@@ -152,19 +152,19 @@ input.error {
 /* Bouton Google */
 .google-btn{
     width:100%;
-    padding:10px;
-    border-radius:8px;
-    border:1px solid #ccc;
-    background:white;
+    padding:0;
+    border:none;
+    background:transparent;
     display:flex;
     align-items:center;
     justify-content:center;
-    gap:10px;
     cursor:pointer;
+    min-height:44px;
 }
 
-.google-btn img{
-    width:18px;
+.google-btn > div,
+.google-btn iframe {
+    width:100% !important;
 }
 
 /* Terms */

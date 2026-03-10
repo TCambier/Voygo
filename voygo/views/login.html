@@ -40,10 +40,7 @@
             <span>Pas de compte ? <a href="signup.html">Créer un compte</a></span>
         </div>
 
-        <button class="google-btn">
-            <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google">
-            Google
-        </button>
+        <div id="google-signin-btn" class="google-btn" aria-label="Se connecter avec Google"></div>
 
         <p class="terms">
             By clicking continue, you agree to our 
@@ -66,6 +63,7 @@
     </div>
 </div>
 
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script type="module" src="../assets/js/login.js"></script>
 <script src="../assets/js/forgot-password.js"></script>
 
