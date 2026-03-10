@@ -14,11 +14,11 @@ export class User {
     static async create(first_name, last_name, email, password) {
         const emailExists = await this.emailExists(email);
         if (emailExists) {
-            throw new Error('Cette adresse email existe deja');
+            throw new Error('Cette adresse email existe déjà');
         }
 
         // Create account in Supabase Auth (source of JWT)
-        const { error: authError } = await supabase.auth.signUp({
+        const { data: authData, error: authError } = await supabase.auth.signUp({
             email,
             password,
             options: {
@@ -29,7 +29,19 @@ export class User {
             }
         });
 
-        if (authError) throw authError;
+        if (authError) {
+            const msg = authError.message || '';
+            if (msg.toLowerCase().includes('already')) {
+                throw new Error('Cette adresse email existe déjà');
+            }
+            throw authError;
+        }
+
+        // Supabase returns a user with empty identities when the email already exists
+        const identities = authData?.user?.identities;
+        if (Array.isArray(identities) && identities.length === 0) {
+            throw new Error('Cette adresse email existe déjà');
+        }
 
         // Keep profile row in users table
         const hashedPassword = await hashPassword(password);

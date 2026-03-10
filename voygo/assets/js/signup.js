@@ -1,4 +1,4 @@
-// signup.js - Gestion de l'inscription
+﻿// signup.js - Gestion de l'inscription
 import { signup, checkEmailExists } from '../../controllers/userController.js';
 
 window.addEventListener('load', () => {
@@ -12,6 +12,29 @@ window.addEventListener('load', () => {
     let emailCheckTimeout;
     let passwordCheckTimeout;
     let isSubmitting = false; // Flag pour éviter les soumissions multiples
+
+    function setEmailError(message) {
+        emailInput.classList.add('error');
+        emailErrorMessage.textContent = message;
+        emailErrorMessage.classList.add('show');
+    }
+
+    function clearEmailError() {
+        emailInput.classList.remove('error');
+        emailErrorMessage.classList.remove('show');
+    }
+
+    function isEmailConflictMessage(message = '') {
+        const lower = message.toLowerCase();
+        return (
+            lower.includes('deja') ||
+            lower.includes('déjà') ||
+            lower.includes('already') ||
+            lower.includes('registered') ||
+            lower.includes('duplicate') ||
+            lower.includes('email')
+        );
+    }
 
     // Fonction pour valider le mot de passe
     function validatePassword(password = null) {
@@ -57,17 +80,15 @@ window.addEventListener('load', () => {
             const result = await checkEmailExists(emailToCheck);
 
             if (result.exists) {
-                emailInput.classList.add('error');
-                emailErrorMessage.classList.add('show');
+                setEmailError('Cette adresse email existe déjà');
                 signupBtn.disabled = true;
                 return false;
             } else {
-                emailInput.classList.remove('error');
-                emailErrorMessage.classList.remove('show');
+                clearEmailError();
                 return true;
             }
         } catch (error) {
-            emailInput.classList.add('error');
+            setEmailError('Impossible de vérifier cet email pour le moment');
             signupBtn.disabled = true;
             return false;
         }
@@ -159,10 +180,17 @@ window.addEventListener('load', () => {
                 window.location.href = 'login.html';
             });
         } else {
-            alert('Erreur: ' + result.error);
+            if (isEmailConflictMessage(result.error || '')) {
+                setEmailError('Cette adresse email existe déjà');
+            } else {
+                alert('Erreur: ' + result.error);
+            }
             isSubmitting = false;
             signupBtn.disabled = false;
             signupBtn.textContent = 'Créer un compte';
         }
     });
 });
+
+
+
