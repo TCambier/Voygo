@@ -2,7 +2,9 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Voyages</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mes voyages</title>
     <link rel="stylesheet" href="../assets/css/style.css">
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 </head>
@@ -10,7 +12,92 @@
     <div id="header-container"></div>
     <script src="../assets/js/header.js"></script>
 
-    <!-- voyages page content goes here -->
+    <main class="voyages-page">
+        <section class="voyages-hero">
+            <div class="voyages-hero-content">
+                <span class="voyages-eyebrow">Mes voyages</span>
+                <h1>Retrouvez tous les voyages que vous avez créés</h1>
+                <p>Reprenez un itinéraire, ajustez votre budget ou préparez un nouveau départ. Tout est centralisé ici, avec vos dates, vos notes et vos points d'étape.</p>
+                <div class="voyages-hero-actions">
+                    <button class="btn-primary">
+                        <i class='bx bx-plus'></i>
+                        Créer un voyage
+                    </button>
+                    <div class="voyages-search">
+                        <i class='bx bx-search'></i>
+                        <input type="text" placeholder="Rechercher une destination ou un nom">
+                    </div>
+                </div>
+            </div>
+            <div class="voyages-hero-stats">
+                <article class="stat-card">
+                    <p class="stat-label">Voyages créés</p>
+                    <p class="stat-value" id="stat-total">0</p>
+                    <p class="stat-note" id="stat-last-created">Dernière création : -</p>
+                </article>
+                <article class="stat-card">
+                    <p class="stat-label">Prochains départs</p>
+                    <p class="stat-value" id="stat-upcoming">0</p>
+                    <p class="stat-note" id="stat-upcoming-notes">-</p>
+                </article>
+                <article class="stat-card">
+                    <p class="stat-label">Budget moyen</p>
+                    <p class="stat-value" id="stat-budget">-</p>
+                    <p class="stat-note" id="stat-budget-note">Basé sur les voyages renseignés</p>
+                </article>
+            </div>
+        </section>
 
+        <section class="voyages-toolbar">
+            <div class="filter-group">
+                <label for="status-filter">Statut</label>
+                <select id="status-filter">
+                    <option>Tous</option>
+                    <option>À venir</option>
+                    <option>En cours</option>
+                    <option>Terminé</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="sort-filter">Trier par</label>
+                <select id="sort-filter">
+                    <option>Dernière mise à jour</option>
+                    <option>Date de départ</option>
+                    <option>Budget</option>
+                </select>
+            </div>
+            <div class="filter-tags">
+                <span class="tag active">Favoris</span>
+                <span class="tag">Workation</span>
+                <span class="tag">Week-end</span>
+                <span class="tag">Long séjour</span>
+            </div>
+        </section>
+
+        <section class="voyages-grid" id="voyages-grid"></section>
+        <section class="voyages-empty" id="voyages-empty" hidden>
+            <div>
+                <h2>Aucun voyage pour le moment</h2>
+                <p>Créez votre premier voyage et retrouvez-le ici dès maintenant.</p>
+            </div>
+            <button class="btn-primary">
+                <i class='bx bx-plus'></i>
+                Créer un voyage
+            </button>
+        </section>
+
+        <section class="voyages-callout">
+            <div>
+                <h2>Besoin d'un nouveau départ ?</h2>
+                <p>Créez un voyage en 2 minutes, invitez vos compagnons et partagez votre plan en temps réel.</p>
+            </div>
+            <button class="btn-primary">
+                <i class='bx bx-calendar-plus'></i>
+                Lancer une planification
+            </button>
+        </section>
+    </main>
+
+    <script type="module" src="../assets/js/voyages.js"></script>
 </body>
 </html>
