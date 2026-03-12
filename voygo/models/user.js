@@ -33,8 +33,31 @@ export class User {
     }
 
     static async emailExists(email) {
+        if (!email) return false;
+
+        // Preferred: RPC function that checks auth.users via SECURITY DEFINER.
+        // See Docs/supabase-auth-email-exists.sql for the SQL to create it.
+        try {
+            const { data, error } = await supabase.rpc('auth_email_exists', {
+                email_to_check: email
+            });
+            if (!error) return Boolean(data);
+        } catch (error) {
+            // Ignore and try the fallback below.
+        }
+
+        // Fallback: Edge function (if you prefer functions over RPC).
+        try {
+            const { data, error } = await supabase.functions.invoke('auth-email-exists', {
+                body: { email }
+            });
+            if (!error) return Boolean(data?.exists);
+        } catch (error) {
+            // Ignore; final fallback below.
+        }
+
         // Supabase Auth does not expose email existence checks for anon clients.
-        // Keep API for UI validation, but defer the real check to signUp.
+        // Defer the real check to signUp if no server-side check is available.
         return false;
     }
 

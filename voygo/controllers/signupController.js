@@ -1,5 +1,5 @@
 ﻿// signup.js - Gestion de l'inscription
-import { signup } from './userController.js';
+import { signup, checkEmailExists } from './userController.js';
 
 window.addEventListener('load', () => {
     const emailInput = document.getElementById('email');
@@ -31,7 +31,8 @@ window.addEventListener('load', () => {
             lower.includes('already') ||
             lower.includes('registered') ||
             lower.includes('duplicate') ||
-            lower.includes('email')
+            lower.includes('exists') ||
+            lower.includes('taken')
         );
     }
 
@@ -121,6 +122,16 @@ window.addEventListener('load', () => {
         isSubmitting = true;
         signupBtn.disabled = true;
         signupBtn.textContent = 'Création en cours...';
+
+        // Vérifier si l'email existe déjà (côté serveur si configuré)
+        const emailCheck = await checkEmailExists(email);
+        if (emailCheck?.exists) {
+            setEmailError('Cette adresse email existe déjà');
+            isSubmitting = false;
+            signupBtn.disabled = false;
+            signupBtn.textContent = 'Créer un compte';
+            return;
+        }
 
         const result = await signup(first_name, last_name, email, password);
         if (result.success) {
