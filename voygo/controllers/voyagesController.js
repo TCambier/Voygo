@@ -194,30 +194,23 @@ function applyFilters() {
 }
 
 async function fetchTripsForUser(userId) {
-    const columns = 'id,name,destination,start_date,end_date,people,travelers,steps,steps_count,budget,budget_total,total_budget,estimated_budget,progress,summary,description,notes,created_at,updated_at,user_id,uid';
-
-    try {
-        const { data, error } = await supabase
-            .from('trips')
-            .select(columns)
-            .eq('user_id', userId);
-
-        if (!error && data?.length) return data;
-        if (!error && data?.length === 0) return data;
-        if (error) {
-            console.warn('Query trips by user_id failed:', error.message);
-        }
-    } catch (err) {
-        console.warn('Query trips by user_id failed:', err);
-    }
-
-    const { data: altData, error: altError } = await supabase
+    const columns = '*';
+    const { data, error } = await supabase
         .from('trips')
         .select(columns)
-        .eq('uid', userId);
+        .eq('user_id', userId);
 
-    if (altError) throw altError;
-    return altData || [];
+    if (error) {
+        console.error('Query trips by user_id failed:', {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code
+        });
+        throw error;
+    }
+
+    return data || [];
 }
 
 async function initVoyagesPage() {

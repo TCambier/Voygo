@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Voygo - Planification</title>
-    <link rel="stylesheet" href="../assets/css/planning.css">
     <link rel="stylesheet" href="../assets/css/style.css">
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 </head>
@@ -15,11 +14,6 @@
 
     <main class="planning-page">
         <section class="top-strip">
-            <div class="tab-group">
-                <button type="button" class="tab active">Tableau</button>
-                <button type="button" class="tab">Agenda</button>
-                <button type="button" class="tab">Prix</button>
-            </div>
             <div class="trip-meta">
                 <div class="meta-item">
                     <span class="meta-label">Destination :</span>
@@ -32,10 +26,36 @@
             </div>
         </section>
 
+        <section class="panel planning-edit">
+            <h3>Infos du voyage</h3>
+            <div class="planning-edit-grid">
+                <div class="field-group">
+                    <label for="trip-name">Nom du voyage</label>
+                    <input class="form-input" id="trip-name" type="text" placeholder="Ex: Ã‰tÃ© en Italie">
+                </div>
+                <div class="field-group">
+                    <label for="trip-destination-input">Destination</label>
+                    <input class="form-input" id="trip-destination-input" type="text" placeholder="Ex: Rome">
+                </div>
+                <div class="field-group">
+                    <label for="trip-start-date">Date de dÃ©part</label>
+                    <input class="form-input" id="trip-start-date" type="date">
+                </div>
+                <div class="field-group">
+                    <label for="trip-end-date">Date de retour</label>
+                    <input class="form-input" id="trip-end-date" type="date">
+                </div>
+            </div>
+            <div class="planning-edit-actions">
+                <span class="settings-feedback" id="trip-save-note"></span>
+                <button type="button" class="btn-primary" id="trip-save">Enregistrer</button>
+            </div>
+        </section>
+
         <section class="planning-grid">
             <article class="panel add-panel">
                 <h3>Transport</h3>
-                <button type="button" class="add-icon" aria-label="Ajouter un transport">
+                <button type="button" class="add-icon" aria-label="Ajouter un transport" data-open-transport>
                     <i class='bx bx-plus'></i>
                 </button>
             </article>
@@ -77,6 +97,47 @@
         </section>
     </main>
 
+    <div class="modal-backdrop" id="transport-modal" hidden>
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Ajouter un transport</h2>
+                <button type="button" class="modal-close" data-close aria-label="Fermer">
+                    <i class='bx bx-x'></i>
+                </button>
+            </div>
+            <form class="modal-body" id="transport-form">
+                <div class="field-group">
+                    <label for="transport-from">D'où partez-vous ?</label>
+                    <input class="form-input" id="transport-from" name="from" type="text" placeholder="Ex: Paris" required>
+                </div>
+                <div class="field-group">
+                    <label for="transport-to">Où voulez-vous aller ?</label>
+                    <input class="form-input" id="transport-to" name="to" type="text" placeholder="Ex: Rome" required>
+                </div>
+                <div class="field-group">
+                    <label for="transport-date">Quel jour ?</label>
+                    <input class="form-input" id="transport-date" name="date" type="date" required>
+                </div>
+                <div class="field-group">
+                    <label for="transport-mode">Mode de transport</label>
+                    <select class="form-input" id="transport-mode" name="mode" required>
+                        <option value="">Sélectionner</option>
+                        <option>Avion</option>
+                        <option>Train</option>
+                        <option>Voiture</option>
+                        <option>Bus</option>
+                        <option>Bateau</option>
+                        <option>Autre</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-ghost" data-close>Annuler</button>
+                    <button type="submit" class="btn-primary">Ajouter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script type="module">
         import { requireAuth } from '../controllers/authGuardController.js';
         await requireAuth();
@@ -84,5 +145,6 @@
     <script type="module" src="../controllers/planningController.js"></script>
 </body>
 </html>
+
 
 
