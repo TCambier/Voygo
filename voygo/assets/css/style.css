@@ -743,78 +743,73 @@ body.dark-theme .hero-plane img {
     padding: 40px 50px 80px;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 28px;
     background:
         radial-gradient(circle at 12% 18%, rgba(255, 209, 102, 0.26), transparent 40%),
         linear-gradient(160deg, var(--bg-primary) 0%, var(--bg-tertiary) 70%);
     min-height: calc(100vh - 70px);
 }
 
-.top-strip {
-    display: flex;
-    justify-content: space-between;
+.planning-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    gap: 24px;
     align-items: center;
-    gap: 16px;
     background: var(--bg-secondary);
-    border-radius: 20px;
-    padding: 18px 22px;
-    border: 1px solid color-mix(in srgb, var(--accent) 12%, transparent);
-    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.08);
-    flex-wrap: wrap;
-}
-
-.tab-group {
-    display: inline-flex;
-    background: var(--bg-tertiary);
-    border-radius: 999px;
-    padding: 4px;
-    gap: 6px;
+    border-radius: 24px;
+    padding: 28px 32px;
     border: 1px solid color-mix(in srgb, var(--accent) 16%, transparent);
+    box-shadow: 0 18px 36px rgba(255, 107, 107, 0.12);
 }
 
-.tab {
-    border: none;
-    padding: 8px 16px;
-    border-radius: 999px;
-    background: transparent;
+.planning-eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent-strong);
+}
+
+.planning-hero-text h1 {
+    margin: 14px 0 10px;
+    font-size: 30px;
+}
+
+.planning-hero-text p {
     color: var(--text-secondary);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+    font-size: 14px;
+    line-height: 1.7;
 }
 
-.tab:hover {
-    transform: translateY(-1px);
-    color: var(--text-primary);
-}
-
-.tab.active {
-    background: var(--accent);
-    color: #ffffff;
-}
-
-.trip-meta {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
+.planning-hero-meta {
+    display: grid;
+    gap: 12px;
 }
 
 .meta-item {
-    background: linear-gradient(180deg, var(--bg-primary) 0%, #fff1df 100%);
-    border-radius: 12px;
-    padding: 8px 12px;
-    min-width: 160px;
+    background: linear-gradient(120deg, var(--bg-tertiary), #fff7e6);
+    border-radius: 16px;
+    padding: 14px 16px;
     font-size: 13px;
     color: var(--text-primary);
-    border: 1px solid var(--border-color);
+    border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
 .meta-label {
+    display: block;
     color: var(--text-secondary);
-    margin-right: 6px;
-    font-weight: 600;
+    font-weight: 700;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 11px;
+}
+
+.planning-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: 22px;
+    align-items: start;
 }
 
 .planning-grid {
@@ -827,18 +822,22 @@ body.dark-theme .hero-plane img {
     gap: 18px;
 }
 
+.planning-edit-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.planning-edit-header h3 {
+    margin-bottom: 4px;
+}
+
 .planning-edit-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
-}
-
-.planning-edit-actions {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
 }
 
 .panel {
@@ -856,6 +855,19 @@ body.dark-theme .hero-plane img {
 .panel h3 {
     font-size: 18px;
     color: var(--text-primary);
+}
+
+.panel-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.panel-title-row .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .add-panel {
@@ -890,12 +902,22 @@ body.dark-theme .hero-plane img {
 
 .panel-head {
     display: grid;
-    grid-template-columns: 1fr auto auto;
+    grid-template-columns: minmax(0, 1fr) 110px 80px 84px;
     gap: 12px;
     font-size: 12px;
     color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.08em;
+    align-items: center;
+}
+
+.panel-head span:nth-child(2),
+.panel-head span:nth-child(3) {
+    text-align: right;
+}
+
+.panel-head span:last-child {
+    text-align: right;
 }
 
 .panel-body {
@@ -905,6 +927,89 @@ body.dark-theme .hero-plane img {
 
 .muted {
     color: var(--text-secondary);
+}
+
+.transport-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 240px;
+    overflow-y: auto;
+    padding-right: 6px;
+}
+
+.transport-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.transport-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.transport-list::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--accent) 30%, #9aa0a6);
+    border-radius: 999px;
+}
+
+.transport-list::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--accent) 45%, #7f8c8d);
+}
+
+.transport-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 110px 80px 84px;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    font-size: 13px;
+}
+
+.transport-row > span:nth-child(2),
+.transport-row > span:nth-child(3) {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.transport-title {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-weight: 600;
+}
+
+.transport-sub {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.transport-actions {
+    display: inline-flex;
+    gap: 6px;
+    justify-self: end;
+}
+
+.btn-icon {
+    border: none;
+    background: var(--bg-secondary);
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+}
+
+.btn-icon.danger {
+    color: #b91c1c;
+}
+
+.transport-empty {
+    padding: 10px 0;
 }
 
 .activity-list {
@@ -1025,6 +1130,7 @@ body.dark-theme .hero-plane img {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    position: relative;
 }
 
 .field-group label {
@@ -1158,6 +1264,14 @@ body.dark-theme .hero-plane img {
         grid-template-columns: 1fr;
     }
 
+    .planning-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .planning-hero {
+        grid-template-columns: 1fr;
+    }
+
     .settings-grid {
         grid-template-columns: 1fr;
     }
@@ -1168,14 +1282,8 @@ body.dark-theme .hero-plane img {
         padding: 24px 18px 60px;
     }
 
-    .top-strip {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .trip-meta {
-        width: 100%;
-        justify-content: flex-start;
+    .planning-hero {
+        padding: 22px;
     }
 
     .settings-page {
@@ -1195,7 +1303,8 @@ body.dark-theme .hero-plane img {
     border-radius: 12px;
     border: 1px solid var(--border-color);
     background: var(--bg-primary);
-    min-width: 240px;
+    min-width: 320px;
+    width: 320px;
 }
 
 .voyages-search input {
@@ -1464,6 +1573,10 @@ body.dark-theme .hero-plane img {
     border-radius: 18px;
     background: linear-gradient(120deg, var(--bg-secondary), #fff7e6);
     border: 1px dashed color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.voyages-empty[hidden] {
+    display: none;
 }
 
 .voyages-empty h2 {

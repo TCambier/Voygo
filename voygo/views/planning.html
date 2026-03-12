@@ -13,88 +13,102 @@
 
 
     <main class="planning-page">
-        <section class="top-strip">
-            <div class="trip-meta">
+        <section class="planning-hero">
+            <div class="planning-hero-text">
+                <span class="planning-eyebrow">Planification</span>
+                <h1>Organisez votre voyage en un clin d'oeil</h1>
+                <p>Ajoutez vos transports, logements et activites, tout en gardant vos dates et votre destination au meme endroit.</p>
+            </div>
+            <div class="planning-hero-meta">
                 <div class="meta-item">
-                    <span class="meta-label">Destination :</span>
+                    <span class="meta-label">Destination</span>
                     <span id="planning-destination">-</span>
                 </div>
                 <div class="meta-item">
-                    <span class="meta-label">Date :</span>
+                    <span class="meta-label">Dates</span>
                     <span id="planning-dates">-</span>
                 </div>
             </div>
         </section>
 
-        <section class="panel planning-edit">
-            <h3>Infos du voyage</h3>
-            <div class="planning-edit-grid">
-                <div class="field-group">
-                    <label for="trip-name">Nom du voyage</label>
-                    <input class="form-input" id="trip-name" type="text" placeholder="Ex: Ã‰tÃ© en Italie">
+        <div class="planning-layout">
+            <section class="panel planning-edit">
+                <div class="planning-edit-header">
+                    <div>
+                        <h3>Infos du voyage</h3>
+                        <p class="muted">Mettez a jour le nom, la destination et les dates.</p>
+                    </div>
+                    <button type="button" class="btn-primary" id="trip-save">Enregistrer</button>
                 </div>
-                <div class="field-group">
-                    <label for="trip-destination-input">Destination</label>
-                    <input class="form-input" id="trip-destination-input" type="text" placeholder="Ex: Rome">
+                <div class="planning-edit-grid">
+                    <div class="field-group">
+                        <label for="trip-name">Nom du voyage</label>
+                        <input class="form-input" id="trip-name" type="text" placeholder="Ex: Voyage en Italie">
+                    </div>
+                    <div class="field-group">
+                        <label for="pays">Destination</label>
+                        <input class="form-input" id="pays" type="text" placeholder="Ex: Rome" autocomplete="off" aria-autocomplete="list" aria-expanded="false">
+                        <ul class="country-suggestions" id="country-suggestions" role="listbox" aria-label="Suggestions de pays"></ul>
+                    </div>
+                    <div class="field-group">
+                        <label for="trip-start-date">Date de depart</label>
+                        <input class="form-input" id="trip-start-date" type="date">
+                    </div>
+                    <div class="field-group">
+                        <label for="trip-end-date">Date de retour</label>
+                        <input class="form-input" id="trip-end-date" type="date">
+                    </div>
                 </div>
-                <div class="field-group">
-                    <label for="trip-start-date">Date de dÃ©part</label>
-                    <input class="form-input" id="trip-start-date" type="date">
-                </div>
-                <div class="field-group">
-                    <label for="trip-end-date">Date de retour</label>
-                    <input class="form-input" id="trip-end-date" type="date">
-                </div>
-            </div>
-            <div class="planning-edit-actions">
                 <span class="settings-feedback" id="trip-save-note"></span>
-                <button type="button" class="btn-primary" id="trip-save">Enregistrer</button>
-            </div>
-        </section>
+            </section>
 
-        <section class="planning-grid">
-            <article class="panel add-panel">
-                <h3>Transport</h3>
-                <button type="button" class="add-icon" aria-label="Ajouter un transport" data-open-transport>
-                    <i class='bx bx-plus'></i>
-                </button>
-            </article>
-
-            <article class="panel add-panel">
-                <h3>Logement</h3>
-                <button type="button" class="add-icon" aria-label="Ajouter un logement">
-                    <i class='bx bx-plus'></i>
-                </button>
-            </article>
+            <section class="planning-grid">
+                <article class="panel add-panel">
+                    <h3>Logement</h3>
+                    <button type="button" class="add-icon" aria-label="Ajouter un logement">
+                        <i class='bx bx-plus'></i>
+                    </button>
+                </article>
 
             <article class="panel content-panel">
-                <h3>Transport sur place</h3>
+                <div class="panel-title-row">
+                    <h3>Transports</h3>
+                    <button type="button" class="btn-secondary" data-open-transport>
+                        <i class='bx bx-plus'></i>
+                        Ajouter
+                    </button>
+                </div>
                 <div class="panel-head">
                     <span>Moyen de deplacement</span>
                     <span>Temps de trajet</span>
                     <span>Prix</span>
+                    <span></span>
                 </div>
-                <div class="panel-body muted">Aucun transport ajoute pour le moment.</div>
+                <div class="panel-body">
+                    <div class="transport-list" id="transport-list"></div>
+                    <div class="transport-empty muted" id="transport-empty">Aucun transport ajoute pour le moment.</div>
+                </div>
             </article>
 
-            <article class="panel content-panel">
-                <h3>Activites a faire</h3>
-                <div class="activity-list">
-                    <button type="button" class="activity-add" aria-label="Ajouter une activite">
-                        <i class='bx bx-plus'></i>
-                    </button>
-                    <ul>
-                        <li>Proposition d'activites a faire :</li>
-                        <li>- Parc de ...</li>
-                        <li>- Ville de ...</li>
-                        <li>- Activites 3</li>
-                        <li>- Activites 4</li>
-                        <li>- Activites 5</li>
-                    </ul>
-                </div>
-                <button type="button" class="see-more">Voir Plus</button>
-            </article>
-        </section>
+                <article class="panel content-panel">
+                    <h3>Activites a faire</h3>
+                    <div class="activity-list">
+                        <button type="button" class="activity-add" aria-label="Ajouter une activite">
+                            <i class='bx bx-plus'></i>
+                        </button>
+                        <ul>
+                            <li>Proposition d'activites a faire :</li>
+                            <li>- Parc de ...</li>
+                            <li>- Ville de ...</li>
+                            <li>- Activites 3</li>
+                            <li>- Activites 4</li>
+                            <li>- Activites 5</li>
+                        </ul>
+                    </div>
+                    <button type="button" class="see-more">Voir Plus</button>
+                </article>
+            </section>
+        </div>
     </main>
 
     <div class="modal-backdrop" id="transport-modal" hidden>
@@ -106,12 +120,13 @@
                 </button>
             </div>
             <form class="modal-body" id="transport-form">
+                <input type="hidden" id="transport-id" name="transport_id">
                 <div class="field-group">
-                    <label for="transport-from">D'où partez-vous ?</label>
+                    <label for="transport-from">D'ou partez-vous ?</label>
                     <input class="form-input" id="transport-from" name="from" type="text" placeholder="Ex: Paris" required>
                 </div>
                 <div class="field-group">
-                    <label for="transport-to">Où voulez-vous aller ?</label>
+                    <label for="transport-to">Ou voulez-vous aller ?</label>
                     <input class="form-input" id="transport-to" name="to" type="text" placeholder="Ex: Rome" required>
                 </div>
                 <div class="field-group">
@@ -119,9 +134,17 @@
                     <input class="form-input" id="transport-date" name="date" type="date" required>
                 </div>
                 <div class="field-group">
+                    <label for="transport-duration">Temps de trajet (minutes)</label>
+                    <input class="form-input" id="transport-duration" name="duration" type="number" min="1" placeholder="Ex: 120">
+                </div>
+                <div class="field-group">
+                    <label for="transport-price">Prix (EUR)</label>
+                    <input class="form-input" id="transport-price" name="price" type="number" min="0" step="0.01" placeholder="Ex: 89.90">
+                </div>
+                <div class="field-group">
                     <label for="transport-mode">Mode de transport</label>
                     <select class="form-input" id="transport-mode" name="mode" required>
-                        <option value="">Sélectionner</option>
+                        <option value="">Selectionner</option>
                         <option>Avion</option>
                         <option>Train</option>
                         <option>Voiture</option>
@@ -131,8 +154,9 @@
                     </select>
                 </div>
                 <div class="modal-actions">
+                    <span class="settings-feedback" id="transport-save-note"></span>
                     <button type="button" class="btn-ghost" data-close>Annuler</button>
-                    <button type="submit" class="btn-primary">Ajouter</button>
+                    <button type="submit" class="btn-primary" id="transport-submit">Ajouter</button>
                 </div>
             </form>
         </div>
@@ -145,6 +169,3 @@
     <script type="module" src="../controllers/planningController.js"></script>
 </body>
 </html>
-
-
-

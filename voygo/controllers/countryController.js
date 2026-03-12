@@ -8,9 +8,11 @@ function debounce(fn, delay = 250) {
   };
 }
 
-export function initCountryAutocomplete() {
-  const input = document.querySelector('#pays');
-  const list = document.querySelector('#country-suggestions');
+export function initCountryAutocomplete(options = {}) {
+  const inputSelector = options.inputSelector || '#pays';
+  const listSelector = options.listSelector || '#country-suggestions';
+  const input = document.querySelector(inputSelector);
+  const list = document.querySelector(listSelector);
   if (!input || !list) return;
 
   let activeIndex = -1;
