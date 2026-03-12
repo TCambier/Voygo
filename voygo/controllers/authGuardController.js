@@ -1,13 +1,13 @@
 // auth-guard.js - Protects pages that require authentication
-import { supabase } from '../assets/js/supabase.js';
+import { api } from '../assets/js/api.js';
 
 export async function requireAuth() {
   const returnTo = `${window.location.pathname.split('/').pop() || 'index.html'}${window.location.search || ''}`;
 
   try {
-    const { data, error } = await supabase.auth.getUser();
+    const data = await api.get('/api/auth/me');
     const userId = data?.user?.id;
-    if (error || !userId) {
+    if (!userId) {
       window.location.href = `login.html?returnTo=${encodeURIComponent(returnTo)}`;
       return null;
     }

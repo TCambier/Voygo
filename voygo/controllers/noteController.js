@@ -1,26 +1,22 @@
-import { supabase } from '../assets/js/supabase.js';
+import { api } from '../assets/js/api.js';
 
 // Notes table helpers
 export async function listNotes() {
-    const { data, error } = await supabase.from('notes').select('*');
-    if (error) throw error;
-    return data;
+    const result = await api.get('/api/notes');
+    return result?.data || [];
 }
 
 export async function createNote(item) {
-    const { data, error } = await supabase.from('notes').insert(item);
-    if (error) throw error;
-    return data;
+    const result = await api.post('/api/notes', item);
+    return result?.data;
 }
 
 export async function updateNote(id, changes) {
-    const { data, error } = await supabase.from('notes').update(changes).eq('id', id);
-    if (error) throw error;
-    return data;
+    const result = await api.patch(`/api/notes/${encodeURIComponent(id)}`, changes);
+    return result?.data;
 }
 
 export async function deleteNote(id) {
-    const { data, error } = await supabase.from('notes').delete().eq('id', id);
-    if (error) throw error;
-    return data;
+    const result = await api.delete(`/api/notes/${encodeURIComponent(id)}`);
+    return result;
 }

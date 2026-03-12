@@ -1,28 +1,24 @@
-import { supabase } from '../assets/js/supabase.js';
+import { api } from '../assets/js/api.js';
 
 // Helpers for the `trips` table. Adjust table/column names to match your
 // Supabase schema.
 
 export async function listTrips() {
-    const { data, error } = await supabase.from('trips').select('*');
-    if (error) throw error;
-    return data;
+    const result = await api.get('/api/trips');
+    return result?.data || [];
 }
 
 export async function createTrip(trip) {
-    const { data, error } = await supabase.from('trips').insert(trip);
-    if (error) throw error;
-    return data;
+    const result = await api.post('/api/trips', trip);
+    return result?.data;
 }
 
 export async function updateTrip(id, changes) {
-    const { data, error } = await supabase.from('trips').update(changes).eq('id', id);
-    if (error) throw error;
-    return data;
+    const result = await api.patch(`/api/trips/${encodeURIComponent(id)}`, changes);
+    return result?.data;
 }
 
 export async function deleteTrip(id) {
-    const { data, error } = await supabase.from('trips').delete().eq('id', id);
-    if (error) throw error;
-    return data;
+    const result = await api.delete(`/api/trips/${encodeURIComponent(id)}`);
+    return result;
 }

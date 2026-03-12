@@ -1,6 +1,6 @@
 // login.js - Gestion de la connexion
 import { login } from './userController.js';
-import { supabase } from '../assets/js/supabase.js';
+import { api } from '../assets/js/api.js';
 
 window.addEventListener('load', () => {
     const loginForm = document.getElementById('login-form');
@@ -25,23 +25,6 @@ window.addEventListener('load', () => {
         loginErrorMessage.textContent = '';
     }
 
-    function parseJwt(token) {
-        try {
-            const base64Url = token.split('.')[1];
-            if (!base64Url) return null;
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(
-                atob(base64)
-                    .split('')
-                    .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-                    .join('')
-            );
-            return JSON.parse(jsonPayload);
-        } catch (error) {
-            return null;
-        }
-    }
-
     function generateNonce() {
         const array = new Uint8Array(16);
         crypto.getRandomValues(array);
@@ -59,36 +42,12 @@ window.addEventListener('load', () => {
         clearLoginError();
 
         const nonce = sessionStorage.getItem('voygo_google_nonce') || undefined;
-
-        const { data, error } = await supabase.auth.signInWithIdToken({
-            provider: 'google',
-            token: response.credential,
-            nonce
-        });
-
-        if (error || !data?.session) {
+        try {
+            await api.post('/api/auth/google', { token: response.credential, nonce });
+            window.location.href = returnTo;
+        } catch (error) {
             setLoginError(error?.message || 'Connexion Google echouee');
-            return;
         }
-
-        const payload = parseJwt(response.credential) || {};
-        const userMeta = data.user?.user_metadata || {};
-        const first_name = userMeta.given_name || payload.given_name || '';
-        const last_name = userMeta.family_name || payload.family_name || '';
-        const email = data.user?.email || payload.email || '';
-
-        localStorage.setItem('voygo_jwt', data.session.access_token);
-        localStorage.setItem(
-            'voygo_auth_user',
-            JSON.stringify({
-                id: data.user?.id,
-                email,
-                first_name,
-                last_name
-            })
-        );
-
-        window.location.href = returnTo;
     }
 
     function initGoogleSignIn() {
@@ -140,19 +99,6 @@ window.addEventListener('load', () => {
 
         const result = await login(email, password);
         if (result.success) {
-            if (result.user?.token) {
-                localStorage.setItem('voygo_jwt', result.user.token);
-                localStorage.setItem(
-                    'voygo_auth_user',
-                    JSON.stringify({
-                        id: result.user.id,
-                        email: result.user.email,
-                        first_name: result.user.first_name || '',
-                        last_name: result.user.last_name || ''
-                    })
-                );
-            }
-            // Rediriger vers la page demandee (ou index par defaut)
             window.location.href = returnTo;
         } else {
             // Afficher le message d'erreur

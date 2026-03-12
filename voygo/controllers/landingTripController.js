@@ -1,5 +1,5 @@
-import { supabase } from '../assets/js/supabase.js';
 import { createTrip } from './tripController.js';
+import { api } from '../assets/js/api.js';
 
 export function initLandingTripCreation() {
   const countryInput = document.querySelector('#pays');
@@ -18,9 +18,14 @@ export function initLandingTripCreation() {
     const endDate = endDateInput.value;
     const travelers = parseInt(travelersInput.value, 10) || 1;
 
-    const { data: authData, error: authError } = await supabase.auth.getUser();
-    const userId = authData?.user?.id || null;
-    if (authError || !userId) {
+    let userId = null;
+    try {
+      const me = await api.get('/api/auth/me');
+      userId = me?.user?.id || null;
+    } catch (error) {
+      userId = null;
+    }
+    if (!userId) {
       localStorage.setItem(
         'voygo_trip_draft',
         JSON.stringify({
@@ -67,39 +72,8 @@ export function initLandingTripCreation() {
         end_date: endDate,
         people: travelers
       };
-
-      const payloadVariants = [
-        { ...basePayload, user_id: userId, name: '' },
-        { ...basePayload, user_id: userId, name: null },
-        { ...basePayload, user_id: userId },
-        { ...basePayload, uid: userId, name: '' },
-        { ...basePayload, uid: userId, name: null },
-        { ...basePayload, uid: userId },
-        { ...basePayload, travelers, people: undefined, user_id: userId },
-        { ...basePayload, travelers, people: undefined, uid: userId }
-      ];
-
-      let trip = null;
-      let lastError = null;
-
-      for (const payload of payloadVariants) {
-        const cleanPayload = Object.fromEntries(
-          Object.entries(payload).filter(([, value]) => value !== undefined)
-        );
-        try {
-          trip = await createTrip(cleanPayload);
-          lastError = null;
-          break;
-        } catch (error) {
-          lastError = error;
-        }
-      }
-
-      if (!trip && lastError) {
-        throw lastError;
-      }
-
-      const tripId = Array.isArray(trip) ? trip[0]?.id : trip?.id;
+      const trip = await createTrip(basePayload);
+      const tripId = trip?.id || null;
 
       localStorage.setItem(
         'voygo_current_trip',

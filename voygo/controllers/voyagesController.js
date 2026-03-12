@@ -1,4 +1,4 @@
-import { supabase } from '../assets/js/supabase.js';
+import { api } from '../assets/js/api.js';
 
 const grid = document.getElementById('voyages-grid');
 const emptyState = document.getElementById('voyages-empty');
@@ -196,84 +196,27 @@ function applyFilters() {
     renderTrips(filtered);
 }
 
-async function fetchTripsForUser(userId) {
-    const columns = '*';
-    const { data, error } = await supabase
-        .from('trips')
-        .select(columns)
-        .eq('user_id', userId);
-
-    if (error) {
-        console.error('Query trips by user_id failed:', {
-            message: error.message,
-            details: error.details,
-            hint: error.hint,
-            code: error.code
-        });
-        throw error;
-    }
-
-    return data || [];
+async function fetchTrips() {
+    const result = await api.get('/api/trips');
+    return result?.data || [];
 }
 
-function isMissingTableError(error) {
-    if (!error) return false;
-    const code = String(error.code || '').toUpperCase();
-    if (code === '42P01' || code === 'PGRST106') return true;
-    const message = `${error.message || ''} ${error.details || ''}`.toLowerCase();
-    return (
-        message.includes('does not exist') ||
-        (message.includes('relation') && message.includes('not found')) ||
-        message.includes('schema cache') ||
-        (message.includes('not found') && message.includes('schema'))
-    );
-}
-
-async function deleteTripAndRelated(tripId, userId) {
-    const relatedTables = [
-        { table: 'transports', column: 'trip_id' },
-        { table: 'logements', column: 'trip_id' },
-        { table: 'activities', column: 'trip_id' },
-        { table: 'activites', column: 'trip_id' },
-        { table: 'budgets', column: 'trip_id' },
-        { table: 'calendar_entries', column: 'trip_id' },
-        { table: 'markers', column: 'trip_id' }
-    ];
-
-    for (const { table, column } of relatedTables) {
-        const { error } = await supabase.from(table).delete().eq(column, tripId);
-        if (error && !isMissingTableError(error)) {
-            console.warn(`Impossible de supprimer les données liées (${table}).`, error);
-            throw error;
-        }
-    }
-
-    const { error: tripError } = await supabase
-        .from('trips')
-        .delete()
-        .eq('id', tripId)
-        .eq('user_id', userId);
-
-    if (tripError) {
-        console.warn('Impossible de supprimer le voyage.', tripError);
-        throw tripError;
-    }
+async function deleteTrip(tripId) {
+    await api.delete(`/api/trips/${encodeURIComponent(tripId)}`);
 }
 
 async function initVoyagesPage() {
     if (!grid || !emptyState) return;
     grid.innerHTML = '<div class="voyages-loading">Chargement des voyages...</div>';
-
-    const { data: authData, error: authError } = await supabase.auth.getUser();
-    const userId = authData?.user?.id;
-
-    if (authError || !userId) {
-        window.location.href = `login.html?returnTo=${encodeURIComponent('voyages.html')}`;
-        return;
-    }
-
     try {
-        allTrips = await fetchTripsForUser(userId);
+        const me = await api.get('/api/auth/me');
+        const userId = me?.user?.id;
+        if (!userId) {
+            window.location.href = `login.html?returnTo=${encodeURIComponent('voyages.html')}`;
+            return;
+        }
+
+        allTrips = await fetchTrips();
         updateStats(allTrips);
         applyFilters();
     } catch (err) {
@@ -306,25 +249,17 @@ document.addEventListener('click', (event) => {
         deleteButton.disabled = true;
         deleteButton.textContent = 'Suppression...';
 
-        supabase.auth.getUser().then(async ({ data: authData, error: authError }) => {
-            const userId = authData?.user?.id;
-            if (authError || !userId) {
-                window.location.href = `login.html?returnTo=${encodeURIComponent('voyages.html')}`;
-                return;
-            }
-
-            try {
-                await deleteTripAndRelated(tripId, userId);
-                allTrips = allTrips.filter((item) => String(item.id) !== String(tripId));
-                updateStats(allTrips);
-                applyFilters();
-            } catch (err) {
-                console.error('Suppression du voyage impossible.', err);
-                window.alert("Impossible de supprimer ce voyage pour le moment.");
-                deleteButton.disabled = false;
-                deleteButton.textContent = 'Supprimer';
-            }
-        });
+        try {
+            await deleteTrip(tripId);
+            allTrips = allTrips.filter((item) => String(item.id) !== String(tripId));
+            updateStats(allTrips);
+            applyFilters();
+        } catch (err) {
+            console.error('Suppression du voyage impossible.', err);
+            window.alert("Impossible de supprimer ce voyage pour le moment.");
+            deleteButton.disabled = false;
+            deleteButton.textContent = 'Supprimer';
+        }
         return;
     }
 });
@@ -334,4 +269,7 @@ statusFilter?.addEventListener('change', applyFilters);
 sortFilter?.addEventListener('change', applyFilters);
 
 initVoyagesPage();
+
+
+
 

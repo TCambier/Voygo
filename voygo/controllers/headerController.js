@@ -1,4 +1,4 @@
-import { supabase } from '../assets/js/supabase.js';
+import { api, fetchCurrentUser } from '../assets/js/api.js';
 
 // Loads header.html into #header-container and manages theme toggle
 async function loadHeader() {
@@ -27,23 +27,11 @@ async function loadHeader() {
     }
 }
 
-function getStoredUser() {
-    try {
-        const raw = localStorage.getItem('voygo_auth_user');
-        if (!raw) return null;
-        const user = JSON.parse(raw);
-        if (!user || typeof user !== 'object') return null;
-        return user;
-    } catch (error) {
-        return null;
-    }
-}
-
-function renderAccountSlot() {
+async function renderAccountSlot() {
     const slot = document.getElementById('header-account-slot');
     if (!slot) return;
 
-    const user = getStoredUser();
+    const user = await fetchCurrentUser();
     if (!user) {
         slot.innerHTML = '<a href="login.html" class="btn-connexion" id="header-login-link">Connexion</a>';
         return;
@@ -112,12 +100,10 @@ function setupAccountMenu() {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async () => {
             try {
-                await supabase.auth.signOut();
+                await api.post('/api/auth/logout');
             } catch (error) {
-                console.warn('Supabase sign out failed:', error);
+                console.warn('Logout failed:', error);
             }
-            localStorage.removeItem('voygo_auth_user');
-            localStorage.removeItem('voygo_jwt');
             window.location.href = 'login.html';
         });
     }

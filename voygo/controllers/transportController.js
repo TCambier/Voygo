@@ -1,26 +1,24 @@
-import { supabase } from '../assets/js/supabase.js';
+import { api } from '../assets/js/api.js';
 
 // Transport table helpers
-export async function listTransports() {
-    const { data, error } = await supabase.from('transports').select('*');
-    if (error) throw error;
-    return data;
+export async function listTransports(tripId) {
+    if (!tripId) throw new Error('Trip ID requis');
+    const result = await api.get(`/api/transports/trip/${encodeURIComponent(tripId)}`);
+    return result?.data || [];
 }
 
-export async function createTransport(item) {
-    const { data, error } = await supabase.from('transports').insert(item);
-    if (error) throw error;
-    return data;
+export async function createTransport(tripId, item) {
+    if (!tripId) throw new Error('Trip ID requis');
+    const result = await api.post(`/api/transports/trip/${encodeURIComponent(tripId)}`, item);
+    return result?.data;
 }
 
 export async function updateTransport(id, changes) {
-    const { data, error } = await supabase.from('transports').update(changes).eq('id', id);
-    if (error) throw error;
-    return data;
+    const result = await api.patch(`/api/transports/${encodeURIComponent(id)}`, changes);
+    return result?.data;
 }
 
 export async function deleteTransport(id) {
-    const { data, error } = await supabase.from('transports').delete().eq('id', id);
-    if (error) throw error;
-    return data;
+    const result = await api.delete(`/api/transports/${encodeURIComponent(id)}`);
+    return result;
 }

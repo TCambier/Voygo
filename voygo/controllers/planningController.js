@@ -1,4 +1,4 @@
-import { supabase } from '../assets/js/supabase.js';
+import { api } from '../assets/js/api.js';
 import { initCountryAutocomplete } from './countryController.js';
 
 function formatDate(dateValue) {
@@ -42,7 +42,6 @@ function readFallbackTrip() {
 
 const tripState = {
   id: null,
-  userId: null,
   name: '',
   destination: '',
   startDate: '',
@@ -117,20 +116,14 @@ function syncTripInputs() {
 }
 
 async function loadTransports() {
-  if (!tripState.id || !tripState.userId) return;
-  const { data, error } = await supabase
-    .from('transports')
-    .select('id,origin,destination,travel_date,mode,price,duration_minutes,created_at')
-    .eq('trip_id', tripState.id)
-    .eq('user_id', tripState.userId)
-    .order('travel_date', { ascending: true });
-
-  if (error) {
+  if (!tripState.id) return;
+  try {
+    const result = await api.get(`/api/transports/trip/${encodeURIComponent(tripState.id)}`);
+    transports = result?.data || [];
+  } catch (error) {
     console.warn('Impossible de charger les transports.', error);
     return;
   }
-
-  transports = data || [];
   renderTransports();
 }
 
@@ -172,13 +165,17 @@ function renderTransports() {
 
 async function initPlanningPage() {
   const returnTo = `planning.html${window.location.search || ''}`;
-  const { data: authData, error: authError } = await supabase.auth.getUser();
-  const userId = authData?.user?.id;
-  if (authError || !userId) {
+  try {
+    const me = await api.get('/api/auth/me');
+    const userId = me?.user?.id;
+    if (!userId) {
+      window.location.href = `login.html?returnTo=${encodeURIComponent(returnTo)}`;
+      return;
+    }
+  } catch (error) {
     window.location.href = `login.html?returnTo=${encodeURIComponent(returnTo)}`;
     return;
   }
-  tripState.userId = userId;
 
   const params = new URLSearchParams(window.location.search);
   const tripId = params.get('tripId');
@@ -188,13 +185,9 @@ async function initPlanningPage() {
 
   if (tripId) {
     try {
-      const { data, error } = await supabase
-        .from('trips')
-        .select('id,name,destination,start_date,end_date')
-        .eq('id', tripId)
-        .single();
-
-      if (!error && data) {
+      const result = await api.get(`/api/trips/${encodeURIComponent(tripId)}`);
+      const data = result?.data;
+      if (data) {
         tripState.id = data.id;
         tripState.name = data.name || '';
         destination = data.destination || destination;
@@ -202,7 +195,7 @@ async function initPlanningPage() {
         endDate = toDateInputValue(data.end_date || endDate);
       }
     } catch (err) {
-      console.warn('Impossible de charger le voyage depuis Supabase.', err);
+      console.warn('Impossible de charger le voyage depuis le serveur.', err);
     }
   }
 
@@ -293,14 +286,8 @@ function initTripEditor() {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('trips')
-        .update(payload)
-        .eq('id', tripState.id)
-        .select('id,name,destination,start_date,end_date')
-        .single();
-
-      if (error) throw error;
+      const result = await api.patch(`/api/trips/${encodeURIComponent(tripState.id)}`, payload);
+      const data = result?.data;
 
       tripState.name = data?.name || '';
       tripState.destination = data?.destination || '';
@@ -392,7 +379,7 @@ function initTransportModal() {
     saveNote.classList.remove('is-success', 'is-error');
     saveNote.textContent = 'Enregistrement...';
 
-    if (!tripState.id || !tripState.userId) {
+    if (!tripState.id) {
       saveNote.classList.add('is-error');
       saveNote.textContent = "Impossible d'enregistrer sans voyage.";
       return;
@@ -437,8 +424,6 @@ function initTransportModal() {
       }
 
       const payload = {
-        trip_id: tripState.id,
-        user_id: tripState.userId,
         origin,
         destination,
         travel_date: travelDate,
@@ -447,12 +432,11 @@ function initTransportModal() {
         duration_minutes: durationValue
       };
 
-      const query = supabase.from('transports');
-      const { error } = transportId
-        ? await query.update(payload).eq('id', transportId)
-        : await query.insert(payload);
-
-      if (error) throw error;
+      if (transportId) {
+        await api.patch(`/api/transports/${encodeURIComponent(transportId)}`, payload);
+      } else {
+        await api.post(`/api/transports/trip/${encodeURIComponent(tripState.id)}`, payload);
+      }
 
       saveNote.classList.add('is-success');
       saveNote.textContent = transportId ? 'Transport mis a jour.' : 'Transport ajoute.';
@@ -494,11 +478,9 @@ function initTransportModal() {
       if (target.closest('[data-delete]')) {
         const confirmed = window.confirm('Supprimer ce transport ?');
         if (!confirmed) return;
-        const { error } = await supabase
-          .from('transports')
-          .delete()
-          .eq('id', current.id);
-        if (error) {
+        try {
+          await api.delete(`/api/transports/${encodeURIComponent(current.id)}`);
+        } catch (error) {
           console.warn('Impossible de supprimer le transport.', error);
           return;
         }
@@ -511,3 +493,7 @@ function initTransportModal() {
 initPlanningPage().then(initTripEditor);
 initTransportModal();
 initCountryAutocomplete();
+
+
+
+

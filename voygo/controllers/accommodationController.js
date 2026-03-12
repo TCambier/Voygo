@@ -1,26 +1,22 @@
-import { supabase } from '../assets/js/supabase.js';
+import { api } from '../assets/js/api.js';
 
 // CRUD helpers for accommodations table.
 export async function listAccommodations() {
-    const { data, error } = await supabase.from('accommodations').select('*');
-    if (error) throw error;
-    return data;
+    const result = await api.get('/api/accommodations');
+    return result?.data || [];
 }
 
 export async function createAccommodation(item) {
-    const { data, error } = await supabase.from('accommodations').insert(item);
-    if (error) throw error;
-    return data;
+    const result = await api.post('/api/accommodations', item);
+    return result?.data;
 }
 
 export async function updateAccommodation(id, changes) {
-    const { data, error } = await supabase.from('accommodations').update(changes).eq('id', id);
-    if (error) throw error;
-    return data;
+    const result = await api.patch(`/api/accommodations/${encodeURIComponent(id)}`, changes);
+    return result?.data;
 }
 
 export async function deleteAccommodation(id) {
-    const { data, error } = await supabase.from('accommodations').delete().eq('id', id);
-    if (error) throw error;
-    return data;
+    const result = await api.delete(`/api/accommodations/${encodeURIComponent(id)}`);
+    return result;
 }

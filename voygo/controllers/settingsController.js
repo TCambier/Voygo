@@ -1,4 +1,4 @@
-import { supabase } from '../assets/js/supabase.js';
+import { api } from '../assets/js/api.js';
 
 const profileForm = document.getElementById('profile-form');
 const emailForm = document.getElementById('email-form');
@@ -24,28 +24,18 @@ function setFeedback(node, message, type = 'info') {
   if (type === 'error') node.classList.add('is-error');
 }
 
-function updateLocalUser(update) {
-  try {
-    const raw = localStorage.getItem('voygo_auth_user');
-    if (!raw) return;
-    const current = JSON.parse(raw);
-    const next = { ...current, ...update };
-    localStorage.setItem('voygo_auth_user', JSON.stringify(next));
-  } catch (error) {
-    // ignore
-  }
-}
-
 async function loadUserProfile() {
-  const { data, error } = await supabase.auth.getUser();
-  if (error || !data?.user) return;
+  try {
+    const result = await api.get('/api/auth/me');
+    const user = result?.user;
+    if (!user) return;
 
-  const user = data.user;
-  const meta = user.user_metadata || {};
-
-  if (firstNameInput) firstNameInput.value = meta.first_name || '';
-  if (lastNameInput) lastNameInput.value = meta.last_name || '';
-  if (emailInput) emailInput.value = user.email || '';
+    if (firstNameInput) firstNameInput.value = user.first_name || '';
+    if (lastNameInput) lastNameInput.value = user.last_name || '';
+    if (emailInput) emailInput.value = user.email || '';
+  } catch (error) {
+    return;
+  }
 }
 
 profileForm?.addEventListener('submit', async (event) => {
@@ -61,17 +51,12 @@ profileForm?.addEventListener('submit', async (event) => {
 
   setFeedback(profileFeedback, 'Mise a jour en cours...');
 
-  const { data, error } = await supabase.auth.updateUser({
-    data: { first_name, last_name }
-  });
-
-  if (error) {
+  try {
+    await api.patch('/api/auth/profile', { first_name, last_name });
+    setFeedback(profileFeedback, 'Profil mis a jour.', 'success');
+  } catch (error) {
     setFeedback(profileFeedback, error.message || 'Impossible de mettre a jour le profil.', 'error');
-    return;
   }
-
-  updateLocalUser({ first_name, last_name, email: data?.user?.email || emailInput.value });
-  setFeedback(profileFeedback, 'Profil mis a jour.', 'success');
 });
 
 emailForm?.addEventListener('submit', async (event) => {
@@ -85,13 +70,12 @@ emailForm?.addEventListener('submit', async (event) => {
 
   setFeedback(emailFeedback, 'Mise a jour en cours...');
 
-  const { error } = await supabase.auth.updateUser({ email });
-  if (error) {
+  try {
+    await api.post('/api/auth/email', { email });
+    setFeedback(emailFeedback, 'Un email de confirmation a ete envoye.', 'success');
+  } catch (error) {
     setFeedback(emailFeedback, error.message || 'Impossible de mettre a jour l\'email.', 'error');
-    return;
   }
-
-  setFeedback(emailFeedback, 'Un email de confirmation a ete envoye.', 'success');
 });
 
 passwordForm?.addEventListener('submit', async (event) => {
@@ -112,15 +96,14 @@ passwordForm?.addEventListener('submit', async (event) => {
 
   setFeedback(passwordFeedback, 'Mise a jour en cours...');
 
-  const { error } = await supabase.auth.updateUser({ password });
-  if (error) {
+  try {
+    await api.post('/api/auth/password', { password });
+    newPasswordInput.value = '';
+    confirmPasswordInput.value = '';
+    setFeedback(passwordFeedback, 'Mot de passe mis a jour.', 'success');
+  } catch (error) {
     setFeedback(passwordFeedback, error.message || 'Impossible de mettre a jour le mot de passe.', 'error');
-    return;
   }
-
-  newPasswordInput.value = '';
-  confirmPasswordInput.value = '';
-  setFeedback(passwordFeedback, 'Mot de passe mis a jour.', 'success');
 });
 
 deleteButton?.addEventListener('click', async () => {
@@ -129,20 +112,16 @@ deleteButton?.addEventListener('click', async () => {
 
   setFeedback(deleteFeedback, 'Suppression en cours...');
 
-  const { error } = await supabase.functions.invoke('delete-account');
-  if (error) {
+  try {
+    await api.post('/api/auth/delete');
+    window.location.href = 'signup.html';
+  } catch (error) {
     setFeedback(
       deleteFeedback,
-      "Impossible de supprimer le compte. Configurez la fonction 'delete-account' cote serveur.",
+      error.message || "Impossible de supprimer le compte. Configurez la fonction 'delete-account' cote serveur.",
       'error'
     );
-    return;
   }
-
-  await supabase.auth.signOut();
-  localStorage.removeItem('voygo_auth_user');
-  localStorage.removeItem('voygo_jwt');
-  window.location.href = 'signup.html';
 });
 
 loadUserProfile();

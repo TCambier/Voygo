@@ -185,3 +185,10 @@ Améliorations possibles du projet :
 - version mobile
 - export PDF ou Excel
 - partage de voyages
+
+# Backend Node.js (nouveau)
+
+1. Copier `.env.example` vers `.env` et renseigner `SUPABASE_URL` et `SUPABASE_ANON_KEY`.
+2. Installer les dependances : `npm install`
+3. Lancer le serveur : `npm run dev`
+4. Ouvrir l'application : `http://localhost:3000`
