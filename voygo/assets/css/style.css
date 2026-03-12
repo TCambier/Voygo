@@ -1527,3 +1527,469 @@ body.dark-theme .hero-plane img {
         align-items: flex-start;
     }
 }
+
+/* ============================================================
+   MOBILE — à coller à la fin de style.css
+   Breakpoint principal : 480px (smartphone portrait)
+   ============================================================ */
+ 
+@media (max-width: 480px) {
+ 
+  /* ── HEADER ── */
+  .header {
+    padding: 12px 16px;
+    flex-wrap: nowrap;        /* logo + boutons sur une seule ligne */
+    gap: 8px;
+  }
+ 
+  /* Cache le menu de navigation central sur mobile */
+  .navbar-menu {
+    display: none;
+  }
+ 
+  .navbar-left .logo {
+    height: 32px;
+  }
+ 
+  .navbar-right {
+    gap: 10px;
+  }
+ 
+  .btn-connexion {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+ 
+  /* ── HERO SECTION ── */
+  .hero-section {
+    padding: 24px 16px 32px;
+    min-height: auto;
+    gap: 24px;
+    background:
+      radial-gradient(circle at 10% 10%, rgba(255, 209, 102, 0.28), transparent 45%),
+      linear-gradient(160deg, var(--bg-primary) 0%, var(--bg-tertiary) 100%);
+  }
+ 
+  .hero-section h1 {
+    font-size: 26px;
+    line-height: 1.25;
+    margin-bottom: 12px;
+  }
+ 
+  .hero-section > .hero-content > p {
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+ 
+  /* Cache l'image décorative sur mobile (trop lourde visuellement) */
+  .hero-image {
+    display: none;
+  }
+ 
+  .hero-plane {
+    display: none;
+  }
+ 
+  /* ── FORMULAIRE ── */
+  .trip-form {
+    position: static;
+    width: 100%;
+    transform: none;
+    flex-direction: column;
+    gap: 14px;
+    padding: 20px 16px;
+    border-radius: 16px;
+    box-shadow: 0 12px 30px rgba(255, 107, 107, 0.15);
+  }
+ 
+  .form-group {
+    width: 100%;
+  }
+ 
+  .form-input {
+    font-size: 16px; /* évite le zoom auto sur iOS */
+    padding: 13px 14px;
+  }
+ 
+  .traveler-stepper {
+    width: 100%;
+  }
+ 
+  .traveler-input {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+  }
+ 
+  .traveler-btn {
+    width: 48px;
+    height: 48px;
+    font-size: 22px;
+  }
+ 
+  .btn-creer {
+    width: 100%;
+    padding: 14px;
+    font-size: 15px;
+    border-radius: 10px;
+  }
+ 
+  /* Suggestions pays */
+  .country-suggestions {
+    font-size: 15px;
+  }
+ 
+  .country-suggestion-item {
+    padding: 13px 14px;
+  }
+ 
+  /* ── WELCOME / À PROPOS ── */
+  .welcome-section {
+    flex-direction: column;
+    padding: 36px 16px;
+    gap: 24px;
+  }
+ 
+  .welcome-section h2 {
+    font-size: 22px;
+  }
+ 
+  .welcome-section p {
+    font-size: 14px;
+  }
+ 
+  /* ── GALERIE ── */
+  .gallery {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    justify-content: flex-start;
+    gap: 10px;
+    padding-right: 0;
+    padding-bottom: 8px;
+  }
+ 
+  .gallery::-webkit-scrollbar {
+    display: none;
+  }
+ 
+  .gallery-item {
+    flex-shrink: 0;
+    width: 130px !important;
+    max-width: none;
+    border-radius: 16px;
+  }
+ 
+  /* Hauteurs uniformes en scroll horizontal */
+  .gallery-item:nth-child(1),
+  .gallery-item:nth-child(2),
+  .gallery-item:nth-child(3),
+  .gallery-item:nth-child(4),
+  .gallery-item:nth-child(5) {
+    height: 160px;
+  }
+ 
+  /* ── PAGE VOYAGES ── */
+  .voyages-page {
+    padding: 20px 16px 80px;
+    gap: 20px;
+  }
+ 
+  .voyages-hero {
+    padding: 20px 16px;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    border-radius: 18px;
+  }
+ 
+  .voyages-hero-content h1 {
+    font-size: 22px;
+  }
+ 
+  .voyages-hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+ 
+  .voyages-hero-actions .btn-primary,
+  .voyages-hero-actions .btn-danger {
+    width: 100%;
+    justify-content: center;
+    padding: 13px;
+  }
+ 
+  .voyages-search {
+    min-width: 0;
+    width: 100%;
+  }
+ 
+  .voyages-toolbar {
+    flex-direction: column;
+    gap: 14px;
+    align-items: stretch;
+  }
+ 
+  .filter-group {
+    width: 100%;
+  }
+ 
+  .filter-group select {
+    width: 100%;
+    font-size: 15px;
+  }
+ 
+  .voyages-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+ 
+  .voyage-card {
+    padding: 18px 16px;
+    border-radius: 16px;
+  }
+ 
+  .voyage-card h3 {
+    font-size: 18px;
+  }
+ 
+  .voyage-actions {
+    flex-direction: column;
+  }
+ 
+  .voyage-actions .btn-primary,
+  .voyage-actions .btn-secondary,
+  .voyage-actions .btn-ghost {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+ 
+  .voyages-callout {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px 16px;
+    border-radius: 16px;
+  }
+ 
+  .voyages-callout .btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
+ 
+  .voyages-empty {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px 16px;
+  }
+ 
+  .voyages-empty .btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
+ 
+  /* ── PAGE PLANNING ── */
+  .planning-page {
+    padding: 20px 16px 80px;
+    gap: 16px;
+  }
+ 
+  .top-strip {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+    border-radius: 14px;
+    gap: 12px;
+  }
+ 
+  .tab-group {
+    width: 100%;
+    justify-content: stretch;
+  }
+ 
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 9px 10px;
+    font-size: 12px;
+  }
+ 
+  .trip-meta {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+ 
+  .meta-item {
+    min-width: 0;
+    flex: 1 1 calc(50% - 4px);
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+ 
+  .planning-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+ 
+  .planning-edit-grid {
+    grid-template-columns: 1fr;
+  }
+ 
+  .panel {
+    padding: 16px;
+    border-radius: 14px;
+  }
+ 
+  /* ── PAGE PARAMÈTRES ── */
+  .settings-page {
+    padding: 20px 16px 80px;
+    gap: 16px;
+  }
+ 
+  .settings-hero {
+    padding: 18px 16px;
+    border-radius: 14px;
+  }
+ 
+  .settings-hero h1 {
+    font-size: 22px;
+  }
+ 
+  .settings-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+ 
+  .settings-card {
+    padding: 18px 16px;
+    border-radius: 14px;
+  }
+ 
+  /* ── MODALES ── */
+  .modal-backdrop {
+    padding: 12px;
+    align-items: flex-end; /* slide depuis le bas sur mobile */
+  }
+ 
+  .modal {
+    width: 100%;
+    border-radius: 20px 20px 0 0;
+  }
+ 
+  .modal-header,
+  .modal-body {
+    padding: 18px 16px;
+  }
+ 
+  .modal-actions {
+    flex-direction: column;
+  }
+ 
+  .modal-actions .btn-primary,
+  .modal-actions .btn-secondary,
+  .modal-actions .btn-ghost {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+ 
+  /* ── DROPDOWN COMPTE ── */
+  .account-dropdown {
+    right: -10px;
+    min-width: 190px;
+  }
+ 
+  /* ── STAT CARDS ── */
+  .voyages-hero-stats {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+ 
+  .stat-value {
+    font-size: 22px;
+  }
+}
+
+/* ============================================================
+   MENU HAMBURGER MOBILE — à ajouter dans mobile-additions.css
+   (dans le bloc @media (max-width: 480px) existant)
+   ============================================================ */
+ 
+@media (max-width: 480px) {
+ 
+  /* ── HEADER ── */
+  .header {
+    padding: 12px 16px;
+    position: relative;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+ 
+  /* Cache le menu horizontal */
+  .navbar-menu {
+    display: none;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--header-bg);
+    border-top: 1px solid var(--header-border);
+    border-bottom: 1px solid var(--header-border);
+    padding: 8px 0;
+    z-index: 200;
+    box-shadow: 0 8px 24px rgba(255, 107, 107, 0.12);
+  }
+ 
+  /* Menu ouvert */
+  .navbar-menu.is-open {
+    display: flex;
+  }
+ 
+  .navbar-menu a {
+    padding: 13px 20px;
+    font-size: 15px;
+    border-bottom: 1px solid var(--border-color);
+    width: 100%;
+  }
+ 
+  .navbar-menu a:last-child {
+    border-bottom: none;
+  }
+ 
+  /* Bouton hamburger — injecté par JS */
+  .btn-hamburger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    margin-right: auto; /* pousse navbar-right à droite */
+    color: var(--text-primary);
+    font-size: 26px;
+    line-height: 1;
+    transition: color 0.2s;
+  }
+ 
+  .btn-hamburger:hover {
+    color: var(--accent);
+  }
+ 
+  /* Réduit le logo */
+  .navbar-left .logo {
+    height: 36px !important;
+  }
+ 
+  .navbar-right {
+    gap: 10px;
+  }
+ 
+  .btn-connexion {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+}
