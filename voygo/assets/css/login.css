@@ -149,24 +149,6 @@ input.error {
     text-decoration:none;
 }
 
-/* Bouton Google */
-.google-btn{
-    width:100%;
-    padding:0;
-    border:none;
-    background:transparent;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    cursor:pointer;
-    min-height:44px;
-}
-
-.google-btn > div,
-.google-btn iframe {
-    width:100% !important;
-}
-
 /* Terms */
 .terms{
     font-size:12px;
@@ -179,8 +161,8 @@ input.error {
     text-decoration:none;
 }
 
-/* Modal styles */
-.modal {
+/* Modal styles (auth pages) */
+.auth-modal {
     display: none;
     position: fixed;
     z-index: 1;
@@ -193,7 +175,7 @@ input.error {
     background-color: rgba(0,0,0,0.4);
 }
 
-.modal-content {
+.auth-modal-content {
     background: rgba(255,255,255,0.95);
     backdrop-filter: blur(8px);
     padding: 32px;
@@ -206,13 +188,13 @@ input.error {
     position: relative;
 }
 
-.modal-content h2 {
+.auth-modal-content h2 {
     color: #ff6b6b;
     font-size: 24px;
     margin-bottom: 16px;
 }
 
-.modal-content p {
+.auth-modal-content p {
     color: #666;
     margin-bottom: 24px;
     line-height: 1.5;

@@ -11,6 +11,9 @@ const statUpcoming = document.getElementById('stat-upcoming');
 const statUpcomingNotes = document.getElementById('stat-upcoming-notes');
 const statBudget = document.getElementById('stat-budget');
 const statBudgetNote = document.getElementById('stat-budget-note');
+const createTripButton = document.getElementById('create-trip-btn');
+const createTripEmptyButton = document.getElementById('create-trip-empty-btn');
+const launchPlanningButton = document.getElementById('launch-planning-btn');
 
 let allTrips = [];
 
@@ -196,6 +199,10 @@ function applyFilters() {
     renderTrips(filtered);
 }
 
+function redirectToIndex() {
+    window.location.href = 'index.html';
+}
+
 async function fetchTrips() {
     const result = await api.get('/api/trips');
     return result?.data || [];
@@ -267,6 +274,10 @@ document.addEventListener('click', (event) => {
 searchInput?.addEventListener('input', applyFilters);
 statusFilter?.addEventListener('change', applyFilters);
 sortFilter?.addEventListener('change', applyFilters);
+
+createTripButton?.addEventListener('click', redirectToIndex);
+createTripEmptyButton?.addEventListener('click', redirectToIndex);
+launchPlanningButton?.addEventListener('click', redirectToIndex);
 
 initVoyagesPage();
 

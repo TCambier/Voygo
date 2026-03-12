@@ -21,6 +21,7 @@ async function loadHeader() {
         if (container) container.innerHTML = html;
         updateThemeIcon();
         renderAccountSlot();
+        updateNavForAuth();
         initMobileMenu(); // ✅ appelé ici, après injection du header
     } catch (err) {
         console.error('Failed to load header:', err);
@@ -118,6 +119,14 @@ function renderAccountSlot() {
     setupAccountMenu();
 }
  
+function updateNavForAuth() {
+    if (!isBrowser) return;
+    const link = document.getElementById('nav-my-trips');
+    if (!link) return;
+    const user = getStoredUser();
+    link.style.display = user ? '' : 'none';
+}
+
 function setupAccountMenu() {
     if (!isBrowser) return;
     const toggle = document.getElementById('account-toggle');
@@ -210,3 +219,5 @@ if (isBrowser) {
         initHeader();
     }
 }
+
+

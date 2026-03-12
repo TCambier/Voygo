@@ -54,26 +54,6 @@ export async function login(req, res) {
   return res.json({ user: buildUserPayload(data.user) });
 }
 
-export async function loginWithGoogle(req, res) {
-  const { token, nonce } = req.body || {};
-  if (!token) {
-    return res.status(400).json({ error: 'Jeton Google manquant.' });
-  }
-
-  const { data, error } = await supabaseAuth.auth.signInWithIdToken({
-    provider: 'google',
-    token,
-    nonce
-  });
-
-  if (error || !data?.session) {
-    return res.status(401).json({ error: error?.message || 'Connexion Google echouee.' });
-  }
-
-  setAuthCookies(res, data.session);
-  return res.json({ user: buildUserPayload(data.user) });
-}
-
 export async function me(req, res) {
   if (!req.user) {
     return res.status(401).json({ error: 'Non authentifie.' });
