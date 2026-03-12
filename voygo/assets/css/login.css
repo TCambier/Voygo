@@ -106,7 +106,7 @@ input.error {
     padding:12px;
     border:none;
     border-radius:8px;
-    background:#0d6e7a;
+    background:#ff6b6b;
     color:white;
     font-size:14px;
     cursor:pointer;
@@ -115,7 +115,7 @@ input.error {
 }
 
 .email-btn:hover{
-    background:#0b5d68;
+    background:#ff6b6b;
 }
 
 .email-btn:disabled {
@@ -133,7 +133,7 @@ input.error {
 }
 
 .separator a{
-    color:#0d6e7a;
+    color:#ff6b6b;
     text-decoration:none;
 }
 
@@ -145,7 +145,7 @@ input.error {
 }
 
 .space a{
-    color:#0d6e7a;
+    color:#ff6b6b;
     text-decoration:none;
 }
 
@@ -175,7 +175,7 @@ input.error {
 }
 
 .terms a{
-    color:#0d6e7a;
+    color:#ff6b6b;
     text-decoration:none;
 }
 
@@ -207,7 +207,7 @@ input.error {
 }
 
 .modal-content h2 {
-    color: #0d6e7a;
+    color: #ff6b6b;
     font-size: 24px;
     margin-bottom: 16px;
 }
@@ -249,7 +249,7 @@ input.error {
     padding: 12px;
     border: none;
     border-radius: 8px;
-    background: #0d6e7a;
+    background: #ff6b6b;
     color: white;
     font-size: 14px;
     cursor: pointer;
@@ -257,5 +257,5 @@ input.error {
 }
 
 #send-btn:hover {
-    background: #0b5d68;
+    background: #ff6b6b ;
 }
