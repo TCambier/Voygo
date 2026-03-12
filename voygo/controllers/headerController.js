@@ -1,7 +1,10 @@
-import { api, fetchCurrentUser } from '../assets/js/api.js';
+import { supabase } from '../assets/js/supabase.js';
 
+const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
+ 
 // Loads header.html into #header-container and manages theme toggle
 async function loadHeader() {
+    if (!isBrowser) return;
     try {
         let base = window.location.pathname;
         if (!base.endsWith('/')) {
@@ -23,12 +26,71 @@ async function loadHeader() {
         console.error('Failed to load header:', err);
     }
 }
-
-async function renderAccountSlot() {
+ 
+function initMobileMenu() {
+    if (!isBrowser) return;
+    const menu = document.querySelector('.navbar-menu');
+    if (!menu) return;
+ 
+    // Sur PC, on ne fait rien
+    if (window.innerWidth > 480) return;
+ 
+    // Évite de créer le bouton deux fois sur mobile
+    if (document.querySelector('.btn-hamburger')) return;
+ 
+    const btn = document.createElement('button');
+    btn.className = 'btn-hamburger';
+    btn.setAttribute('aria-label', 'Ouvrir le menu');
+    btn.setAttribute('aria-expanded', 'false');
+    btn.innerHTML = '<i class="bx bx-menu"></i>';
+ 
+    const navbarLeft = document.querySelector('.navbar-left');
+    navbarLeft.insertAdjacentElement('afterend', btn);
+ 
+    btn.addEventListener('click', () => {
+        const isOpen = menu.classList.toggle('is-open');
+        btn.setAttribute('aria-expanded', String(isOpen));
+        btn.innerHTML = isOpen
+            ? '<i class="bx bx-x"></i>'
+            : '<i class="bx bx-menu"></i>';
+    });
+ 
+    document.addEventListener('click', (e) => {
+        if (!btn.contains(e.target) && !menu.contains(e.target)) {
+            menu.classList.remove('is-open');
+            btn.setAttribute('aria-expanded', 'false');
+            btn.innerHTML = '<i class="bx bx-menu"></i>';
+        }
+    });
+ 
+    menu.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+            menu.classList.remove('is-open');
+            btn.setAttribute('aria-expanded', 'false');
+            btn.innerHTML = '<i class="bx bx-menu"></i>';
+        });
+    });
+}
+ 
+function getStoredUser() {
+    if (!isBrowser) return null;
+    try {
+        const raw = localStorage.getItem('voygo_auth_user');
+        if (!raw) return null;
+        const user = JSON.parse(raw);
+        if (!user || typeof user !== 'object') return null;
+        return user;
+    } catch (error) {
+        return null;
+    }
+}
+ 
+function renderAccountSlot() {
+    if (!isBrowser) return;
     const slot = document.getElementById('header-account-slot');
     if (!slot) return;
-
-    const user = await fetchCurrentUser();
+ 
+    const user = getStoredUser();
     if (!user) {
         slot.innerHTML = '<a href="login.html" class="btn-connexion" id="header-login-link">Connexion</a>';
         return;
@@ -57,6 +119,7 @@ async function renderAccountSlot() {
 }
  
 function setupAccountMenu() {
+    if (!isBrowser) return;
     const toggle = document.getElementById('account-toggle');
     const dropdown = document.getElementById('account-dropdown');
     const logoutBtn = document.getElementById('account-logout');
@@ -91,16 +154,23 @@ function setupAccountMenu() {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async () => {
             try {
-                await api.post('/api/auth/logout');
+                if (supabase?.auth?.signOut) {
+                    await supabase.auth.signOut();
+                } else if (typeof fetch === 'function') {
+                    await fetch('/api/auth/logout', { method: 'POST' });
+                }
             } catch (error) {
-                console.warn('Logout failed:', error);
+                console.warn('Supabase sign out failed:', error);
             }
+            localStorage.removeItem('voygo_auth_user');
+            localStorage.removeItem('voygo_jwt');
             window.location.href = 'login.html';
         });
     }
 }
  
 function updateThemeIcon() {
+    if (!isBrowser) return;
     const icon = document.querySelector('.theme-icon');
     if (!icon) return;
     const isDark = document.body.classList.contains('dark-theme');
@@ -109,17 +179,34 @@ function updateThemeIcon() {
 }
  
 function toggleTheme() {
+    if (!isBrowser) return;
     document.body.classList.toggle('dark-theme');
     localStorage.setItem('theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
     updateThemeIcon();
 }
- 
-window.toggleTheme = toggleTheme;
- 
-// Restore theme preference and load header on DOM ready
-document.addEventListener('DOMContentLoaded', () => {
+
+export function initHeader() {
+    if (!isBrowser) return;
     if (localStorage.getItem('theme') === 'dark') {
         document.body.classList.add('dark-theme');
     }
     loadHeader();
-});
+}
+
+export {
+    loadHeader,
+    initMobileMenu,
+    renderAccountSlot,
+    setupAccountMenu,
+    updateThemeIcon,
+    toggleTheme
+};
+
+if (isBrowser) {
+    window.toggleTheme = toggleTheme;
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initHeader);
+    } else {
+        initHeader();
+    }
+}
