@@ -32,34 +32,54 @@
         </section>
 
         <div class="planning-layout">
-            <section class="panel planning-edit">
-                <div class="planning-edit-header">
-                    <div>
-                        <h3>Infos du voyage</h3>
-                        <p class="muted">Mettez a jour le nom, la destination et les dates.</p>
+            <section class="planning-left">
+                <article class="panel planning-edit">
+                    <div class="planning-edit-header">
+                        <div>
+                            <h3>Infos du voyage</h3>
+                            <p class="muted">Mettez a jour le nom, la destination et les dates.</p>
+                        </div>
+                        <button type="button" class="btn-primary" id="trip-save">Enregistrer</button>
                     </div>
-                    <button type="button" class="btn-primary" id="trip-save">Enregistrer</button>
-                </div>
-                <div class="planning-edit-grid">
-                    <div class="field-group">
-                        <label for="trip-name">Nom du voyage</label>
-                        <input class="form-input" id="trip-name" type="text" placeholder="Ex: Voyage en Italie">
+                    <div class="planning-edit-grid">
+                        <div class="field-group">
+                            <label for="trip-name">Nom du voyage</label>
+                            <input class="form-input" id="trip-name" type="text" placeholder="Ex: Voyage en Italie">
+                        </div>
+                        <div class="field-group">
+                            <label for="pays">Destination</label>
+                            <input class="form-input" id="pays" type="text" placeholder="Ex: Rome, Italie" autocomplete="off" aria-autocomplete="list" aria-expanded="false">
+                            <ul class="country-suggestions" id="country-suggestions" role="listbox" aria-label="Suggestions de destination"></ul>
+                        </div>
+                        <div class="field-group">
+                            <label for="trip-start-date">Date de depart</label>
+                            <input class="form-input" id="trip-start-date" type="date">
+                        </div>
+                        <div class="field-group">
+                            <label for="trip-end-date">Date de retour</label>
+                            <input class="form-input" id="trip-end-date" type="date">
+                        </div>
                     </div>
-                    <div class="field-group">
-                        <label for="pays">Destination</label>
-                        <input class="form-input" id="pays" type="text" placeholder="Ex: Rome" autocomplete="off" aria-autocomplete="list" aria-expanded="false">
-                        <ul class="country-suggestions" id="country-suggestions" role="listbox" aria-label="Suggestions de pays"></ul>
+                    <span class="settings-feedback" id="trip-save-note"></span>
+                </article>
+
+                <article class="panel content-panel activities-panel">
+                    <h3>Activités à faire</h3>
+                    <div class="activity-list">
+                        <button type="button" class="activity-add" aria-label="Ajouter une activite">
+                            <i class='bx bx-plus'></i>
+                        </button>
+                        <ul>
+                            <li>Proposition d'activités à faire :</li>
+                            <li>- Parc de ...</li>
+                            <li>- Ville de ...</li>
+                            <li>- Activités 3</li>
+                            <li>- Activités 4</li>
+                            <li>- Activités 5</li>
+                        </ul>
                     </div>
-                    <div class="field-group">
-                        <label for="trip-start-date">Date de depart</label>
-                        <input class="form-input" id="trip-start-date" type="date">
-                    </div>
-                    <div class="field-group">
-                        <label for="trip-end-date">Date de retour</label>
-                        <input class="form-input" id="trip-end-date" type="date">
-                    </div>
-                </div>
-                <span class="settings-feedback" id="trip-save-note"></span>
+                    <button type="button" class="see-more">Voir Plus</button>
+                </article>
             </section>
 
             <section class="planning-grid">
@@ -77,7 +97,7 @@
                     </div>
                 </article>
 
-            <article class="panel content-panel">
+            <article class="panel content-panel transport-panel">
                 <div class="panel-title-row">
                     <h3>Transports</h3>
                     <button type="button" class="btn-secondary" data-open-transport>
@@ -96,24 +116,6 @@
                     <div class="transport-empty muted" id="transport-empty">Aucun transport ajoute pour le moment.</div>
                 </div>
             </article>
-
-                <article class="panel content-panel">
-                    <h3>Activites a faire</h3>
-                    <div class="activity-list">
-                        <button type="button" class="activity-add" aria-label="Ajouter une activite">
-                            <i class='bx bx-plus'></i>
-                        </button>
-                        <ul>
-                            <li>Proposition d'activites a faire :</li>
-                            <li>- Parc de ...</li>
-                            <li>- Ville de ...</li>
-                            <li>- Activites 3</li>
-                            <li>- Activites 4</li>
-                            <li>- Activites 5</li>
-                        </ul>
-                    </div>
-                    <button type="button" class="see-more">Voir Plus</button>
-                </article>
             </section>
         </div>
     </main>

@@ -14,6 +14,7 @@ export function initLandingTripCreation() {
 
   createButton.addEventListener('click', async () => {
     const destination = countryInput.value.trim();
+    const selectedValue = countryInput.dataset.selectedValue || '';
     const startDate = startDateInput.value;
     const endDate = endDateInput.value;
     const travelers = parseInt(travelersInput.value, 10) || 1;
@@ -40,7 +41,12 @@ export function initLandingTripCreation() {
     }
 
     if (!destination || !startDate || !endDate) {
-      alert('Merci de renseigner le pays et les dates du voyage.');
+      alert('Merci de renseigner la destination et les dates du voyage.');
+      return;
+    }
+
+    if (destination !== selectedValue) {
+      alert('Merci de choisir une destination dans la liste de suggestions.');
       return;
     }
 

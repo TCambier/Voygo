@@ -134,7 +134,10 @@ function syncTripInputs() {
   const endInput = document.getElementById('trip-end-date');
 
   if (nameInput) nameInput.value = tripState.name || '';
-  if (destinationInput) destinationInput.value = tripState.destination || '';
+  if (destinationInput) {
+    destinationInput.value = tripState.destination || '';
+    destinationInput.dataset.selectedValue = tripState.destination || '';
+  }
   if (startInput) startInput.value = toDateInputValue(tripState.startDate);
   if (endInput) endInput.value = toDateInputValue(tripState.endDate);
 
@@ -360,12 +363,19 @@ function initTripEditor() {
     saveNote.textContent = 'Enregistrement...';
 
     const nextName = nameInput.value.trim() || tripState.name || 'Voyage';
+    const selectedValue = destinationInput.dataset.selectedValue || '';
     const payload = {
       name: nextName,
       destination: destinationInput.value.trim() || null,
       start_date: startInput.value || null,
       end_date: endInput.value || null
     };
+
+    if (payload.destination && payload.destination !== selectedValue) {
+      saveNote.classList.add('is-error');
+      saveNote.textContent = 'Merci de choisir une destination dans la liste de suggestions.';
+      return;
+    }
 
     const today = getTodayInputValue();
     if (payload.start_date && payload.start_date < today) {
@@ -399,7 +409,7 @@ function initTripEditor() {
       syncTripInputs();
 
       saveNote.classList.add('is-success');
-      saveNote.textContent = 'Voyage mis Ã  jour.';
+      saveNote.textContent = 'Voyage mis à jour.';
     } catch (err) {
       console.warn('Impossible de mettre Ã  jour le voyage.', err);
       saveNote.classList.add('is-error');

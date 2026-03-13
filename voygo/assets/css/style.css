@@ -812,10 +812,23 @@ body.dark-theme .hero-plane img {
     align-items: start;
 }
 
+.planning-left,
+.planning-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    min-height: 0;
+}
+
+.planning-layout {
+    align-items: stretch;
+}
+
 .planning-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 22px;
+    grid-auto-rows: 640px;
+    align-items: stretch;
 }
 
 .planning-edit {
@@ -898,10 +911,23 @@ body.dark-theme .hero-plane img {
 
 .content-panel {
     min-height: 260px;
+    flex: 1 1 0;
 }
 
-.accommodation-panel {
-    height: 360px;
+.accommodation-panel,
+.transport-panel {
+    height: 640px;
+    max-height: 640px;
+    flex: 0 0 640px;
+    overflow: hidden;
+}
+
+.planning-left .panel {
+    flex: 0 0 auto;
+}
+
+.planning-grid .panel {
+    height: 100%;
 }
 
 .panel-head {
@@ -927,12 +953,13 @@ body.dark-theme .hero-plane img {
 .panel-body {
     font-size: 14px;
     color: var(--text-primary);
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .accommodation-panel .panel-body {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
     flex: 1 1 auto;
 }
 
@@ -944,9 +971,11 @@ body.dark-theme .hero-plane img {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    max-height: 240px;
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
     padding-right: 6px;
+    max-height: 100%;
 }
 
 .transport-list::-webkit-scrollbar {
@@ -1024,10 +1053,13 @@ body.dark-theme .hero-plane img {
 }
 
 .accommodation-list {
-    display: block;
-    height: 100%;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
     padding-right: 6px;
+    max-height: 100%;
 }
 
 .accommodation-list > * + * {
@@ -1128,6 +1160,7 @@ body.dark-theme .hero-plane img {
     position: relative;
     min-height: 170px;
 }
+
 
 .activity-add {
     position: absolute;
@@ -1366,10 +1399,6 @@ body.dark-theme .hero-plane img {
 @media (max-width: 1024px) {
     .planning-page {
         padding: 30px;
-    }
-
-    .planning-grid {
-        grid-template-columns: 1fr;
     }
 
     .planning-edit-grid {

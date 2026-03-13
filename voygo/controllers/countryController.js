@@ -19,6 +19,14 @@ export function initCountryAutocomplete(options = {}) {
   let currentItems = [];
   let requestController;
 
+  function getItemLabel(item) {
+    return typeof item === 'string' ? item : item?.label || '';
+  }
+
+  function getItemValue(item) {
+    return typeof item === 'string' ? item : item?.value || '';
+  }
+
   function closeList() {
     currentItems = [];
     activeIndex = -1;
@@ -28,8 +36,10 @@ export function initCountryAutocomplete(options = {}) {
     input.removeAttribute('aria-activedescendant');
   }
 
-  function pickCountry(countryName) {
-    input.value = countryName;
+  function pickCountry(item) {
+    const value = getItemValue(item);
+    input.value = value;
+    input.dataset.selectedValue = value;
     closeList();
   }
 
@@ -58,17 +68,18 @@ export function initCountryAutocomplete(options = {}) {
       return;
     }
 
-    items.forEach((countryName, index) => {
-      const item = document.createElement('li');
-      item.className = 'country-suggestion-item';
-      item.setAttribute('role', 'option');
-      item.setAttribute('id', `country-option-${index}`);
-      item.textContent = countryName;
-      item.addEventListener('mousedown', (event) => {
+    items.forEach((suggestion, index) => {
+      const label = getItemLabel(suggestion);
+      const option = document.createElement('li');
+      option.className = 'country-suggestion-item';
+      option.setAttribute('role', 'option');
+      option.setAttribute('id', `country-option-${index}`);
+      option.textContent = label;
+      option.addEventListener('mousedown', (event) => {
         event.preventDefault();
-        pickCountry(countryName);
+        pickCountry(suggestion);
       });
-      list.appendChild(item);
+      list.appendChild(option);
     });
 
     list.classList.add('is-open');
@@ -98,6 +109,7 @@ export function initCountryAutocomplete(options = {}) {
 
   input.addEventListener('input', () => {
     activeIndex = -1;
+    input.dataset.selectedValue = '';
     debouncedSearch(input.value.trim());
   });
 
