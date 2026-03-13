@@ -1,40 +1,61 @@
-// forgot-password.js - Gestion du modal mot de passe oublié
-document.addEventListener('DOMContentLoaded', function() {
-    // Get the modal
-    var modal = document.getElementById('forgot-password-modal');
+import { requestPasswordReset } from './userController.js';
 
-    // Get the link that opens the modal
-    var link = document.getElementById('forgot-password-link');
+document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('forgot-password-modal');
+    const link = document.getElementById('forgot-password-link');
+    const span = document.getElementsByClassName('close')[0];
+    const sendBtn = document.getElementById('send-btn');
+    const emailInput = document.getElementById('forgot-email');
+    const feedback = document.getElementById('forgot-feedback');
 
-    // Get the <span> element that closes the modal
-    var span = document.getElementsByClassName('close')[0];
-
-    // When the user clicks the link, open the modal
-    link.onclick = function(event) {
-        event.preventDefault();
+    function openModal() {
         modal.style.display = 'block';
+        feedback.textContent = '';
+        feedback.classList.remove('is-success', 'is-error');
+        emailInput.focus();
     }
 
-    // When the user clicks on <span> (x), close the modal
-    span.onclick = function() {
+    function closeModal() {
         modal.style.display = 'none';
     }
 
-    // When the user clicks anywhere outside of the modal, close it
-    window.onclick = function(event) {
-        if (event.target == modal) {
-            modal.style.display = 'none';
-        }
-    }
+    link.onclick = (event) => {
+        event.preventDefault();
+        openModal();
+    };
 
-    // Handle send button
-    document.getElementById('send-btn').onclick = function() {
-        var email = document.getElementById('forgot-email').value;
-        if (email) {
-            alert('Email envoyé à ' + email);
-            modal.style.display = 'none';
-        } else {
-            alert('Veuillez entrer un email valide.');
+    span.onclick = closeModal;
+
+    window.onclick = (event) => {
+        if (event.target === modal) {
+            closeModal();
         }
-    }
+    };
+
+    sendBtn.onclick = async () => {
+        const email = emailInput.value.trim();
+        feedback.textContent = '';
+        feedback.classList.remove('is-success', 'is-error');
+
+        if (!email) {
+            feedback.textContent = 'Veuillez entrer un email valide.';
+            feedback.classList.add('is-error');
+            return;
+        }
+
+        sendBtn.disabled = true;
+        sendBtn.textContent = 'Envoi en cours...';
+
+        const result = await requestPasswordReset(email);
+        if (result.success) {
+            feedback.textContent = 'Email envoyé. Vérifiez votre boîte de réception.';
+            feedback.classList.add('is-success');
+        } else {
+            feedback.textContent = result.error || 'Impossible d’envoyer l’email.';
+            feedback.classList.add('is-error');
+        }
+
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'Envoyer';
+    };
 });

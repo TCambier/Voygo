@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>À propos — Voygo</title>
+
+  <!-- Font Awesome (icons) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/about.css" />
+  <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+</head>
+<body>
+
+<!-- ── HEADER ──────────────────────────────────────────────── -->
+    <div id="header-container"></div>
+    <script type="module" src="../controllers/headerController.js"></script>
+
+<!-- ── ABOUT PAGE ───────────────────────────────────────────── -->
+<main class="about-page">
+
+  <!-- HERO -->
+  <section class="about-hero">
+    <div class="about-eyebrow">Notre histoire</div>
+    <h1>L'application née d'un<br /><span>voyage au Japon</span></h1>
+    <p class="about-hero-sub">
+      Voygo est né d'une frustration simple&nbsp;: organiser un voyage à deux
+      sans outil vraiment adapté. D'un carnet de notes éparpillées est née
+      l'idée de créer quelque chose de mieux.
+    </p>
+    <div class="about-badges">
+      <span class="badge"><i class="fas fa-map-marker-alt"></i> France • 2024</span>
+      <span class="badge"><i class="fas fa-users"></i> 2 créateurs</span>
+      <span class="badge"><i class="fas fa-code"></i> Projet étudiant</span>
+      <span class="badge"><i class="fas fa-heart"></i> Fait avec passion</span>
+    </div>
+  </section>
+
+  <!-- ORIGIN STORY -->
+  <section class="about-origin">
+    <div class="origin-visual">
+      <div class="origin-card">
+        <div class="japan-route">
+          <div class="route-stop">
+            <div class="stop-dot"><i class="fas fa-plane-departure"></i></div>
+            <div class="stop-info">
+              <div class="stop-city">Paris CDG ✈</div>
+              <div class="stop-detail">Le départ de l'aventure</div>
+            </div>
+          </div>
+          <div class="route-stop">
+            <div class="stop-dot"><i class="fas fa-torii-gate"></i></div>
+            <div class="stop-info">
+              <div class="stop-city">Tokyo</div>
+              <div class="stop-detail">Shinjuku, Akihabara, Shibuya…</div>
+            </div>
+          </div>
+          <div class="route-stop">
+            <div class="stop-dot"><i class="fas fa-mountain"></i></div>
+            <div class="stop-info">
+              <div class="stop-city">Kyoto</div>
+              <div class="stop-detail">Fushimi Inari, Arashiyama</div>
+            </div>
+          </div>
+          <div class="route-stop">
+            <div class="stop-dot"><i class="fas fa-fish"></i></div>
+            <div class="stop-info">
+              <div class="stop-city">Osaka</div>
+              <div class="stop-detail">Dotonbori, Namba, Takoyaki</div>
+            </div>
+          </div>
+          <div class="route-stop">
+            <div class="stop-dot"><i class="fas fa-lightbulb"></i></div>
+            <div class="stop-info">
+              <div class="stop-city">✨ L'idée Voygo</div>
+              <div class="stop-detail">née à partir de grande ambitions</div>
+            </div>
+          </div>
+        </div>
+        <p class="origin-card-label">Notre itinéraire au Japon &mdash; l'étincelle de Voygo</p>
+      </div>
+      <div class="floating-tag tag-top">
+        <i class="fas fa-star" style="color:var(--accent-sun)"></i> 3 semaines
+      </div>
+      <div class="floating-tag tag-bottom">
+        <i class="fas fa-map" style="color:var(--accent-cool)"></i> 4 villes
+      </div>
+    </div>
+
+    <div class="origin-content">
+      <h2>De l'organisation<br /><em>d'un voyage</em> à une app</h2>
+<p>
+        Depuis la France, Yoann et Thomas préparaient ensemble leur futur voyage
+        au Japon. Entre les onglets de tableur qui s'accumulent, les fils de
+        messagerie interminables, les notes éparpillées sur le téléphone et les
+        PDFs de billets d'avion, la préparation était rapidement devenue un
+        vrai casse-tête — long, brouillon et difficile à suivre.
+      </p>
+      <blockquote class="origin-quote">
+        "On passait plus de temps à gérer nos fichiers qu'à vraiment préparer
+        notre voyage. Il devait forcément exister une meilleure façon de faire."
+      </blockquote>
+      <p>
+        C'est là, depuis leur bureau en France, qu'est née l'idée de Voygo :
+        un espace unique pour centraliser toutes les informations d'un voyage
+        — activités, transports, logements, carte — de façon simple, claire
+        et visuelle. Le Japon était la destination, mais l'idée, elle, est née
+        bien avant d'avoir décollé.
+      </p>
+      <p>
+        L'idée a pris forme dans le cadre de leur formation en développement
+        web. Ce qui était une frustration du quotidien est devenu un vrai
+        produit, conçu pour que personne n'ait à jongler avec dix outils
+        différents pour organiser ses aventures.
+      </p>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="about-features">
+    <div class="section-header">
+      <h2>Ce que Voygo vous offre</h2>
+      <p>Tout ce dont vous avez besoin pour préparer un voyage, au même endroit.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">✈️</div>
+        <h3>Gestion des voyages</h3>
+        <p>Créez, modifiez et organisez vos voyages en quelques clics. Destination, dates, participants : tout est clair d'un coup d'œil.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📅</div>
+        <h3>Calendrier interactif</h3>
+        <p>Visualisez votre planning comme dans Google Calendar. Activités, déplacements et logements s'affichent chronologiquement.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🗺️</div>
+        <h3>Carte du voyage</h3>
+        <p>Retrouvez tous vos lieux sur une carte interactive OpenStreetMap avec des marqueurs pour chaque étape de votre aventure.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎯</div>
+        <h3>Planification d'activités</h3>
+        <p>Ajoutez vos activités avec leur lieu, date et coût estimé. Ne ratez plus aucune expérience que vous aviez prévue.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>Tableau récapitulatif</h3>
+        <p>Un résumé jour par jour automatiquement généré : destination, activité, logement, transport et budget pour chaque étape.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📤</div>
+        <h3>Export des données</h3>
+        <p>Exportez toutes les informations de votre séjour pour les consulter hors ligne ou les partager avec vos compagnons de voyage.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- TECH STACK -->
+  <section class="about-tech">
+    <div class="section-header">
+      <h2>Les technologies utilisées</h2>
+      <p>Une stack moderne et accessible, choisie pour sa simplicité et sa puissance.</p>
+    </div>
+    <div class="tech-grid">
+      <div class="tech-card">
+        <div class="tech-icon">🌐</div>
+        <h4>HTML / CSS</h4>
+        <p>Structure & styles de l'interface</p>
+      </div>
+      <div class="tech-card">
+        <div class="tech-icon">⚡</div>
+        <h4>JavaScript</h4>
+        <p>Logique et interactions dynamiques</p>
+      </div>
+      <div class="tech-card">
+        <div class="tech-icon">🗄️</div>
+        <h4>Supabase</h4>
+        <p>Base de données cloud PostgreSQL</p>
+      </div>
+      <div class="tech-card">
+        <div class="tech-icon">🗺️</div>
+        <h4>Leaflet & OSM</h4>
+        <p>Carte interactive open source</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- TEAM -->
+  <section class="about-team">
+    <div class="section-header">
+      <h2>L'équipe derrière Voygo</h2>
+      <p>Deux amis, un voyage, une idée. Rencontrez les créateurs de Voygo.</p>
+    </div>
+    <div class="team-grid">
+      <div class="team-card">
+        <div class="team-avatar">YC</div>
+        <h3>Crosnier Yoann</h3>
+        <div class="team-role">Co-fondateur & Développeur</div>
+        <div class="team-divider"></div>
+        <p>
+          Passionné de développement web et de voyages, Yoann est à l'origine
+          de l'idée Voygo lors de la planification de leur voyage au Japon. Il a contribué à la
+          conception de l'interface et à la logique applicative.
+        </p>
+      </div>
+      <div class="team-card">
+        <div class="team-avatar">TC</div>
+        <h3>Cambier Thomas</h3>
+        <div class="team-role">Co-fondateur & Développeur</div>
+        <div class="team-divider"></div>
+        <p>
+          Thomas a apporté son sens du détail et sa rigueur technique au projet.
+          Il a notamment pris en charge l'intégration de Supabase, la carte
+          interactive et la structure back-end de l'application.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="about-cta">
+    <div class="cta-box">
+      <h2>Prêt à planifier votre prochain voyage ?</h2>
+      <p>
+        Rejoignez Voygo et organisez votre aventure en toute sérénité.
+        Activités, transports, logements — tout au même endroit.
+      </p>
+      <a href="index.html" class="btn-primary">
+        <i class="fas fa-rocket"></i> Commencer gratuitement
+      </a>
+    </div>
+  </section>
+
+</main>
+
+<script>
+  // Dark / light theme toggle (identique au reste du site)
+  const toggle = document.getElementById('themeToggle');
+  const icon   = toggle.querySelector('.theme-icon');
+
+  function applyTheme(dark) {
+    document.body.classList.toggle('dark-theme', dark);
+    icon.textContent = dark ? '☀️' : '🌙';
+    localStorage.setItem('voygo-theme', dark ? 'dark' : 'light');
+  }
+
+  // Init from stored preference
+  applyTheme(localStorage.getItem('voygo-theme') === 'dark');
+
+  toggle.addEventListener('click', () => {
+    applyTheme(!document.body.classList.contains('dark-theme'));
+  });
+</script>
+</body>
+</html>

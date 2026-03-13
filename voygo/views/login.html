@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Login</title>
 <link rel="stylesheet" href="../assets/css/login.css">
 <link rel="stylesheet" href="../assets/css/style.css">
@@ -56,12 +57,13 @@
         <h2>Mot de passe oublié</h2>
         <p>Entrez votre email pour recevoir un lien de réinitialisation.</p>
         <input type="email" id="forgot-email" placeholder="email@domain.com" required>
+        <div class="forgot-feedback" id="forgot-feedback" role="status" aria-live="polite"></div>
         <button id="send-btn">Envoyer</button>
     </div>
 </div>
 
 <script type="module" src="../controllers/loginController.js"></script>
-<script src="../controllers/forgotPasswordController.js"></script>
+<script type="module" src="../controllers/forgotPasswordController.js"></script>
 
 </body>
 </html>

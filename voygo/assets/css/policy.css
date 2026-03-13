@@ -215,3 +215,44 @@
       .pp-page { padding: 24px 18px 60px; }
       .voyages-callout { flex-direction: column; align-items: flex-start; }
     }
+
+    @media (max-width: 480px) {
+      .pp-page { padding: 20px 16px 60px; gap: 20px; }
+
+      .pp-notice {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 16px;
+      }
+
+      .pp-section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+      }
+
+      .pp-section-num {
+        font-size: 22px;
+        min-width: 0;
+      }
+
+      .pp-section h2 {
+        font-size: 18px;
+      }
+
+      .pp-list li {
+        padding: 8px 12px;
+        font-size: 13px;
+      }
+
+      .pp-highlight {
+        padding: 12px 14px;
+        font-size: 13px;
+      }
+
+      .pp-table th,
+      .pp-table td {
+        padding: 10px 12px;
+        font-size: 12px;
+      }
+    }

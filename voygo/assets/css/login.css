@@ -241,3 +241,55 @@ input.error {
 #send-btn:hover {
     background: #ff6b6b ;
 }
+
+.forgot-feedback {
+    min-height: 16px;
+    font-size: 12px;
+    margin: -4px 0 12px;
+    color: #666;
+}
+
+.forgot-feedback.is-success {
+    color: #047857;
+}
+
+.forgot-feedback.is-error {
+    color: #b91c1c;
+}
+
+@media (max-width: 480px) {
+    .page-body {
+        padding: 16px 16px 24px;
+    }
+
+    .login-container {
+        width: 100%;
+        max-width: 360px;
+        padding: 24px 20px;
+    }
+
+    .logo img {
+        width: 72px;
+    }
+
+    h2 {
+        font-size: 20px;
+    }
+
+    input,
+    #forgot-email {
+        font-size: 16px;
+    }
+
+    .email-btn,
+    #send-btn {
+        padding: 13px;
+        font-size: 15px;
+    }
+
+    .auth-modal-content {
+        width: 92%;
+        margin: 18% auto;
+        padding: 24px 20px;
+    }
+}
