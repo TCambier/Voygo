@@ -228,3 +228,73 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+@media (max-width: 480px) {
+    .planning-header {
+        height: 56px;
+        padding: 0 12px;
+    }
+
+    .logo {
+        height: 30px;
+    }
+
+    .share-btn {
+        padding: 7px 12px;
+        font-size: 12px;
+    }
+
+    .more-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        font-size: 18px;
+    }
+
+    .planning-page {
+        padding: 14px 16px 22px;
+    }
+
+    .top-strip {
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+
+    .tab-group {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .tab {
+        flex: 1;
+        text-align: center;
+        padding: 7px 8px;
+        font-size: 11px;
+    }
+
+    .trip-meta {
+        width: 100%;
+        justify-content: flex-start;
+        gap: 6px;
+    }
+
+    .meta-item {
+        min-width: 0;
+        flex: 1 1 calc(50% - 3px);
+        padding: 6px 8px;
+        font-size: 11px;
+    }
+
+    .planning-grid {
+        gap: 12px;
+    }
+
+    .panel {
+        padding: 12px;
+    }
+
+    .panel-head {
+        grid-template-columns: 1fr auto;
+        font-size: 11px;
+    }
+}

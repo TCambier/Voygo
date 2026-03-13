@@ -84,6 +84,38 @@ export async function emailExists(req, res) {
   return res.json({ exists: false });
 }
 
+export async function forgotPassword(req, res) {
+  const { email } = req.body || {};
+  if (!email) {
+    return res.status(400).json({ error: 'Email manquant.' });
+  }
+
+  const origin = req.get('origin') || `${req.protocol}://${req.get('host')}`;
+  const redirectTo = `${origin}/reset-password.html`;
+
+  const { error } = await supabaseAuth.auth.resetPasswordForEmail(email, { redirectTo });
+  if (error) {
+    return res.status(400).json({ error: error.message || "Envoi de l'email impossible." });
+  }
+
+  return res.json({ success: true });
+}
+
+export async function resetPassword(req, res) {
+  const { accessToken, password } = req.body || {};
+  if (!accessToken || !password) {
+    return res.status(400).json({ error: 'Token ou mot de passe manquant.' });
+  }
+
+  const client = getSupabaseForUser(accessToken);
+  const { error } = await client.auth.updateUser({ password });
+  if (error) {
+    return res.status(400).json({ error: error.message || 'Mise a jour impossible.' });
+  }
+
+  return res.json({ success: true });
+}
+
 export async function updateProfile(req, res) {
   const { first_name, last_name } = req.body || {};
   if (!first_name || !last_name) {

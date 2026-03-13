@@ -44,7 +44,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    padding: 15px 50px;
+    padding: 15px 50px 15px 20px;
     background: var(--header-bg);
     position: sticky;
     top: 0;
@@ -58,6 +58,7 @@ body {
     flex: 0 0 auto;
     display: flex;
     align-items: center;
+    margin-right: 20px;
 }
 
 .navbar-left .logo {

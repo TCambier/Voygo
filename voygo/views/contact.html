@@ -1,0 +1,131 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Contact – Voygo</title>
+  <link rel="stylesheet" href="../assets/css/style.css"/>
+  <link rel="stylesheet" href="../assets/css/contact.css"/>
+  <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+</head>
+<body>
+
+  <div id="header-container"></div>
+  <script type="module" src="../controllers/headerController.js"></script>
+
+  <main class="contact-page">
+
+    <!-- Hero -->
+    <section class="voyages-hero contact-hero">
+      <div class="voyages-hero-content">
+        <span class="voyages-eyebrow">Contact</span>
+        <h1>Une question sur votre voyage ou sur Voygo ?</h1>
+        <p>Notre équipe vous répond rapidement pour toute demande d'aide, suggestion ou partenariat. Utilisez le formulaire ci-dessous ou contactez-nous directement.</p>
+        <div class="voyages-hero-actions">
+          <a class="btn-primary" href="mailto:yoanncrosnier2306@gmail.com">
+            <i class='bx bx-mail-send'></i>
+            Écrire à l'équipe
+          </a>
+          <a class="btn-secondary" href="mailto:yoanncrosnier2306@gmail.com?subject=Demande%20de%20d%C3%A9mo">
+            <i class='bx bx-calendar'></i>
+            Demander une démo
+          </a>
+        </div>
+      </div>
+      <div class="voyages-hero-stats">
+        <article class="stat-card">
+          <p class="stat-label">Temps de réponse</p>
+          <p class="stat-value">&lt; 24h</p>
+          <p class="stat-note">Du lundi au vendredi</p>
+        </article>
+        <article class="stat-card">
+          <p class="stat-label">Support</p>
+          <p class="stat-value">99%</p>
+          <p class="stat-note">Taux de satisfaction</p>
+        </article>
+        <article class="stat-card">
+          <p class="stat-label">Canaux</p>
+          <p class="stat-value">Email</p>
+          <p class="stat-note">Formulaire & mail direct</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="contact-grid">
+      <form class="panel contact-form" action="mailto:yoanncrosnier2306@gmail.com" method="post" enctype="text/plain">
+        <div class="panel-title-row">
+          <h3>Envoyer un message</h3>
+          <span class="contact-badge">Réponse rapide</span>
+        </div>
+        <p class="contact-help">Ce formulaire ouvrira votre client e-mail avec votre message pré-rempli.</p>
+
+        <div class="contact-field">
+          <label for="contact-name">Nom complet</label>
+          <input id="contact-name" name="Nom" class="form-input" type="text" placeholder="Votre nom" required>
+        </div>
+        <div class="contact-field">
+          <label for="contact-email">E-mail</label>
+          <input id="contact-email" name="Email" class="form-input" type="email" placeholder="vous@exemple.com" required>
+        </div>
+        <div class="contact-field">
+          <label for="contact-topic">Sujet</label>
+          <select id="contact-topic" name="Sujet" class="form-input">
+            <option>Support & assistance</option>
+            <option>Suggestion produit</option>
+            <option>Partenariat</option>
+            <option>Facturation</option>
+            <option>Autre</option>
+          </select>
+        </div>
+        <div class="contact-field">
+          <label for="contact-message">Message</label>
+          <textarea id="contact-message" name="Message" class="form-input" rows="6" placeholder="Expliquez votre demande, votre voyage, vos dates, etc." required></textarea>
+        </div>
+        <button class="btn-primary contact-submit" type="submit">
+          <i class='bx bx-send'></i>
+          Envoyer le message
+        </button>
+      </form>
+
+      <div class="contact-side">
+        <article class="panel contact-card">
+          <div class="contact-card-title">
+            <i class='bx bx-support'></i>
+            <h3>Support Voygo</h3>
+          </div>
+          <p>Pour toute question liée à l'utilisation de l'application, à vos voyages ou à la planification.</p>
+          <div class="contact-list">
+            <a href="mailto:yoanncrosnier2306@gmail.com"><i class='bx bx-envelope'></i> yoanncrosnier2306@gmail.com</a>
+            <span><i class='bx bx-time-five'></i> Lundi – Vendredi, 9h – 18h</span>
+          </div>
+        </article>
+
+        <article class="panel contact-card">
+          <div class="contact-card-title">
+            <i class='bx bx-briefcase'></i>
+            <h3>Partenariats</h3>
+          </div>
+          <p>Agences, hébergements ou activités : collaborons pour améliorer l'expérience des voyageurs.</p>
+          <div class="contact-list">
+            <a href="mailto:yoanncrosnier2306@gmail.com?subject=Partenariat%20Voygo"><i class='bx bx-link'></i> Proposer un partenariat</a>
+            <span><i class='bx bx-map'></i> France – Europe</span>
+          </div>
+        </article>
+
+        <article class="panel contact-card">
+          <div class="contact-card-title">
+            <i class='bx bx-help-circle'></i>
+            <h3>Questions fréquentes</h3>
+          </div>
+          <ul class="contact-faq">
+            <li><strong>Export :</strong> PDF et Excel sont disponibles depuis votre planning.</li>
+            <li><strong>Données :</strong> vous gardez la main sur vos voyages et vos notes.</li>
+            <li><strong>Comptes :</strong> fonctionnalités utilisateurs en préparation.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+  </main>
+</body>
+</html>

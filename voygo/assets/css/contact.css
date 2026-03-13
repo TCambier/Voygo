@@ -1,0 +1,220 @@
+﻿.contact-page {
+    padding: 40px 50px 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    background:
+        radial-gradient(circle at 12% 18%, rgba(255, 209, 102, 0.25), transparent 40%),
+        radial-gradient(circle at 85% 12%, rgba(46, 196, 182, 0.2), transparent 45%),
+        linear-gradient(160deg, var(--bg-primary) 0%, var(--bg-tertiary) 70%);
+    min-height: calc(100vh - 70px);
+}
+
+.contact-hero .voyages-hero-actions {
+    flex-wrap: wrap;
+}
+
+.contact-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    gap: 22px;
+    align-items: start;
+}
+
+.contact-form {
+    gap: 16px;
+}
+
+.contact-form .form-input {
+    width: 100%;
+}
+
+.contact-help {
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.contact-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.contact-field label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.contact-field .form-input {
+    background: var(--bg-primary);
+    border-radius: 10px;
+}
+
+.contact-field .form-input:focus {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.contact-field textarea.form-input {
+    resize: vertical;
+    min-height: 140px;
+}
+
+.contact-submit {
+    align-self: flex-start;
+}
+
+.contact-badge {
+    background: color-mix(in srgb, var(--accent) 18%, var(--bg-secondary));
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 999px;
+}
+
+.contact-side {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.contact-card {
+    gap: 12px;
+}
+
+.contact-card-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.contact-card-title h3 {
+    margin: 0;
+}
+
+.contact-card-title i {
+    font-size: 22px;
+    color: var(--accent-strong);
+}
+
+.contact-card p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+.contact-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.contact-list a,
+.contact-list span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: inherit;
+    text-decoration: none;
+}
+
+.contact-list a:hover,
+.contact-list a:focus-visible {
+    color: var(--accent-strong);
+}
+
+.contact-list a:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--accent) 30%, transparent);
+    outline-offset: 2px;
+    border-radius: 8px;
+}
+
+.contact-faq {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.contact-faq li {
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: linear-gradient(140deg, var(--bg-tertiary), #fff7e6);
+    border: 1px solid color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.contact-faq strong {
+    color: var(--text-primary);
+}
+
+.contact-callout {
+    margin-top: 6px;
+}
+
+@media (max-width: 1024px) {
+    .contact-page {
+        padding: 30px;
+    }
+
+    .contact-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .contact-page {
+        padding: 24px 18px 60px;
+    }
+
+    .contact-hero .voyages-hero-actions {
+        width: 100%;
+    }
+
+    .contact-hero .voyages-hero-actions .btn-primary,
+    .contact-hero .voyages-hero-actions .btn-secondary {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .contact-submit {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .contact-callout {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .contact-page {
+        padding: 20px 16px 60px;
+        gap: 20px;
+    }
+
+    .contact-grid {
+        gap: 16px;
+    }
+
+    .contact-field textarea.form-input {
+        min-height: 120px;
+    }
+
+    .contact-submit {
+        width: 100%;
+    }
+
+    .contact-card p,
+    .contact-list,
+    .contact-faq {
+        font-size: 13px;
+    }
+}

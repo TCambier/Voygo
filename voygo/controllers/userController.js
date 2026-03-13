@@ -26,3 +26,21 @@ export async function checkEmailExists(email) {
         return { success: false, error: error.message };
     }
 }
+
+export async function requestPasswordReset(email) {
+    try {
+        const result = await api.post('/api/auth/forgot-password', { email });
+        return { success: true, data: result };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+export async function resetPassword(accessToken, password) {
+    try {
+        const result = await api.post('/api/auth/reset-password', { accessToken, password });
+        return { success: true, data: result };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}

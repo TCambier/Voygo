@@ -31,46 +31,73 @@ async function loadHeader() {
 function initMobileMenu() {
     if (!isBrowser) return;
     const menu = document.querySelector('.navbar-menu');
-    if (!menu) return;
- 
-    // Sur PC, on ne fait rien
-    if (window.innerWidth > 480) return;
- 
-    // Évite de créer le bouton deux fois sur mobile
-    if (document.querySelector('.btn-hamburger')) return;
- 
-    const btn = document.createElement('button');
-    btn.className = 'btn-hamburger';
-    btn.setAttribute('aria-label', 'Ouvrir le menu');
-    btn.setAttribute('aria-expanded', 'false');
-    btn.innerHTML = '<i class="bx bx-menu"></i>';
- 
     const navbarLeft = document.querySelector('.navbar-left');
-    navbarLeft.insertAdjacentElement('afterend', btn);
- 
-    btn.addEventListener('click', () => {
-        const isOpen = menu.classList.toggle('is-open');
-        btn.setAttribute('aria-expanded', String(isOpen));
-        btn.innerHTML = isOpen
-            ? '<i class="bx bx-x"></i>'
-            : '<i class="bx bx-menu"></i>';
-    });
- 
-    document.addEventListener('click', (e) => {
-        if (!btn.contains(e.target) && !menu.contains(e.target)) {
-            menu.classList.remove('is-open');
+    if (!menu || !navbarLeft) return;
+
+    const mq = window.matchMedia('(max-width: 480px)');
+    const closeMenu = () => {
+        menu.classList.remove('is-open');
+        const btn = document.querySelector('.btn-hamburger');
+        if (btn) {
             btn.setAttribute('aria-expanded', 'false');
             btn.innerHTML = '<i class="bx bx-menu"></i>';
         }
-    });
- 
-    menu.querySelectorAll('a').forEach(link => {
-        link.addEventListener('click', () => {
-            menu.classList.remove('is-open');
-            btn.setAttribute('aria-expanded', 'false');
-            btn.innerHTML = '<i class="bx bx-menu"></i>';
+    };
+
+    const ensureButton = () => {
+        const existingBtn = document.querySelector('.btn-hamburger');
+        if (!mq.matches) {
+            if (existingBtn) {
+                existingBtn.remove();
+            }
+            closeMenu();
+            return;
+        }
+
+        if (existingBtn) return;
+
+        const btn = document.createElement('button');
+        btn.className = 'btn-hamburger';
+        btn.setAttribute('aria-label', 'Ouvrir le menu');
+        btn.setAttribute('aria-expanded', 'false');
+        btn.innerHTML = '<i class="bx bx-menu"></i>';
+
+        navbarLeft.insertAdjacentElement('afterend', btn);
+
+        btn.addEventListener('click', () => {
+            const isOpen = menu.classList.toggle('is-open');
+            btn.setAttribute('aria-expanded', String(isOpen));
+            btn.innerHTML = isOpen
+                ? '<i class="bx bx-x"></i>'
+                : '<i class="bx bx-menu"></i>';
         });
-    });
+    };
+
+    ensureButton();
+
+    if (!menu.dataset.mobileMenuBound) {
+        menu.dataset.mobileMenuBound = 'true';
+
+        mq.addEventListener('change', ensureButton);
+
+        document.addEventListener('click', (e) => {
+            const btn = document.querySelector('.btn-hamburger');
+            if (!btn) return;
+            if (!btn.contains(e.target) && !menu.contains(e.target)) {
+                closeMenu();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeMenu();
+        });
+
+        menu.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                closeMenu();
+            });
+        });
+    }
 }
  
 function getStoredUser() {
