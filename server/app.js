@@ -13,12 +13,11 @@ import resourceRoutes from './routes/resourceRoutes.js';
 const app = express();
 
 app.use(helmet({ contentSecurityPolicy: false }));
-app.use(
-  rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 300
-  })
-);
+// Limit only API routes to avoid blocking static assets/pages
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 1000
+});
 app.use(cookieParser());
 app.use(express.json({ limit: '1mb' }));
 
@@ -31,6 +30,7 @@ app.use('/models', express.static(path.join(clientRoot, 'models')));
 app.use('/views', express.static(path.join(clientRoot, 'views')));
 app.use(express.static(path.join(clientRoot, 'views')));
 
+app.use('/api', apiLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/trips', tripRoutes);
 app.use('/api/transports', transportRoutes);

@@ -20,8 +20,9 @@ async function loadHeader() {
         const container = document.getElementById('header-container');
         if (container) container.innerHTML = html;
         updateThemeIcon();
-        renderAccountSlot();
-        updateNavForAuth();
+        const user = await resolveAuthUser();
+        renderAccountSlot(user);
+        updateNavForAuth(user);
         initMobileMenu(); // ✅ appelé ici, après injection du header
     } catch (err) {
         console.error('Failed to load header:', err);
@@ -85,13 +86,35 @@ function getStoredUser() {
         return null;
     }
 }
- 
-function renderAccountSlot() {
+
+async function resolveAuthUser() {
+    if (!isBrowser) return null;
+    try {
+        const res = await fetch('/api/auth/me', { credentials: 'include' });
+        if (!res.ok) {
+            localStorage.removeItem('voygo_auth_user');
+            localStorage.removeItem('voygo_jwt');
+            return null;
+        }
+        const data = await res.json();
+        if (data?.user) {
+            localStorage.setItem('voygo_auth_user', JSON.stringify(data.user));
+            return data.user;
+        }
+    } catch (error) {
+        return null;
+    }
+    return null;
+}
+
+function renderAccountSlot(user) {
     if (!isBrowser) return;
     const slot = document.getElementById('header-account-slot');
     if (!slot) return;
  
-    const user = getStoredUser();
+    if (!user) {
+        user = getStoredUser();
+    }
     if (!user) {
         slot.innerHTML = '<a href="login.html" class="btn-connexion" id="header-login-link">Connexion</a>';
         return;
@@ -119,11 +142,13 @@ function renderAccountSlot() {
     setupAccountMenu();
 }
  
-function updateNavForAuth() {
+function updateNavForAuth(user) {
     if (!isBrowser) return;
     const link = document.getElementById('nav-my-trips');
     if (!link) return;
-    const user = getStoredUser();
+    if (!user) {
+        user = getStoredUser();
+    }
     link.style.display = user ? '' : 'none';
 }
 
