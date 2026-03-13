@@ -200,7 +200,7 @@ function applyFilters() {
 }
 
 function redirectToIndex() {
-    window.location.href = 'index.html';
+    window.location.href = '/index.html';
 }
 
 async function fetchTrips() {
@@ -232,7 +232,7 @@ async function initVoyagesPage() {
     }
 }
 
-document.addEventListener('click', (event) => {
+document.addEventListener('click', async (event) => {
     const target = event.target;
     if (!(target instanceof HTMLElement)) return;
 

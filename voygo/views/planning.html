@@ -63,11 +63,18 @@
             </section>
 
             <section class="planning-grid">
-                <article class="panel add-panel">
-                    <h3>Logement</h3>
-                    <button type="button" class="add-icon" aria-label="Ajouter un logement">
-                        <i class='bx bx-plus'></i>
-                    </button>
+                <article class="panel content-panel accommodation-panel">
+                    <div class="panel-title-row">
+                        <h3>Logement</h3>
+                        <button type="button" class="btn-secondary" data-open-accommodation>
+                            <i class='bx bx-plus'></i>
+                            Ajouter
+                        </button>
+                    </div>
+                    <div class="panel-body">
+                        <div class="accommodation-list" id="accommodation-list"></div>
+                        <div class="accommodation-empty muted" id="accommodation-empty">Aucun logement ajoute pour le moment.</div>
+                    </div>
                 </article>
 
             <article class="panel content-panel">
@@ -157,6 +164,50 @@
                     <span class="settings-feedback" id="transport-save-note"></span>
                     <button type="button" class="btn-ghost" data-close>Annuler</button>
                     <button type="submit" class="btn-primary" id="transport-submit">Ajouter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="accommodation-modal" hidden>
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Ajouter un logement</h2>
+                <button type="button" class="modal-close" data-close aria-label="Fermer">
+                    <i class='bx bx-x'></i>
+                </button>
+            </div>
+            <form class="modal-body" id="accommodation-form">
+                <input type="hidden" id="accommodation-id" name="accommodation_id">
+                <input type="hidden" id="accommodation-image-data" name="image_data">
+                <div class="field-group">
+                    <label for="accommodation-name">Nom du logement</label>
+                    <input class="form-input" id="accommodation-name" name="name" type="text" placeholder="Ex: Hotel Piazza">
+                </div>
+                <div class="field-group">
+                    <label for="accommodation-address">Adresse du logement</label>
+                    <input class="form-input" id="accommodation-address" name="address" type="text" placeholder="Ex: 12 rue des Fleurs, Rome" required>
+                </div>
+                <div class="field-group">
+                    <label for="accommodation-price">Prix par nuit (EUR)</label>
+                    <input class="form-input" id="accommodation-price" name="price" type="number" min="0" step="0.01" placeholder="Ex: 120">
+                </div>
+                <div class="field-group">
+                    <label for="accommodation-start">Date d'arrivee</label>
+                    <input class="form-input" id="accommodation-start" name="start" type="date" required>
+                </div>
+                <div class="field-group">
+                    <label for="accommodation-end">Date de depart</label>
+                    <input class="form-input" id="accommodation-end" name="end" type="date" required>
+                </div>
+                <div class="field-group">
+                    <label for="accommodation-nights">Nombre de nuits</label>
+                    <input class="form-input" id="accommodation-nights" name="nights" type="number" min="1" readonly>
+                </div>
+                <div class="modal-actions">
+                    <span class="settings-feedback" id="accommodation-save-note"></span>
+                    <button type="button" class="btn-ghost" data-close>Annuler</button>
+                    <button type="submit" class="btn-primary" id="accommodation-submit">Ajouter</button>
                 </div>
             </form>
         </div>

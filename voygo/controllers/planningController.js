@@ -1,5 +1,11 @@
 import { api } from '../assets/js/api.js';
 import { initCountryAutocomplete } from './countryController.js';
+import {
+  listAccommodations,
+  createAccommodation,
+  updateAccommodation,
+  deleteAccommodation
+} from './accommodationController.js';
 
 function formatDate(dateValue) {
   if (!dateValue) return '';
@@ -49,6 +55,7 @@ const tripState = {
 };
 
 let transports = [];
+let accommodations = [];
 
 function formatDuration(value) {
   const minutes = Number(value);
@@ -64,6 +71,32 @@ function formatPrice(value) {
   const amount = Number(value);
   if (!Number.isFinite(amount)) return '-';
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
+}
+
+function computeNights(startDate, endDate) {
+  if (!startDate || !endDate) return 0;
+  const start = new Date(`${startDate}T00:00:00`);
+  const end = new Date(`${endDate}T00:00:00`);
+  const diff = Math.round((end - start) / (24 * 60 * 60 * 1000));
+  return Number.isFinite(diff) && diff > 0 ? diff : 0;
+}
+
+function setAccommodationDateBounds(startDate, endDate) {
+  const startInput = document.getElementById('accommodation-start');
+  const endInput = document.getElementById('accommodation-end');
+  if (!startInput || !endInput) return;
+
+  startInput.min = startDate || '';
+  startInput.max = endDate || '';
+  endInput.min = startDate ? addDaysToInput(startDate, 1) : '';
+  endInput.max = endDate || '';
+
+  if (startInput.value && startDate && startInput.value < startDate) {
+    startInput.value = startDate;
+  }
+  if (endInput.value && endDate && endInput.value > endDate) {
+    endInput.value = endDate;
+  }
 }
 
 function setTransportDateBounds(startDate, endDate) {
@@ -163,6 +196,73 @@ function renderTransports() {
   });
 }
 
+async function loadAccommodations() {
+  if (!tripState.id) {
+    accommodations = [];
+    renderAccommodations();
+    return;
+  }
+  try {
+    const all = await listAccommodations();
+    accommodations = (all || []).filter((item) => String(item.trip_id) === String(tripState.id));
+  } catch (error) {
+    console.warn('Impossible de charger les logements.', error);
+    accommodations = [];
+  }
+  renderAccommodations();
+}
+
+function renderAccommodations() {
+  const list = document.getElementById('accommodation-list');
+  const empty = document.getElementById('accommodation-empty');
+  if (!list || !empty) return;
+
+  list.innerHTML = '';
+  if (!accommodations.length) {
+    empty.hidden = false;
+  } else {
+    empty.hidden = true;
+  }
+
+  accommodations.forEach((item) => {
+    const card = document.createElement('div');
+    card.className = 'accommodation-card';
+    card.dataset.accommodationId = item.id;
+
+    const startDate = toDateInputValue(item.start_date || '');
+    const endDate = toDateInputValue(item.end_date || '');
+    const nights = item.nights ?? computeNights(startDate, endDate);
+    const price = item.price_per_night ?? item.price ?? null;
+    const total = Number.isFinite(Number(price)) && nights ? Number(price) * nights : null;
+    const title = item.name || item.address || 'Logement';
+
+    card.innerHTML = `
+      <div class="accommodation-content">
+        <div class="accommodation-title">${title}</div>
+        <div class="accommodation-meta">
+          <span>${startDate ? formatDate(startDate) : '-'} -> ${endDate ? formatDate(endDate) : '-'}</span>
+          <span>${nights ? `${nights} nuit${nights > 1 ? 's' : ''}` : '-'}</span>
+          <span>${price ? `${formatPrice(price)} / nuit` : '-'}</span>
+          <span>${total ? `${formatPrice(total)} total` : '-'}</span>
+        </div>
+        <div class="accommodation-actions">
+          <button type="button" class="btn-icon" data-edit title="Modifier"><i class='bx bx-edit'></i></button>
+          <button type="button" class="btn-icon danger" data-delete title="Supprimer"><i class='bx bx-trash'></i></button>
+        </div>
+      </div>
+    `;
+
+    list.appendChild(card);
+  });
+
+  const addCard = document.createElement('button');
+  addCard.type = 'button';
+  addCard.className = 'accommodation-add-card';
+  addCard.setAttribute('data-add-accommodation', '');
+  addCard.innerHTML = "<i class='bx bx-plus'></i> Ajouter un logement";
+  list.appendChild(addCard);
+}
+
 async function initPlanningPage() {
   const returnTo = `planning.html${window.location.search || ''}`;
   try {
@@ -216,6 +316,7 @@ async function initPlanningPage() {
 
   syncTripInputs();
   await loadTransports();
+  await loadAccommodations();
 }
 
 function initTripEditor() {
@@ -490,8 +591,200 @@ function initTransportModal() {
   }
 }
 
+function initAccommodationModal() {
+  const modal = document.getElementById('accommodation-modal');
+  const openButton = document.querySelector('[data-open-accommodation]');
+  const closeButtons = modal?.querySelectorAll('[data-close]') || [];
+  const form = document.getElementById('accommodation-form');
+  const saveNote = document.getElementById('accommodation-save-note');
+  const submitButton = document.getElementById('accommodation-submit');
+  const nightsInput = document.getElementById('accommodation-nights');
+
+  if (!modal || !openButton || !form || !saveNote || !submitButton || !nightsInput) {
+    return;
+  }
+
+  const resetForm = () => {
+    form.reset();
+    submitButton.textContent = 'Ajouter';
+    saveNote.classList.remove('is-success', 'is-error');
+    saveNote.textContent = '';
+    form.elements.namedItem('accommodation_id').value = '';
+    nightsInput.value = '';
+  };
+
+  const openModal = () => {
+    modal.hidden = false;
+    document.body.style.overflow = 'hidden';
+    const startInput = document.getElementById('trip-start-date')?.value || tripState.startDate;
+    const endInput = document.getElementById('trip-end-date')?.value || tripState.endDate;
+    setAccommodationDateBounds(startInput, endInput);
+    resetForm();
+    const firstInput = modal.querySelector('input, select, textarea');
+    if (firstInput instanceof HTMLElement) {
+      firstInput.focus();
+    }
+  };
+
+  const closeModal = () => {
+    modal.hidden = true;
+    document.body.style.overflow = '';
+  };
+
+  openButton.addEventListener('click', openModal);
+  closeButtons.forEach((button) => button.addEventListener('click', closeModal));
+
+  modal.addEventListener('click', (event) => {
+    if (event.target === modal) {
+      closeModal();
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !modal.hidden) {
+      closeModal();
+    }
+  });
+
+  const updateNights = () => {
+    const startValue = form.elements.namedItem('start')?.value;
+    const endValue = form.elements.namedItem('end')?.value;
+    const nights = computeNights(startValue, endValue);
+    nightsInput.value = nights ? String(nights) : '';
+  };
+
+  form.elements.namedItem('start')?.addEventListener('change', updateNights);
+  form.elements.namedItem('end')?.addEventListener('change', updateNights);
+
+  const list = document.getElementById('accommodation-list');
+  if (list) {
+    list.addEventListener('click', async (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (!target) return;
+
+      if (target.closest('[data-add-accommodation]')) {
+        openModal();
+        return;
+      }
+
+      const card = target.closest('.accommodation-card');
+      if (!card) return;
+      const accommodationId = card.dataset.accommodationId;
+      const current = accommodations.find((item) => String(item.id) === String(accommodationId));
+      if (!current) return;
+
+      if (target.closest('[data-edit]')) {
+        modal.hidden = false;
+        document.body.style.overflow = 'hidden';
+        form.elements.namedItem('accommodation_id').value = current.id;
+        form.elements.namedItem('name').value = current.name || '';
+        form.elements.namedItem('address').value = current.address || '';
+        form.elements.namedItem('price').value = current.price_per_night ?? current.price ?? '';
+        form.elements.namedItem('start').value = toDateInputValue(current.start_date || '');
+        form.elements.namedItem('end').value = toDateInputValue(current.end_date || '');
+        updateNights();
+        submitButton.textContent = 'Modifier';
+        saveNote.classList.remove('is-success', 'is-error');
+        saveNote.textContent = '';
+        return;
+      }
+
+      if (target.closest('[data-delete]')) {
+        const confirmed = window.confirm('Supprimer ce logement ?');
+        if (!confirmed) return;
+        try {
+          await deleteAccommodation(current.id);
+        } catch (error) {
+          console.warn('Impossible de supprimer le logement.', error);
+          return;
+        }
+        await loadAccommodations();
+      }
+    });
+  }
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    saveNote.classList.remove('is-success', 'is-error');
+    saveNote.textContent = 'Enregistrement...';
+
+    if (!tripState.id) {
+      saveNote.classList.add('is-error');
+      saveNote.textContent = "Impossible d'enregistrer sans voyage.";
+      return;
+    }
+
+    const name = form.elements.namedItem('name')?.value?.trim();
+    const address = form.elements.namedItem('address')?.value?.trim();
+    const startDate = form.elements.namedItem('start')?.value;
+    const endDate = form.elements.namedItem('end')?.value;
+    const priceRaw = form.elements.namedItem('price')?.value;
+    const priceValue = priceRaw ? Number(String(priceRaw).replace(',', '.')) : null;
+    const nights = computeNights(startDate, endDate);
+    const accommodationId = form.elements.namedItem('accommodation_id')?.value;
+
+    if (!address) {
+      saveNote.classList.add('is-error');
+      saveNote.textContent = 'Adresse requise.';
+      return;
+    }
+
+    if (!startDate || !endDate || nights <= 0) {
+      saveNote.classList.add('is-error');
+      saveNote.textContent = 'Les dates doivent couvrir au moins 1 nuit.';
+      return;
+    }
+
+    const currentStart = document.getElementById('trip-start-date')?.value || tripState.startDate;
+    const currentEnd = document.getElementById('trip-end-date')?.value || tripState.endDate;
+    if (currentStart && startDate < currentStart) {
+      saveNote.classList.add('is-error');
+      saveNote.textContent = 'Les dates doivent etre dans le voyage.';
+      return;
+    }
+    if (currentEnd && endDate > currentEnd) {
+      saveNote.classList.add('is-error');
+      saveNote.textContent = 'Les dates doivent etre dans le voyage.';
+      return;
+    }
+
+    if (priceValue !== null && !Number.isFinite(priceValue)) {
+      saveNote.classList.add('is-error');
+      saveNote.textContent = 'Prix invalide.';
+      return;
+    }
+
+    const payload = {
+      trip_id: tripState.id,
+      name: name || null,
+      address,
+      price_per_night: priceValue,
+      start_date: startDate,
+      end_date: endDate,
+      nights
+    };
+
+    try {
+      if (accommodationId) {
+        await updateAccommodation(accommodationId, payload);
+      } else {
+        await createAccommodation(payload);
+      }
+      saveNote.classList.add('is-success');
+      saveNote.textContent = accommodationId ? 'Logement mis a jour.' : 'Logement ajoute.';
+      await loadAccommodations();
+      closeModal();
+    } catch (error) {
+      console.warn('Impossible de sauvegarder le logement.', error);
+      saveNote.classList.add('is-error');
+      saveNote.textContent = "Erreur lors de l'enregistrement.";
+    }
+  });
+}
+
 initPlanningPage().then(initTripEditor);
 initTransportModal();
+initAccommodationModal();
 initCountryAutocomplete();
 
 
