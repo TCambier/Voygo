@@ -188,7 +188,15 @@ Améliorations possibles du projet :
 
 # Backend Node.js (nouveau)
 
-1. Copier `.env.example` vers `.env` et renseigner `SUPABASE_URL` et `SUPABASE_ANON_KEY`.
+1. Copier `.env.example` vers `.env` et renseigner `SUPABASE_URL`, `SUPABASE_ANON_KEY` et `OPENTRIPMAP_API_KEY`.
 2. Installer les dependances : `npm install`
 3. Lancer le serveur : `npm run dev`
 4. Ouvrir l'application : `http://localhost:3000`
+
+## SQL requis pour les activites (Planning)
+
+Executer le script SQL suivant dans Supabase avant d'utiliser les suggestions d'activites :
+
+- `Docs/sql/activities.sql`
+
+Les suggestions d'activites et leurs descriptions utilisent OpenTripMap en langue francaise (`/0.1/fr/...`).

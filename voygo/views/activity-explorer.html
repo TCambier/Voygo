@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voygo - Explorer les activites</title>
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+</head>
+<body>
+    <div id="header-container"></div>
+    <script type="module" src="../controllers/headerController.js"></script>
+
+    <main class="activity-explorer-page">
+        <section class="activity-explorer-hero">
+            <div>
+                <span class="planning-eyebrow">Exploration</span>
+                <h1>Explorer les activites par categorie</h1>
+                <p>Filtrez les suggestions entre restaurants, monuments, points de vue et plus encore.</p>
+            </div>
+            <a class="btn-secondary" id="explorer-back" href="planning.html">
+                <i class='bx bx-arrow-back'></i>
+                Retour au planning
+            </a>
+        </section>
+
+        <section class="panel activity-explorer-controls">
+            <div class="field-group">
+                <label for="explorer-destination">Destination</label>
+                <input class="form-input" id="explorer-destination" type="text" placeholder="Ex: Lisbonne, Portugal" autocomplete="off" aria-autocomplete="list" aria-expanded="false">
+                <ul class="country-suggestions" id="explorer-destination-suggestions" role="listbox" aria-label="Suggestions de destination"></ul>
+            </div>
+            <button type="button" class="btn-primary" id="explorer-search">
+                <i class='bx bx-search'></i>
+                Rechercher
+            </button>
+            <button type="button" class="btn-secondary" id="explorer-add-custom">
+                <i class='bx bx-plus'></i>
+                Ajouter une autre activite
+            </button>
+            <span class="settings-feedback" id="explorer-note"></span>
+        </section>
+
+        <section class="activity-filter-bar" id="activity-filter-bar" aria-label="Filtres de categories"></section>
+
+        <section class="panel activity-explorer-results">
+            <div class="activity-list activity-explorer-list" id="explorer-results"></div>
+            <div class="activity-empty muted" id="explorer-empty">Aucune suggestion pour le moment.</div>
+        </section>
+    </main>
+
+    <div class="modal-backdrop" id="custom-activity-modal" hidden>
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Ajouter une activite personnalisee</h2>
+                <button type="button" class="modal-close" data-close aria-label="Fermer">
+                    <i class='bx bx-x'></i>
+                </button>
+            </div>
+            <form class="modal-body" id="custom-activity-form">
+                <div class="field-group">
+                    <label for="custom-activity-name">Nom</label>
+                    <input class="form-input" id="custom-activity-name" name="name" type="text" placeholder="Ex: Atelier photo" required>
+                </div>
+                <div class="field-group">
+                    <label for="custom-activity-address">Adresse</label>
+                    <input class="form-input" id="custom-activity-address" name="address" type="text" placeholder="Ex: 24 Rue des Martyrs, Paris" required>
+                </div>
+                <div class="field-group">
+                    <label for="custom-activity-cost">Cout (optionnel)</label>
+                    <input class="form-input" id="custom-activity-cost" name="estimated_cost" type="number" min="0" step="0.01" placeholder="Ex: 35">
+                </div>
+                <div class="modal-actions">
+                    <span class="settings-feedback" id="custom-activity-note"></span>
+                    <button type="button" class="btn-ghost" data-close>Annuler</button>
+                    <button type="submit" class="btn-primary" id="custom-activity-submit">Ajouter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { requireAuth } from '../controllers/authGuardController.js';
+        await requireAuth();
+    </script>
+    <script type="module" src="../controllers/activityExplorerController.js"></script>
+</body>
+</html>

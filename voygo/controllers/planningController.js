@@ -56,6 +56,18 @@ const tripState = {
 
 let transports = [];
 let accommodations = [];
+let activitySuggestions = [];
+let tripActivities = [];
+let suggestionsVisibleCount = 5;
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 
 function formatDuration(value) {
   const minutes = Number(value);
@@ -71,6 +83,17 @@ function formatPrice(value) {
   const amount = Number(value);
   if (!Number.isFinite(amount)) return '-';
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
+}
+
+function formatActivityRating(rating, reviewsCount) {
+  const safeRating = Number(rating);
+  const safeReviews = Number(reviewsCount);
+  if (!Number.isFinite(safeRating)) return 'Note indisponible';
+  const note = safeRating.toFixed(1).replace('.', ',');
+  if (!Number.isFinite(safeReviews) || safeReviews <= 0) {
+    return `${note} / 5`;
+  }
+  return `${note} / 5 (${safeReviews} avis)`;
 }
 
 function computeNights(startDate, endDate) {
@@ -215,6 +238,247 @@ async function loadAccommodations() {
   renderAccommodations();
 }
 
+async function loadActivitySuggestions() {
+  const destinationInput = document.getElementById('pays');
+  const destination = (destinationInput?.value || tripState.destination || '').trim();
+  const note = document.getElementById('activity-suggestions-note');
+
+  if (note) {
+    note.classList.remove('is-success', 'is-error');
+    note.textContent = '';
+  }
+
+  if (!destination) {
+    activitySuggestions = [];
+    suggestionsVisibleCount = 5;
+    renderActivitySuggestions();
+    return;
+  }
+
+  try {
+    const result = await api.get(`/api/activities/suggestions?destination=${encodeURIComponent(destination)}&limit=10`);
+    activitySuggestions = result?.data || [];
+    suggestionsVisibleCount = 5;
+  } catch (error) {
+    activitySuggestions = [];
+    if (note) {
+      note.classList.add('is-error');
+      note.textContent = error?.message || 'Impossible de charger les suggestions d\'activites.';
+    }
+  }
+
+  renderActivitySuggestions();
+}
+
+function renderActivitySuggestions() {
+  const list = document.getElementById('activity-suggestions');
+  const empty = document.getElementById('activity-suggestions-empty');
+  const loadMoreButton = document.getElementById('activity-load-more');
+  if (!list || !empty || !loadMoreButton) return;
+
+  list.innerHTML = '';
+
+  const displayed = activitySuggestions.slice(0, suggestionsVisibleCount);
+  if (!displayed.length) {
+    empty.hidden = false;
+    loadMoreButton.hidden = true;
+    return;
+  }
+
+  empty.hidden = true;
+  displayed.forEach((item, index) => {
+    const row = document.createElement('article');
+    row.className = 'activity-suggestion-item';
+    row.dataset.suggestionIndex = String(index);
+
+    const safeName = escapeHtml(item.name || 'Activite');
+    const safeAddress = escapeHtml(item.address || 'Adresse indisponible');
+    const safeDescription = escapeHtml(item.description || '');
+    const safeRating = escapeHtml(formatActivityRating(item.rating, item.reviews_count));
+    const mapLink = item.map_url
+      ? `<a class="btn-ghost" target="_blank" rel="noopener" href="${escapeHtml(item.map_url)}">Voir la fiche</a>`
+      : '';
+
+    row.innerHTML = `
+      <div class="activity-suggestion-head">
+        <div>
+          <div class="activity-title">${safeName}</div>
+          <div class="activity-meta">${safeAddress}</div>
+          ${safeDescription ? `<div class="activity-description">${safeDescription}</div>` : ''}
+        </div>
+        <span class="activity-rating">${safeRating}</span>
+      </div>
+      <div class="activity-item-actions">
+        <button type="button" class="btn-secondary" data-add-suggestion="${index}">
+          <i class='bx bx-plus'></i>
+          Ajouter au voyage
+        </button>
+        ${mapLink}
+      </div>
+    `;
+
+    list.appendChild(row);
+  });
+
+  loadMoreButton.hidden = false;
+}
+
+async function loadTripActivities() {
+  const list = document.getElementById('trip-activities-list');
+  const empty = document.getElementById('trip-activities-empty');
+  if (!list || !empty) return;
+
+  if (!tripState.id) {
+    tripActivities = [];
+    renderTripActivities();
+    return;
+  }
+
+  try {
+    const result = await api.get(`/api/activities/trip/${encodeURIComponent(tripState.id)}`);
+    tripActivities = result?.data || [];
+  } catch (error) {
+    tripActivities = [];
+  }
+
+  renderTripActivities();
+}
+
+function renderTripActivities() {
+  const list = document.getElementById('trip-activities-list');
+  const empty = document.getElementById('trip-activities-empty');
+  if (!list || !empty) return;
+
+  list.innerHTML = '';
+
+  if (!tripActivities.length) {
+    empty.hidden = false;
+    return;
+  }
+
+  empty.hidden = true;
+
+  tripActivities.forEach((item) => {
+    const row = document.createElement('article');
+    row.className = 'trip-activity-item';
+    row.dataset.activityId = String(item.id);
+
+    const safeName = escapeHtml(item.name || 'Activite');
+    const safeAddress = escapeHtml(item.address || 'Adresse indisponible');
+    const safeDescription = escapeHtml(item.description || '');
+    const safeRating = escapeHtml(formatActivityRating(item.rating, item.reviews_count));
+
+    row.innerHTML = `
+      <div class="trip-activity-head">
+        <div>
+          <div class="activity-title">${safeName}</div>
+          <div class="activity-meta">${safeAddress}</div>
+          ${safeDescription ? `<div class="activity-description">${safeDescription}</div>` : ''}
+        </div>
+        <span class="activity-rating">${safeRating}</span>
+      </div>
+      <div class="activity-item-actions">
+        <button type="button" class="btn-icon danger" data-delete-activity title="Supprimer"><i class='bx bx-trash'></i></button>
+      </div>
+    `;
+
+    list.appendChild(row);
+  });
+}
+
+function initActivitiesPanel() {
+  const suggestionsList = document.getElementById('activity-suggestions');
+  const tripList = document.getElementById('trip-activities-list');
+  const refreshButton = document.getElementById('activities-refresh');
+  const loadMoreButton = document.getElementById('activity-load-more');
+  const suggestionsNote = document.getElementById('activity-suggestions-note');
+  const tripNote = document.getElementById('trip-activities-note');
+
+  if (!suggestionsList || !tripList || !refreshButton || !loadMoreButton || !suggestionsNote || !tripNote) {
+    return;
+  }
+
+  refreshButton.addEventListener('click', async () => {
+    suggestionsNote.classList.remove('is-success', 'is-error');
+    suggestionsNote.textContent = 'Chargement des suggestions...';
+    await loadActivitySuggestions();
+    if (!suggestionsNote.classList.contains('is-error')) {
+      suggestionsNote.classList.add('is-success');
+      suggestionsNote.textContent = 'Suggestions mises a jour.';
+    }
+  });
+
+  loadMoreButton.addEventListener('click', () => {
+    const destinationInput = document.getElementById('pays');
+    const destination = (destinationInput?.value || tripState.destination || '').trim();
+    const params = new URLSearchParams();
+
+    if (tripState.id) params.set('tripId', String(tripState.id));
+    if (destination) params.set('destination', destination);
+    if (tripState.startDate) params.set('startDate', toDateInputValue(tripState.startDate));
+    if (tripState.endDate) params.set('endDate', toDateInputValue(tripState.endDate));
+
+    const query = params.toString();
+    window.location.href = query ? `activity-explorer.html?${query}` : 'activity-explorer.html';
+  });
+
+  suggestionsList.addEventListener('click', async (event) => {
+    const target = event.target instanceof Element ? event.target.closest('[data-add-suggestion]') : null;
+    if (!target) return;
+    const index = Number.parseInt(target.getAttribute('data-add-suggestion') || '', 10);
+    if (!Number.isFinite(index) || !activitySuggestions[index]) return;
+    if (!tripState.id) return;
+
+    const suggestion = activitySuggestions[index];
+    suggestionsNote.classList.remove('is-success', 'is-error');
+    suggestionsNote.textContent = 'Ajout en cours...';
+
+    try {
+      await api.post(`/api/activities/trip/${encodeURIComponent(tripState.id)}`, {
+        name: suggestion.name,
+        address: suggestion.address,
+        description: suggestion.description,
+        rating: suggestion.rating,
+        reviews_count: suggestion.reviews_count,
+        source: suggestion.source || 'opentripmap',
+        source_place_id: suggestion.source_place_id,
+        map_url: suggestion.map_url
+      });
+      suggestionsNote.classList.add('is-success');
+      suggestionsNote.textContent = 'Activite ajoutee au voyage.';
+      await loadTripActivities();
+    } catch (error) {
+      suggestionsNote.classList.add('is-error');
+      suggestionsNote.textContent = error?.message || "Impossible d'ajouter l'activite.";
+    }
+  });
+
+  tripList.addEventListener('click', async (event) => {
+    const target = event.target instanceof Element ? event.target.closest('[data-delete-activity]') : null;
+    if (!target) return;
+    const row = target.closest('.trip-activity-item');
+    if (!row) return;
+    const activityId = row.getAttribute('data-activity-id');
+    if (!activityId) return;
+
+    const confirmed = window.confirm('Supprimer cette activite du voyage ?');
+    if (!confirmed) return;
+
+    tripNote.classList.remove('is-success', 'is-error');
+    tripNote.textContent = 'Suppression en cours...';
+
+    try {
+      await api.delete(`/api/activities/${encodeURIComponent(activityId)}`);
+      tripNote.classList.add('is-success');
+      tripNote.textContent = 'Activite supprimee.';
+      await loadTripActivities();
+    } catch (error) {
+      tripNote.classList.add('is-error');
+      tripNote.textContent = error?.message || 'Suppression impossible.';
+    }
+  });
+}
+
 function renderAccommodations() {
   const list = document.getElementById('accommodation-list');
   const empty = document.getElementById('accommodation-empty');
@@ -320,6 +584,8 @@ async function initPlanningPage() {
   syncTripInputs();
   await loadTransports();
   await loadAccommodations();
+  await loadTripActivities();
+  await loadActivitySuggestions();
 }
 
 function initTripEditor() {
@@ -407,6 +673,7 @@ function initTripEditor() {
 
       localStorage.setItem('voygo_current_trip', JSON.stringify(data));
       syncTripInputs();
+      await loadActivitySuggestions();
 
       saveNote.classList.add('is-success');
       saveNote.textContent = 'Voyage mis à jour.';
@@ -795,6 +1062,7 @@ function initAccommodationModal() {
 initPlanningPage().then(initTripEditor);
 initTransportModal();
 initAccommodationModal();
+initActivitiesPanel();
 initCountryAutocomplete();
 
 

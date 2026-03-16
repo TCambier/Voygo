@@ -1207,39 +1207,93 @@ body.dark-theme .hero-plane img {
 
 
 .activity-list {
-    position: relative;
-    min-height: 170px;
-}
-
-
-.activity-add {
-    position: absolute;
-    top: -6px;
-    right: 0;
-    border: none;
-    background: var(--bg-tertiary);
-    color: var(--accent);
-    width: 34px;
-    height: 34px;
-    border-radius: 10px;
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.activity-add:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 8px 16px rgba(11, 93, 104, 0.2);
-}
-
-.activity-list ul {
-    list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 10px;
     font-size: 14px;
     color: var(--text-primary);
+    min-height: 0;
+}
+
+.activity-suggestion-item,
+.trip-activity-item {
+    border: 1px solid color-mix(in srgb, var(--accent) 14%, var(--border-color));
+    background: var(--bg-primary);
+    border-radius: 14px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.activity-suggestion-head,
+.trip-activity-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.activity-title {
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.activity-meta {
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.activity-description {
+    margin-top: 4px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.5;
+    display: -webkit-box;
+    line-clamp: 3;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.activity-rating {
+    font-weight: 700;
+    font-size: 12px;
+    color: #9a3412;
+    white-space: nowrap;
+}
+
+.activity-item-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.activities-divider {
+    margin: 4px 0;
+    border-top: 1px dashed color-mix(in srgb, var(--accent) 26%, var(--border-color));
+}
+
+.activities-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.activity-empty {
+    padding: 4px 0 0;
+    font-size: 13px;
+}
+
+.trip-activities-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.activity-actions {
+    display: flex;
+    justify-content: flex-end;
 }
 
 .see-more {
@@ -1262,6 +1316,89 @@ body.dark-theme .hero-plane img {
 .see-more:hover {
     transform: translateY(-1px);
     box-shadow: 0 10px 18px rgba(255, 107, 107, 0.25);
+}
+
+.activity-explorer-page {
+    padding: 34px 42px 70px;
+    max-width: 1180px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.activity-explorer-hero {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 24px;
+    border-radius: 20px;
+    background:
+        radial-gradient(circle at 85% 20%, rgba(255, 209, 102, 0.28), transparent 42%),
+        radial-gradient(circle at 12% 10%, rgba(46, 196, 182, 0.25), transparent 40%),
+        linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+    border: 1px solid color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.activity-explorer-hero h1 {
+    font-size: 30px;
+    line-height: 1.2;
+}
+
+.activity-explorer-hero p {
+    margin-top: 8px;
+    color: var(--text-secondary);
+}
+
+.activity-explorer-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 12px;
+    align-items: end;
+}
+
+.activity-explorer-controls .settings-feedback {
+    grid-column: 1 / -1;
+}
+
+.activity-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.activity-filter-chip {
+    border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border-color));
+    border-radius: 999px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    padding: 8px 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.activity-filter-chip:hover {
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--border-color));
+}
+
+.activity-filter-chip.is-active {
+    background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+    color: #ffffff;
+    border-color: transparent;
+    box-shadow: 0 10px 18px rgba(255, 107, 107, 0.24);
+}
+
+.activity-explorer-results {
+    min-height: 320px;
+}
+
+.activity-explorer-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
 }
 
 .modal-backdrop {
@@ -1493,6 +1630,18 @@ body.dark-theme .hero-plane img {
 
     .settings-hero {
         padding: 22px;
+    }
+
+    .activity-explorer-page {
+        padding: 24px 16px 52px;
+    }
+
+    .activity-explorer-hero {
+        flex-direction: column;
+    }
+
+    .activity-explorer-controls {
+        grid-template-columns: 1fr;
     }
 }
 

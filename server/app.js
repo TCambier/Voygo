@@ -8,6 +8,7 @@ import { config } from './config.js';
 import authRoutes from './routes/authRoutes.js';
 import tripRoutes from './routes/tripRoutes.js';
 import transportRoutes from './routes/transportRoutes.js';
+import activityRoutes from './routes/activityRoutes.js';
 import resourceRoutes from './routes/resourceRoutes.js';
 
 const app = express();
@@ -34,6 +35,7 @@ app.use('/api', apiLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/trips', tripRoutes);
 app.use('/api/transports', transportRoutes);
+app.use('/api/activities', activityRoutes);
 app.use('/api', resourceRoutes);
 
 app.get('/health', (req, res) => {
