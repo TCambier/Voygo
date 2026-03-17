@@ -9,13 +9,17 @@ const FILTERS = [
   { key: 'culture', label: 'Culture', kinds: 'museums,cultural' }
 ];
 
+const SCHEDULE_META_OPEN = '[VOYGO_SCHEDULE]';
+const SCHEDULE_META_CLOSE = '[/VOYGO_SCHEDULE]';
+
 const state = {
   tripId: null,
   destination: '',
   startDate: '',
   endDate: '',
   filter: 'all',
-  suggestions: []
+  suggestions: [],
+  tripActivities: []
 };
 
 function escapeHtml(value) {
@@ -36,6 +40,254 @@ function formatActivityRating(rating, reviewsCount) {
     return `${note} / 5`;
   }
   return `${note} / 5 (${safeReviews} avis)`;
+}
+
+function formatDate(dateValue) {
+  if (!dateValue) return '';
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return dateValue;
+  return date.toLocaleDateString('fr-FR');
+}
+
+function formatDuration(value) {
+  const minutes = Number(value);
+  if (!Number.isFinite(minutes) || minutes <= 0) return '-';
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hours && mins) return `${hours}h ${mins}min`;
+  if (hours) return `${hours}h`;
+  return `${mins}min`;
+}
+
+function getTodayInputValue() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function toMinuteOfDay(timeValue) {
+  if (!/^\d{2}:\d{2}$/.test(String(timeValue || ''))) return null;
+  const [hours, minutes] = String(timeValue).split(':').map((part) => Number(part));
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+  return (hours * 60) + minutes;
+}
+
+function normalizeActivityDate(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  return raw.includes('T') ? raw.split('T')[0] : raw;
+}
+
+function readScheduleMetadata(description) {
+  const text = String(description || '');
+  const match = text.match(/\[VOYGO_SCHEDULE\]([\s\S]*?)\[\/VOYGO_SCHEDULE\]/);
+  if (!match || !match[1]) return null;
+
+  try {
+    const parsed = JSON.parse(match[1]);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function attachScheduleMetadata(description, schedule) {
+  const clean = String(description || '').replace(/\s*\[VOYGO_SCHEDULE\][\s\S]*?\[\/VOYGO_SCHEDULE\]\s*/g, '').trim();
+  const metadata = JSON.stringify({
+    date: schedule.date,
+    time: schedule.startTime,
+    duration_minutes: schedule.durationMinutes
+  });
+  return [clean, `${SCHEDULE_META_OPEN}${metadata}${SCHEDULE_META_CLOSE}`].filter(Boolean).join('\n\n');
+}
+
+function getActivitySchedule(item) {
+  const metadata = readScheduleMetadata(item?.description);
+  const date = normalizeActivityDate(metadata?.date || item?.activity_date || '');
+  const startTime = String(metadata?.time || '').trim();
+  const durationRaw = Number(metadata?.duration_minutes);
+  const durationMinutes = Number.isFinite(durationRaw) && durationRaw > 0
+    ? Math.round(durationRaw)
+    : 60;
+
+  if (!date || !startTime || toMinuteOfDay(startTime) === null) return null;
+
+  return {
+    date,
+    startTime,
+    durationMinutes
+  };
+}
+
+function formatActivitySchedule(schedule) {
+  if (!schedule) return '';
+  const dateLabel = formatDate(schedule.date);
+  const durationLabel = formatDuration(schedule.durationMinutes);
+  return `${dateLabel} a ${schedule.startTime} (${durationLabel})`;
+}
+
+function findActivityConflict(schedule) {
+  const start = toMinuteOfDay(schedule.startTime);
+  if (start === null) return null;
+  const end = start + schedule.durationMinutes;
+
+  for (const existing of state.tripActivities) {
+    const existingSchedule = getActivitySchedule(existing);
+    if (!existingSchedule || existingSchedule.date !== schedule.date) continue;
+
+    const existingStart = toMinuteOfDay(existingSchedule.startTime);
+    if (existingStart === null) continue;
+    const existingEnd = existingStart + existingSchedule.durationMinutes;
+    if (start < existingEnd && existingStart < end) {
+      return existing;
+    }
+  }
+
+  return null;
+}
+
+function initActivityScheduleModal() {
+  const modal = document.getElementById('activity-schedule-modal');
+  const form = document.getElementById('activity-schedule-form');
+  const note = document.getElementById('activity-schedule-note');
+  const closeButtons = modal?.querySelectorAll('[data-close]') || [];
+  const dateInput = form?.elements?.namedItem('date');
+  const timeInput = form?.elements?.namedItem('time');
+  const durationInput = form?.elements?.namedItem('duration');
+
+  if (
+    !modal ||
+    !form ||
+    !note ||
+    !(dateInput instanceof HTMLInputElement) ||
+    !(timeInput instanceof HTMLInputElement) ||
+    !(durationInput instanceof HTMLInputElement)
+  ) {
+    return async () => null;
+  }
+
+  let resolver = null;
+  let validateSchedule = null;
+
+  const closeModal = (value) => {
+    if (!resolver) return;
+    modal.hidden = true;
+    document.body.style.overflow = '';
+    const resolve = resolver;
+    resolver = null;
+    validateSchedule = null;
+    resolve(value);
+  };
+
+  const openModal = (options = {}) => new Promise((resolve) => {
+    resolver = resolve;
+    validateSchedule = typeof options.validate === 'function' ? options.validate : null;
+    note.classList.remove('is-success', 'is-error');
+    note.textContent = '';
+    form.reset();
+    dateInput.min = state.startDate || '';
+    dateInput.max = state.endDate || '';
+    dateInput.value = state.startDate || getTodayInputValue();
+    timeInput.value = '09:00';
+    durationInput.value = '60';
+
+    modal.hidden = false;
+    document.body.style.overflow = 'hidden';
+    dateInput.focus();
+  });
+
+  closeButtons.forEach((button) => button.addEventListener('click', () => closeModal(null)));
+
+  modal.addEventListener('click', (event) => {
+    if (event.target === modal) closeModal(null);
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !modal.hidden) closeModal(null);
+  });
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    note.classList.remove('is-success', 'is-error');
+
+    const date = dateInput.value;
+    const startTime = timeInput.value;
+    const durationMinutes = Number(durationInput.value);
+
+    if (!date || !startTime || !Number.isFinite(durationMinutes) || durationMinutes <= 0) {
+      note.classList.add('is-error');
+      note.textContent = 'Merci de renseigner jour, heure et duree.';
+      return;
+    }
+
+    if (state.startDate && date < state.startDate) {
+      note.classList.add('is-error');
+      note.textContent = 'Le jour doit etre dans les dates du voyage.';
+      return;
+    }
+
+    if (state.endDate && date > state.endDate) {
+      note.classList.add('is-error');
+      note.textContent = 'Le jour doit etre dans les dates du voyage.';
+      return;
+    }
+
+    const schedule = {
+      date,
+      startTime,
+      durationMinutes: Math.round(durationMinutes)
+    };
+
+    if (validateSchedule) {
+      const validationMessage = validateSchedule(schedule);
+      if (validationMessage) {
+        note.classList.add('is-error');
+        note.textContent = validationMessage;
+        return;
+      }
+    }
+
+    closeModal(schedule);
+  });
+
+  return openModal;
+}
+
+function normalizeActivityIdentityPart(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function getActivityIdentity(item) {
+  const sourcePlaceId = String(item?.source_place_id || '').trim();
+  if (sourcePlaceId) {
+    return `source:${sourcePlaceId}`;
+  }
+
+  const name = normalizeActivityIdentityPart(item?.name);
+  const address = normalizeActivityIdentityPart(item?.address);
+  if (!name) return '';
+  return `text:${name}::${address}`;
+}
+
+function filterOutAddedSuggestions(items) {
+  const existingIdentities = new Set(
+    state.tripActivities
+      .map((activity) => getActivityIdentity(activity))
+      .filter(Boolean)
+  );
+
+  return (items || []).filter((item) => {
+    const identity = getActivityIdentity(item);
+    return !identity || !existingIdentities.has(identity);
+  });
+}
+
+function getVisibleSuggestions() {
+  return filterOutAddedSuggestions(state.suggestions);
 }
 
 function getCurrentFilter() {
@@ -68,14 +320,16 @@ function renderSuggestions() {
 
   list.innerHTML = '';
 
-  if (!state.suggestions.length) {
+  const visibleSuggestions = getVisibleSuggestions();
+
+  if (!visibleSuggestions.length) {
     empty.hidden = false;
     return;
   }
 
   empty.hidden = true;
 
-  state.suggestions.forEach((item, index) => {
+  visibleSuggestions.forEach((item, index) => {
     const safeName = escapeHtml(item.name || 'Activite');
     const safeAddress = escapeHtml(item.address || 'Adresse indisponible');
     const safeDescription = escapeHtml(item.description || '');
@@ -144,6 +398,23 @@ function updateBackLink() {
   back.href = query ? `planning.html?${query}` : 'planning.html';
 }
 
+async function loadTripActivities() {
+  if (!state.tripId) {
+    state.tripActivities = [];
+    renderSuggestions();
+    return;
+  }
+
+  try {
+    const result = await api.get(`/api/activities/trip/${encodeURIComponent(state.tripId)}`);
+    state.tripActivities = result?.data || [];
+  } catch {
+    state.tripActivities = [];
+  }
+
+  renderSuggestions();
+}
+
 async function fetchSuggestions() {
   if (!state.destination) {
     state.suggestions = [];
@@ -174,16 +445,29 @@ async function fetchSuggestions() {
 }
 
 async function addSuggestion(index) {
-  if (!state.tripId || !state.suggestions[index]) return;
+  const visibleSuggestions = getVisibleSuggestions();
+  if (!state.tripId || !visibleSuggestions[index]) return;
 
-  const item = state.suggestions[index];
+  const item = visibleSuggestions[index];
+  const itemIdentity = getActivityIdentity(item);
+  const requestSchedule = initActivityScheduleModal.instance;
+  const schedule = await requestSchedule({
+    validate: (nextSchedule) => {
+      const conflictingActivity = findActivityConflict(nextSchedule);
+      if (!conflictingActivity) return '';
+      return `Conflit detecte: ${conflictingActivity.name || 'une activite'} est deja prevue a ${formatActivitySchedule(getActivitySchedule(conflictingActivity))}.`;
+    }
+  });
+  if (!schedule) return;
+
   setNote('Ajout en cours...');
 
   try {
     await api.post(`/api/activities/trip/${encodeURIComponent(state.tripId)}`, {
       name: item.name,
       address: item.address,
-      description: item.description,
+      description: attachScheduleMetadata(item.description, schedule),
+      activity_date: schedule.date,
       rating: item.rating,
       reviews_count: item.reviews_count,
       source: item.source || 'opentripmap',
@@ -191,6 +475,8 @@ async function addSuggestion(index) {
       map_url: item.map_url
     });
 
+    state.suggestions = state.suggestions.filter((suggestion) => getActivityIdentity(suggestion) !== itemIdentity);
+    await loadTripActivities();
     setNote('Activite ajoutee au voyage.', 'is-success');
   } catch (error) {
     setNote(error?.message || "Impossible d'ajouter l'activite.", 'is-error');
@@ -358,8 +644,10 @@ async function initPage() {
   });
   renderFilters();
   updateBackLink();
+  initActivityScheduleModal.instance = initActivityScheduleModal();
   bindEvents();
   initCustomActivityModal();
+  await loadTripActivities();
   await fetchSuggestions();
 }
 

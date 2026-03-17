@@ -13,6 +13,68 @@ async function ensureTripOwnership(client, tripId, userId) {
   return true;
 }
 
+function readScheduleMetadataFromDescription(description) {
+  const text = String(description || '');
+  const match = text.match(/\[VOYGO_SCHEDULE\]([\s\S]*?)\[\/VOYGO_SCHEDULE\]/);
+  if (!match || !match[1]) return null;
+
+  try {
+    const parsed = JSON.parse(match[1]);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function toMinuteOfDay(timeValue) {
+  const raw = String(timeValue || '');
+  if (!/^\d{2}:\d{2}$/.test(raw)) return null;
+  const [hours, minutes] = raw.split(':').map((part) => Number(part));
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+  return (hours * 60) + minutes;
+}
+
+function normalizeActivityDate(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  return raw.includes('T') ? raw.split('T')[0] : raw;
+}
+
+function extractScheduleFromActivity(activity) {
+  const metadata = readScheduleMetadataFromDescription(activity?.description);
+  const date = normalizeActivityDate(metadata?.date || activity?.activity_date || '');
+  const startTime = String(metadata?.time || '').trim();
+  const durationRaw = Number(metadata?.duration_minutes);
+  const durationMinutes = Number.isFinite(durationRaw) && durationRaw > 0
+    ? Math.round(durationRaw)
+    : 60;
+
+  if (!date || !startTime || toMinuteOfDay(startTime) === null) return null;
+
+  return {
+    date,
+    startTime,
+    durationMinutes
+  };
+}
+
+function hasScheduleConflict(existingActivities, newSchedule) {
+  const newStart = toMinuteOfDay(newSchedule.startTime);
+  if (newStart === null) return false;
+  const newEnd = newStart + newSchedule.durationMinutes;
+
+  return (existingActivities || []).some((item) => {
+    const schedule = extractScheduleFromActivity(item);
+    if (!schedule || schedule.date !== newSchedule.date) return false;
+
+    const existingStart = toMinuteOfDay(schedule.startTime);
+    if (existingStart === null) return false;
+    const existingEnd = existingStart + schedule.durationMinutes;
+    return newStart < existingEnd && existingStart < newEnd;
+  });
+}
+
 function toTopRatedPlaces(places, limit) {
   return (places || [])
     .map((place) => ({
@@ -352,6 +414,23 @@ export async function createActivity(req, res) {
     source_place_id: payload.source_place_id || null,
     map_url: payload.map_url || null
   };
+
+  const newSchedule = extractScheduleFromActivity(insertPayload);
+  if (newSchedule) {
+    const { data: existingActivities, error: existingError } = await client
+      .from('activities')
+      .select('id,activity_date,description')
+      .eq('trip_id', tripId)
+      .eq('user_id', req.user.id);
+
+    if (existingError) {
+      return res.status(400).json({ error: existingError.message || 'Verification de conflit impossible.' });
+    }
+
+    if (hasScheduleConflict(existingActivities, newSchedule)) {
+      return res.status(409).json({ error: 'Un autre activite est deja planifiee sur ce creneau.' });
+    }
+  }
 
   const { data, error } = await client
     .from('activities')

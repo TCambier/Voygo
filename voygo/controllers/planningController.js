@@ -59,6 +59,10 @@ let accommodations = [];
 let activitySuggestions = [];
 let tripActivities = [];
 let suggestionsVisibleCount = 5;
+let lastAddedActivityId = null;
+
+const SCHEDULE_META_OPEN = '[VOYGO_SCHEDULE]';
+const SCHEDULE_META_CLOSE = '[/VOYGO_SCHEDULE]';
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -94,6 +98,287 @@ function formatActivityRating(rating, reviewsCount) {
     return `${note} / 5`;
   }
   return `${note} / 5 (${safeReviews} avis)`;
+}
+
+function toMinuteOfDay(timeValue) {
+  if (!/^\d{2}:\d{2}$/.test(String(timeValue || ''))) return null;
+  const [hours, minutes] = String(timeValue).split(':').map((part) => Number(part));
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+  return (hours * 60) + minutes;
+}
+
+function normalizeActivityDate(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  return raw.includes('T') ? raw.split('T')[0] : raw;
+}
+
+function readScheduleMetadata(description) {
+  const text = String(description || '');
+  const match = text.match(/\[VOYGO_SCHEDULE\]([\s\S]*?)\[\/VOYGO_SCHEDULE\]/);
+  if (!match || !match[1]) return null;
+
+  try {
+    const parsed = JSON.parse(match[1]);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function stripScheduleMetadata(description) {
+  const text = String(description || '');
+  return text.replace(/\s*\[VOYGO_SCHEDULE\][\s\S]*?\[\/VOYGO_SCHEDULE\]\s*/g, '').trim();
+}
+
+function attachScheduleMetadata(description, schedule) {
+  const clean = stripScheduleMetadata(description);
+  const metadata = JSON.stringify({
+    date: schedule.date,
+    time: schedule.startTime,
+    duration_minutes: schedule.durationMinutes
+  });
+  return [clean, `${SCHEDULE_META_OPEN}${metadata}${SCHEDULE_META_CLOSE}`].filter(Boolean).join('\n\n');
+}
+
+function getActivitySchedule(item) {
+  const metadata = readScheduleMetadata(item?.description);
+  const date = normalizeActivityDate(metadata?.date || item?.activity_date || '');
+  const startTime = String(metadata?.time || '').trim();
+  const durationRaw = Number(metadata?.duration_minutes);
+  const durationMinutes = Number.isFinite(durationRaw) && durationRaw > 0
+    ? Math.round(durationRaw)
+    : 60;
+
+  if (!date || !startTime || toMinuteOfDay(startTime) === null) return null;
+
+  return {
+    date,
+    startTime,
+    durationMinutes
+  };
+}
+
+function formatActivitySchedule(schedule) {
+  if (!schedule) return '';
+  const dateLabel = formatDate(schedule.date);
+  const durationLabel = formatDuration(schedule.durationMinutes);
+  return `${dateLabel} a ${schedule.startTime} (${durationLabel})`;
+}
+
+function normalizeActivityIdentityPart(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function getActivityIdentity(item) {
+  const sourcePlaceId = String(item?.source_place_id || '').trim();
+  if (sourcePlaceId) {
+    return `source:${sourcePlaceId}`;
+  }
+
+  const name = normalizeActivityIdentityPart(item?.name);
+  const address = normalizeActivityIdentityPart(item?.address);
+  if (!name) return '';
+  return `text:${name}::${address}`;
+}
+
+function normalizeDestination(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function syncPlanningUrl() {
+  const params = new URLSearchParams(window.location.search);
+  if (tripState.id) {
+    params.set('tripId', String(tripState.id));
+  } else {
+    params.delete('tripId');
+  }
+
+  if (tripState.destination) {
+    params.set('destination', tripState.destination);
+  } else {
+    params.delete('destination');
+  }
+
+  if (tripState.startDate) {
+    params.set('startDate', toDateInputValue(tripState.startDate));
+  } else {
+    params.delete('startDate');
+  }
+
+  if (tripState.endDate) {
+    params.set('endDate', toDateInputValue(tripState.endDate));
+  } else {
+    params.delete('endDate');
+  }
+
+  const nextQuery = params.toString();
+  const nextUrl = nextQuery ? `planning.html?${nextQuery}` : 'planning.html';
+  window.history.replaceState({}, '', nextUrl);
+}
+
+function filterOutAddedSuggestions(items) {
+  const existingIdentities = new Set(
+    tripActivities
+      .map((activity) => getActivityIdentity(activity))
+      .filter(Boolean)
+  );
+
+  return (items || []).filter((item) => {
+    const identity = getActivityIdentity(item);
+    return !identity || !existingIdentities.has(identity);
+  });
+}
+
+function getVisibleActivitySuggestions() {
+  return filterOutAddedSuggestions(activitySuggestions);
+}
+
+function findActivityConflict(schedule) {
+  const start = toMinuteOfDay(schedule.startTime);
+  if (start === null) return null;
+  const end = start + schedule.durationMinutes;
+
+  for (const existing of tripActivities) {
+    const existingSchedule = getActivitySchedule(existing);
+    if (!existingSchedule || existingSchedule.date !== schedule.date) continue;
+
+    const existingStart = toMinuteOfDay(existingSchedule.startTime);
+    if (existingStart === null) continue;
+    const existingEnd = existingStart + existingSchedule.durationMinutes;
+    const overlap = start < existingEnd && existingStart < end;
+
+    if (overlap) {
+      return existing;
+    }
+  }
+
+  return null;
+}
+
+function initActivityScheduleModal() {
+  const modal = document.getElementById('activity-schedule-modal');
+  const form = document.getElementById('activity-schedule-form');
+  const note = document.getElementById('activity-schedule-note');
+  const closeButtons = modal?.querySelectorAll('[data-close]') || [];
+  const dateInput = form?.elements?.namedItem('date');
+  const timeInput = form?.elements?.namedItem('time');
+  const durationInput = form?.elements?.namedItem('duration');
+
+  if (
+    !modal ||
+    !form ||
+    !(dateInput instanceof HTMLInputElement) ||
+    !(timeInput instanceof HTMLInputElement) ||
+    !(durationInput instanceof HTMLInputElement) ||
+    !note
+  ) {
+    return async () => null;
+  }
+
+  let resolver = null;
+  let validateSchedule = null;
+
+  const closeModal = (value) => {
+    if (!resolver) return;
+    modal.hidden = true;
+    document.body.style.overflow = '';
+    const resolve = resolver;
+    resolver = null;
+    validateSchedule = null;
+    resolve(value);
+  };
+
+  const openModal = (options = {}) => new Promise((resolve) => {
+    resolver = resolve;
+    validateSchedule = typeof options.validate === 'function' ? options.validate : null;
+    note.classList.remove('is-success', 'is-error');
+    note.textContent = '';
+    form.reset();
+
+    const currentStart = document.getElementById('trip-start-date')?.value || tripState.startDate;
+    const currentEnd = document.getElementById('trip-end-date')?.value || tripState.endDate;
+    dateInput.min = currentStart || '';
+    dateInput.max = currentEnd || '';
+    dateInput.value = currentStart || getTodayInputValue();
+    timeInput.value = '09:00';
+    durationInput.value = '60';
+
+    modal.hidden = false;
+    document.body.style.overflow = 'hidden';
+    dateInput.focus();
+  });
+
+  closeButtons.forEach((button) => {
+    button.addEventListener('click', () => closeModal(null));
+  });
+
+  modal.addEventListener('click', (event) => {
+    if (event.target === modal) {
+      closeModal(null);
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !modal.hidden) {
+      closeModal(null);
+    }
+  });
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    note.classList.remove('is-success', 'is-error');
+
+    const date = dateInput.value;
+    const startTime = timeInput.value;
+    const durationMinutes = Number(durationInput.value);
+
+    const currentStart = document.getElementById('trip-start-date')?.value || tripState.startDate;
+    const currentEnd = document.getElementById('trip-end-date')?.value || tripState.endDate;
+
+    if (!date || !startTime || !Number.isFinite(durationMinutes) || durationMinutes <= 0) {
+      note.classList.add('is-error');
+      note.textContent = 'Merci de renseigner jour, heure et duree.';
+      return;
+    }
+
+    if (currentStart && date < currentStart) {
+      note.classList.add('is-error');
+      note.textContent = 'Le jour doit etre dans les dates du voyage.';
+      return;
+    }
+
+    if (currentEnd && date > currentEnd) {
+      note.classList.add('is-error');
+      note.textContent = 'Le jour doit etre dans les dates du voyage.';
+      return;
+    }
+
+    const schedule = {
+      date,
+      startTime,
+      durationMinutes: Math.round(durationMinutes)
+    };
+
+    if (validateSchedule) {
+      const validationMessage = validateSchedule(schedule);
+      if (validationMessage) {
+        note.classList.add('is-error');
+        note.textContent = validationMessage;
+        return;
+      }
+    }
+
+    closeModal(schedule);
+  });
+
+  return openModal;
 }
 
 function computeNights(startDate, endDate) {
@@ -278,7 +563,7 @@ function renderActivitySuggestions() {
 
   list.innerHTML = '';
 
-  const displayed = activitySuggestions.slice(0, suggestionsVisibleCount);
+  const displayed = getVisibleActivitySuggestions().slice(0, suggestionsVisibleCount);
   if (!displayed.length) {
     empty.hidden = false;
     loadMoreButton.hidden = true;
@@ -342,6 +627,7 @@ async function loadTripActivities() {
   }
 
   renderTripActivities();
+  renderActivitySuggestions();
 }
 
 function renderTripActivities() {
@@ -358,21 +644,34 @@ function renderTripActivities() {
 
   empty.hidden = true;
 
+  let didAnimateNewItem = false;
+
   tripActivities.forEach((item) => {
     const row = document.createElement('article');
     row.className = 'trip-activity-item';
     row.dataset.activityId = String(item.id);
 
+    if (lastAddedActivityId && String(item.id) === String(lastAddedActivityId)) {
+      row.classList.add('is-newly-added');
+      didAnimateNewItem = true;
+      window.setTimeout(() => row.classList.remove('is-newly-added'), 1400);
+    }
+
     const safeName = escapeHtml(item.name || 'Activite');
     const safeAddress = escapeHtml(item.address || 'Adresse indisponible');
-    const safeDescription = escapeHtml(item.description || '');
+    const safeDescription = escapeHtml(stripScheduleMetadata(item.description || ''));
     const safeRating = escapeHtml(formatActivityRating(item.rating, item.reviews_count));
+    const schedule = getActivitySchedule(item);
+    const scheduleMarkup = schedule
+      ? `<div class="activity-schedule"><i class='bx bx-time-five'></i>${escapeHtml(formatActivitySchedule(schedule))}</div>`
+      : '';
 
     row.innerHTML = `
       <div class="trip-activity-head">
         <div>
           <div class="activity-title">${safeName}</div>
           <div class="activity-meta">${safeAddress}</div>
+          ${scheduleMarkup}
           ${safeDescription ? `<div class="activity-description">${safeDescription}</div>` : ''}
         </div>
         <span class="activity-rating">${safeRating}</span>
@@ -384,6 +683,10 @@ function renderTripActivities() {
 
     list.appendChild(row);
   });
+
+  if (didAnimateNewItem) {
+    lastAddedActivityId = null;
+  }
 }
 
 function initActivitiesPanel() {
@@ -393,6 +696,7 @@ function initActivitiesPanel() {
   const loadMoreButton = document.getElementById('activity-load-more');
   const suggestionsNote = document.getElementById('activity-suggestions-note');
   const tripNote = document.getElementById('trip-activities-note');
+  const requestSchedule = initActivityScheduleModal();
 
   if (!suggestionsList || !tripList || !refreshButton || !loadMoreButton || !suggestionsNote || !tripNote) {
     return;
@@ -426,24 +730,38 @@ function initActivitiesPanel() {
     const target = event.target instanceof Element ? event.target.closest('[data-add-suggestion]') : null;
     if (!target) return;
     const index = Number.parseInt(target.getAttribute('data-add-suggestion') || '', 10);
-    if (!Number.isFinite(index) || !activitySuggestions[index]) return;
+    const visibleSuggestions = getVisibleActivitySuggestions();
+    if (!Number.isFinite(index) || !visibleSuggestions[index]) return;
     if (!tripState.id) return;
 
-    const suggestion = activitySuggestions[index];
+    const suggestion = visibleSuggestions[index];
+    const schedule = await requestSchedule({
+      validate: (nextSchedule) => {
+        const conflictingActivity = findActivityConflict(nextSchedule);
+        if (!conflictingActivity) return '';
+        return `Conflit detecte: ${conflictingActivity.name || 'une activite'} est deja prevue a ce moment.`;
+      }
+    });
+    if (!schedule) return;
+
+    const descriptionWithSchedule = attachScheduleMetadata(suggestion.description || '', schedule);
+
     suggestionsNote.classList.remove('is-success', 'is-error');
     suggestionsNote.textContent = 'Ajout en cours...';
 
     try {
-      await api.post(`/api/activities/trip/${encodeURIComponent(tripState.id)}`, {
+      const result = await api.post(`/api/activities/trip/${encodeURIComponent(tripState.id)}`, {
         name: suggestion.name,
         address: suggestion.address,
-        description: suggestion.description,
+        description: descriptionWithSchedule,
+        activity_date: schedule.date,
         rating: suggestion.rating,
         reviews_count: suggestion.reviews_count,
         source: suggestion.source || 'opentripmap',
         source_place_id: suggestion.source_place_id,
         map_url: suggestion.map_url
       });
+      lastAddedActivityId = result?.data?.id || null;
       suggestionsNote.classList.add('is-success');
       suggestionsNote.textContent = 'Activite ajoutee au voyage.';
       await loadTripActivities();
@@ -662,10 +980,49 @@ function initTripEditor() {
       return;
     }
 
-    try {
-      const result = await api.patch(`/api/trips/${encodeURIComponent(tripState.id)}`, payload);
-      const data = result?.data;
+    const destinationChanged = normalizeDestination(payload.destination) !== normalizeDestination(tripState.destination);
+    if (destinationChanged) {
+      const confirmed = window.confirm(
+        'Changer la destination va remplacer ce voyage par un nouveau voyage avec la nouvelle destination. Toutes les activites, tous les logements et tous les transports lies au voyage actuel seront supprimes. Voulez-vous continuer ?'
+      );
 
+      if (!confirmed) {
+        saveNote.textContent = '';
+        return;
+      }
+    }
+
+    try {
+      let data = null;
+      let replacedTrip = false;
+
+      if (destinationChanged) {
+        const previousTripId = tripState.id;
+        const createResult = await api.post('/api/trips', payload);
+        data = createResult?.data;
+
+        if (!data?.id) {
+          throw new Error('Creation du nouveau voyage impossible.');
+        }
+
+        try {
+          await api.delete(`/api/trips/${encodeURIComponent(previousTripId)}`);
+        } catch (deleteError) {
+          try {
+            await api.delete(`/api/trips/${encodeURIComponent(data.id)}`);
+          } catch {
+            // Best effort rollback only.
+          }
+          throw deleteError;
+        }
+
+        replacedTrip = true;
+      } else {
+        const result = await api.patch(`/api/trips/${encodeURIComponent(tripState.id)}`, payload);
+        data = result?.data;
+      }
+
+      tripState.id = data?.id || tripState.id;
       tripState.name = data?.name || '';
       tripState.destination = data?.destination || '';
       tripState.startDate = toDateInputValue(data?.start_date || '');
@@ -673,14 +1030,20 @@ function initTripEditor() {
 
       localStorage.setItem('voygo_current_trip', JSON.stringify(data));
       syncTripInputs();
+      syncPlanningUrl();
+      await loadTransports();
+      await loadAccommodations();
+      await loadTripActivities();
       await loadActivitySuggestions();
 
       saveNote.classList.add('is-success');
-      saveNote.textContent = 'Voyage mis à jour.';
+      saveNote.textContent = replacedTrip
+        ? 'Destination modifiee. Un nouveau voyage a ete cree et toutes les donnees liees a l ancien voyage ont ete supprimees.'
+        : 'Voyage mis a jour.';
     } catch (err) {
       console.warn('Impossible de mettre Ã  jour le voyage.', err);
       saveNote.classList.add('is-error');
-      saveNote.textContent = "Erreur lors de l'enregistrement.";
+      saveNote.textContent = err?.message || "Erreur lors de l'enregistrement.";
     }
   });
 }

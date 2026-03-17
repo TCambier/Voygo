@@ -53,9 +53,31 @@ function resolveTitle(trip) {
     return trip.name || trip.destination || 'Voyage';
 }
 
+function normalizeDate(dateValue) {
+    if (!dateValue) return null;
+    if (dateValue instanceof Date) {
+        const normalized = new Date(dateValue);
+        normalized.setHours(0, 0, 0, 0);
+        return normalized;
+    }
+
+    if (typeof dateValue === 'string') {
+        const match = dateValue.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (match) {
+            const [, year, month, day] = match;
+            return new Date(Number(year), Number(month) - 1, Number(day));
+        }
+    }
+
+    const parsed = new Date(dateValue);
+    if (Number.isNaN(parsed.getTime())) return null;
+    parsed.setHours(0, 0, 0, 0);
+    return parsed;
+}
+
 function computeStatus(trip) {
-    const start = trip.start_date ? new Date(trip.start_date) : null;
-    const end = trip.end_date ? new Date(trip.end_date) : null;
+    const start = normalizeDate(trip.start_date);
+    const end = normalizeDate(trip.end_date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 

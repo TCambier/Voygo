@@ -18,6 +18,7 @@
     --accent-strong: #ff3d71;
     --accent-cool: #2ec4b6;
     --accent-sun: #ffd166;
+    --header-height: 91px;
 }
 
 body.dark-theme {
@@ -36,19 +37,26 @@ body {
     background: var(--bg-primary);
     color: var(--text-primary);
     line-height: 1.6;
+    padding-top: var(--header-height);
     transition: background 0.3s ease, color 0.3s ease;
 }
 
 /* Header / Navbar */
+#header-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+}
+
 .header {
     display: flex;
     align-items: center;
     justify-content: flex-start;
     padding: 15px 50px 15px 20px;
     background: var(--header-bg);
-    position: sticky;
-    top: 0;
-    z-index: 100;
+    width: 100%;
     border-bottom: 1px solid var(--header-border);
     box-shadow: 0 8px 20px rgba(255, 107, 107, 0.12);
     transition: background 0.3s ease, border-color 0.3s ease;
@@ -1257,6 +1265,41 @@ body.dark-theme .hero-plane img {
     overflow: hidden;
 }
 
+.activity-schedule {
+    margin-top: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #7c2d12;
+    background: color-mix(in srgb, var(--accent-sun) 40%, #ffffff);
+}
+
+.trip-activity-item.is-newly-added {
+    animation: activity-pop-in 1.2s ease;
+}
+
+@keyframes activity-pop-in {
+    0% {
+        transform: translateY(10px) scale(0.98);
+        box-shadow: 0 0 0 rgba(255, 107, 107, 0);
+        border-color: color-mix(in srgb, var(--accent) 14%, var(--border-color));
+    }
+    25% {
+        transform: translateY(-2px) scale(1.01);
+        box-shadow: 0 16px 24px rgba(255, 107, 107, 0.25);
+        border-color: color-mix(in srgb, var(--accent-strong) 55%, var(--border-color));
+    }
+    100% {
+        transform: translateY(0) scale(1);
+        box-shadow: 0 0 0 rgba(255, 107, 107, 0);
+        border-color: color-mix(in srgb, var(--accent) 14%, var(--border-color));
+    }
+}
+
 .activity-rating {
     font-weight: 700;
     font-size: 12px;
@@ -1997,6 +2040,10 @@ body.dark-theme .hero-plane img {
    ============================================================ */
  
 @media (max-width: 480px) {
+
+    :root {
+        --header-height: 73px;
+    }
  
   /* ── HEADER ── */
   .header {
@@ -2385,7 +2432,6 @@ body.dark-theme .hero-plane img {
   /* ── HEADER ── */
   .header {
     padding: 12px 16px;
-    position: relative;
     flex-wrap: nowrap;
     gap: 8px;
   }
