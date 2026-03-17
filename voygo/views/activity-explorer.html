@@ -49,61 +49,43 @@
         </section>
     </main>
 
-    <div class="modal-backdrop" id="custom-activity-modal" hidden>
+    <div class="modal-backdrop" id="explorer-activity-modal" hidden>
         <div class="modal">
             <div class="modal-header">
-                <h2>Ajouter une activite personnalisee</h2>
+                <h2 id="explorer-activity-modal-title">Ajouter une activite</h2>
                 <button type="button" class="modal-close" data-close aria-label="Fermer">
                     <i class='bx bx-x'></i>
                 </button>
             </div>
-            <form class="modal-body" id="custom-activity-form">
+            <form class="modal-body" id="explorer-activity-form">
                 <div class="field-group">
-                    <label for="custom-activity-name">Nom</label>
-                    <input class="form-input" id="custom-activity-name" name="name" type="text" placeholder="Ex: Atelier photo" required>
+                    <label for="explorer-activity-name">Nom de l'activite</label>
+                    <input class="form-input" id="explorer-activity-name" type="text" placeholder="Ex: Atelier photo" required>
                 </div>
                 <div class="field-group">
-                    <label for="custom-activity-address">Adresse</label>
-                    <input class="form-input" id="custom-activity-address" name="address" type="text" placeholder="Ex: 24 Rue des Martyrs, Paris" required>
+                    <label for="explorer-activity-address">Adresse</label>
+                    <input class="form-input" id="explorer-activity-address" type="text" placeholder="Ex: 24 Rue des Martyrs, Paris">
                 </div>
                 <div class="field-group">
-                    <label for="custom-activity-cost">Cout (optionnel)</label>
-                    <input class="form-input" id="custom-activity-cost" name="estimated_cost" type="number" min="0" step="0.01" placeholder="Ex: 35">
+                    <label for="explorer-activity-date">Quel jour ?</label>
+                    <input class="form-input" id="explorer-activity-date" type="date" required>
+                </div>
+                <div class="field-group">
+                    <label for="explorer-activity-time">A quelle heure ?</label>
+                    <input class="form-input" id="explorer-activity-time" type="time" required>
+                </div>
+                <div class="field-group">
+                    <label for="explorer-activity-duration">Combien de temps (minutes) ?</label>
+                    <input class="form-input" id="explorer-activity-duration" type="number" min="1" step="1" value="60" required>
+                </div>
+                <div class="field-group">
+                    <label for="explorer-activity-desc">Description (optionnel)</label>
+                    <textarea class="form-input" id="explorer-activity-desc" rows="2" placeholder="Notes, details..."></textarea>
                 </div>
                 <div class="modal-actions">
-                    <span class="settings-feedback" id="custom-activity-note"></span>
+                    <span class="settings-feedback" id="explorer-activity-note"></span>
                     <button type="button" class="btn-ghost" data-close>Annuler</button>
-                    <button type="submit" class="btn-primary" id="custom-activity-submit">Ajouter</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div class="modal-backdrop" id="activity-schedule-modal" hidden>
-        <div class="modal">
-            <div class="modal-header">
-                <h2>Planifier l'activite</h2>
-                <button type="button" class="modal-close" data-close aria-label="Fermer">
-                    <i class='bx bx-x'></i>
-                </button>
-            </div>
-            <form class="modal-body" id="activity-schedule-form">
-                <div class="field-group">
-                    <label for="activity-schedule-date">Quel jour ?</label>
-                    <input class="form-input" id="activity-schedule-date" name="date" type="date" required>
-                </div>
-                <div class="field-group">
-                    <label for="activity-schedule-time">A quelle heure ?</label>
-                    <input class="form-input" id="activity-schedule-time" name="time" type="time" required>
-                </div>
-                <div class="field-group">
-                    <label for="activity-schedule-duration">Combien de temps (minutes) ?</label>
-                    <input class="form-input" id="activity-schedule-duration" name="duration" type="number" min="1" step="1" value="60" required>
-                </div>
-                <div class="modal-actions">
-                    <span class="settings-feedback" id="activity-schedule-note"></span>
-                    <button type="button" class="btn-ghost" data-close>Annuler</button>
-                    <button type="submit" class="btn-primary">Confirmer</button>
+                    <button type="submit" class="btn-primary" id="explorer-activity-submit">Ajouter</button>
                 </div>
             </form>
         </div>

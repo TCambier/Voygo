@@ -1,15 +1,102 @@
 import { getSupabaseForUser } from '../services/supabase.js';
 
+function normalizeDate(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  return raw.includes('T') ? raw.split('T')[0] : raw;
+}
+
+function toMinuteOfDay(timeValue) {
+  const raw = String(timeValue || '').trim();
+  const match = raw.match(/(\d{2}):(\d{2})(?::\d{2})?/);
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+  return (hours * 60) + minutes;
+}
+
+function normalizeTransportTime(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+  const match = raw.match(/(\d{2}:\d{2})(?::\d{2})?/);
+  if (match) return `${match[1]}:00`;
+  return raw;
+}
+
+function readScheduleMetadata(description) {
+  const text = String(description || '');
+  const match = text.match(/\[VOYGO_SCHEDULE\]([\s\S]*?)\[\/VOYGO_SCHEDULE\]/);
+  if (!match || !match[1]) return null;
+
+  try {
+    const parsed = JSON.parse(match[1]);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function extractActivitySchedule(activity) {
+  const metadata = readScheduleMetadata(activity?.description);
+  const date = normalizeDate(metadata?.date || activity?.activity_date || '');
+  const startTime = String(metadata?.time || '').trim();
+  const durationRaw = Number(metadata?.duration_minutes);
+  const durationMinutes = Number.isFinite(durationRaw) && durationRaw > 0
+    ? Math.round(durationRaw)
+    : 60;
+
+  if (!date || !startTime || toMinuteOfDay(startTime) === null) return null;
+
+  return { date, startTime, durationMinutes };
+}
+
+function extractTransportSchedule(transport) {
+  const date = normalizeDate(transport?.travel_date || '');
+  const startTime = String(transport?.travel_time || '').trim();
+  const durationRaw = Number(transport?.duration_minutes);
+  const durationMinutes = Number.isFinite(durationRaw) && durationRaw > 0
+    ? Math.round(durationRaw)
+    : 0;
+
+  if (!date || !startTime || toMinuteOfDay(startTime) === null || durationMinutes <= 0) return null;
+
+  return { date, startTime, durationMinutes };
+}
+
+function schedulesOverlap(leftSchedule, rightSchedule) {
+  if (!leftSchedule || !rightSchedule || leftSchedule.date !== rightSchedule.date) return false;
+  const leftStart = toMinuteOfDay(leftSchedule.startTime);
+  const rightStart = toMinuteOfDay(rightSchedule.startTime);
+  if (leftStart === null || rightStart === null) return false;
+  const leftEnd = leftStart + leftSchedule.durationMinutes;
+  const rightEnd = rightStart + rightSchedule.durationMinutes;
+  return leftStart < rightEnd && rightStart < leftEnd;
+}
+
+function findConflictingActivity(activities, transportSchedule) {
+  return (activities || []).find((activity) => schedulesOverlap(extractActivitySchedule(activity), transportSchedule)) || null;
+}
+
+function findConflictingTransport(transports, transportSchedule, excludedTransportId = null) {
+  return (transports || []).find((transport) => {
+    if (excludedTransportId && String(transport.id) === String(excludedTransportId)) return false;
+    return schedulesOverlap(extractTransportSchedule(transport), transportSchedule);
+  }) || null;
+}
+
 export async function listTransports(req, res) {
   const { tripId } = req.params;
   const client = getSupabaseForUser(req.accessToken);
 
   const { data, error } = await client
     .from('transports')
-    .select('id,origin,destination,travel_date,mode,price,duration_minutes,created_at,trip_id')
+    .select('id,origin,destination,travel_date,travel_time,mode,price,duration_minutes,created_at,trip_id')
     .eq('trip_id', tripId)
     .eq('user_id', req.user.id)
-    .order('travel_date', { ascending: true });
+    .order('travel_date', { ascending: true })
+    .order('travel_time', { ascending: true });
 
   if (error) {
     return res.status(400).json({ error: error.message || 'Chargement impossible.' });
@@ -25,14 +112,47 @@ export async function createTransport(req, res) {
 
   const insertPayload = {
     ...payload,
+    travel_time: normalizeTransportTime(payload.travel_time),
     trip_id: tripId,
     user_id: req.user.id
   };
 
+  const nextSchedule = extractTransportSchedule(insertPayload);
+  if (!nextSchedule) {
+    return res.status(400).json({ error: 'Jour, heure et duree du transport requis.' });
+  }
+
+  const [activitiesResult, transportsResult] = await Promise.all([
+    client
+      .from('activities')
+      .select('id,activity_date,description,name')
+      .eq('trip_id', tripId)
+      .eq('user_id', req.user.id),
+    client
+      .from('transports')
+      .select('id,origin,destination,travel_date,travel_time,duration_minutes')
+      .eq('trip_id', tripId)
+      .eq('user_id', req.user.id)
+  ]);
+
+  if (activitiesResult.error || transportsResult.error) {
+    return res.status(400).json({ error: activitiesResult.error?.message || transportsResult.error?.message || 'Verification de conflit impossible.' });
+  }
+
+  const conflictingActivity = findConflictingActivity(activitiesResult.data, nextSchedule);
+  if (conflictingActivity) {
+    return res.status(409).json({ error: `Une activite est deja prevue pendant ce transport: ${conflictingActivity.name || 'activite'}.` });
+  }
+
+  const conflictingTransport = findConflictingTransport(transportsResult.data, nextSchedule);
+  if (conflictingTransport) {
+    return res.status(409).json({ error: 'Un autre transport est deja prevu sur ce creneau.' });
+  }
+
   const { data, error } = await client
     .from('transports')
     .insert(insertPayload)
-    .select('id,origin,destination,travel_date,mode,price,duration_minutes,created_at,trip_id')
+    .select('id,origin,destination,travel_date,travel_time,mode,price,duration_minutes,created_at,trip_id')
     .single();
 
   if (error) {
@@ -47,12 +167,62 @@ export async function updateTransport(req, res) {
   const payload = req.body || {};
   const client = getSupabaseForUser(req.accessToken);
 
+  const { data: currentTransport, error: currentError } = await client
+    .from('transports')
+    .select('id,trip_id,origin,destination,travel_date,travel_time,mode,price,duration_minutes')
+    .eq('id', id)
+    .eq('user_id', req.user.id)
+    .single();
+
+  if (currentError || !currentTransport) {
+    return res.status(404).json({ error: 'Transport introuvable.' });
+  }
+
+  const nextTransport = { ...currentTransport, ...payload };
+  nextTransport.travel_time = normalizeTransportTime(nextTransport.travel_time);
+  payload.travel_time = payload.travel_time === undefined ? undefined : normalizeTransportTime(payload.travel_time);
+  const mustValidateSchedule = [payload.travel_date, payload.travel_time, payload.duration_minutes].some((value) => value !== undefined);
+  const nextSchedule = extractTransportSchedule(nextTransport);
+
+  if (mustValidateSchedule && !nextSchedule) {
+    return res.status(400).json({ error: 'Jour, heure et duree du transport requis.' });
+  }
+
+  if (nextSchedule) {
+    const [activitiesResult, transportsResult] = await Promise.all([
+      client
+        .from('activities')
+        .select('id,activity_date,description,name')
+        .eq('trip_id', currentTransport.trip_id)
+        .eq('user_id', req.user.id),
+      client
+        .from('transports')
+        .select('id,origin,destination,travel_date,travel_time,duration_minutes')
+        .eq('trip_id', currentTransport.trip_id)
+        .eq('user_id', req.user.id)
+    ]);
+
+    if (activitiesResult.error || transportsResult.error) {
+      return res.status(400).json({ error: activitiesResult.error?.message || transportsResult.error?.message || 'Verification de conflit impossible.' });
+    }
+
+    const conflictingActivity = findConflictingActivity(activitiesResult.data, nextSchedule);
+    if (conflictingActivity) {
+      return res.status(409).json({ error: `Une activite est deja prevue pendant ce transport: ${conflictingActivity.name || 'activite'}.` });
+    }
+
+    const conflictingTransport = findConflictingTransport(transportsResult.data, nextSchedule, id);
+    if (conflictingTransport) {
+      return res.status(409).json({ error: 'Un autre transport est deja prevu sur ce creneau.' });
+    }
+  }
+
   const { data, error } = await client
     .from('transports')
     .update(payload)
     .eq('id', id)
     .eq('user_id', req.user.id)
-    .select('id,origin,destination,travel_date,mode,price,duration_minutes,created_at,trip_id')
+    .select('id,origin,destination,travel_date,travel_time,mode,price,duration_minutes,created_at,trip_id')
     .single();
 
   if (error) {

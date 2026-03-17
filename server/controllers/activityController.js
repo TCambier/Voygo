@@ -28,8 +28,10 @@ function readScheduleMetadataFromDescription(description) {
 
 function toMinuteOfDay(timeValue) {
   const raw = String(timeValue || '');
-  if (!/^\d{2}:\d{2}$/.test(raw)) return null;
-  const [hours, minutes] = raw.split(':').map((part) => Number(part));
+  const match = raw.trim().match(/(\d{2}):(\d{2})(?::\d{2})?/);
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
   if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
   if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
   return (hours * 60) + minutes;
@@ -59,6 +61,23 @@ function extractScheduleFromActivity(activity) {
   };
 }
 
+function extractScheduleFromTransport(transport) {
+  const date = normalizeActivityDate(transport?.travel_date || '');
+  const startTime = String(transport?.travel_time || '').trim();
+  const durationRaw = Number(transport?.duration_minutes);
+  const durationMinutes = Number.isFinite(durationRaw) && durationRaw > 0
+    ? Math.round(durationRaw)
+    : 0;
+
+  if (!date || !startTime || toMinuteOfDay(startTime) === null || durationMinutes <= 0) return null;
+
+  return {
+    date,
+    startTime,
+    durationMinutes
+  };
+}
+
 function hasScheduleConflict(existingActivities, newSchedule) {
   const newStart = toMinuteOfDay(newSchedule.startTime);
   if (newStart === null) return false;
@@ -66,6 +85,22 @@ function hasScheduleConflict(existingActivities, newSchedule) {
 
   return (existingActivities || []).some((item) => {
     const schedule = extractScheduleFromActivity(item);
+    if (!schedule || schedule.date !== newSchedule.date) return false;
+
+    const existingStart = toMinuteOfDay(schedule.startTime);
+    if (existingStart === null) return false;
+    const existingEnd = existingStart + schedule.durationMinutes;
+    return newStart < existingEnd && existingStart < newEnd;
+  });
+}
+
+function hasTransportConflict(existingTransports, newSchedule) {
+  const newStart = toMinuteOfDay(newSchedule.startTime);
+  if (newStart === null) return false;
+  const newEnd = newStart + newSchedule.durationMinutes;
+
+  return (existingTransports || []).some((item) => {
+    const schedule = extractScheduleFromTransport(item);
     if (!schedule || schedule.date !== newSchedule.date) return false;
 
     const existingStart = toMinuteOfDay(schedule.startTime);
@@ -417,18 +452,29 @@ export async function createActivity(req, res) {
 
   const newSchedule = extractScheduleFromActivity(insertPayload);
   if (newSchedule) {
-    const { data: existingActivities, error: existingError } = await client
-      .from('activities')
-      .select('id,activity_date,description')
-      .eq('trip_id', tripId)
-      .eq('user_id', req.user.id);
+    const [activitiesResult, transportsResult] = await Promise.all([
+      client
+        .from('activities')
+        .select('id,activity_date,description')
+        .eq('trip_id', tripId)
+        .eq('user_id', req.user.id),
+      client
+        .from('transports')
+        .select('id,travel_date,travel_time,duration_minutes')
+        .eq('trip_id', tripId)
+        .eq('user_id', req.user.id)
+    ]);
 
-    if (existingError) {
-      return res.status(400).json({ error: existingError.message || 'Verification de conflit impossible.' });
+    if (activitiesResult.error || transportsResult.error) {
+      return res.status(400).json({ error: activitiesResult.error?.message || transportsResult.error?.message || 'Verification de conflit impossible.' });
     }
 
-    if (hasScheduleConflict(existingActivities, newSchedule)) {
+    if (hasScheduleConflict(activitiesResult.data, newSchedule)) {
       return res.status(409).json({ error: 'Un autre activite est deja planifiee sur ce creneau.' });
+    }
+
+    if (hasTransportConflict(transportsResult.data, newSchedule)) {
+      return res.status(409).json({ error: 'Un transport est deja planifie sur ce creneau.' });
     }
   }
 

@@ -90,6 +90,11 @@ function readScheduleMetadata(description) {
   }
 }
 
+function stripScheduleMetadata(description) {
+  const text = String(description || '');
+  return text.replace(/\s*\[VOYGO_SCHEDULE\][\s\S]*?\[\/VOYGO_SCHEDULE\]\s*/g, '').trim();
+}
+
 function attachScheduleMetadata(description, schedule) {
   const clean = String(description || '').replace(/\s*\[VOYGO_SCHEDULE\][\s\S]*?\[\/VOYGO_SCHEDULE\]\s*/g, '').trim();
   const metadata = JSON.stringify({
@@ -145,22 +150,33 @@ function findActivityConflict(schedule) {
   return null;
 }
 
-function initActivityScheduleModal() {
-  const modal = document.getElementById('activity-schedule-modal');
-  const form = document.getElementById('activity-schedule-form');
-  const note = document.getElementById('activity-schedule-note');
+function initActivityEditorModal() {
+  const modal = document.getElementById('explorer-activity-modal');
+  const form = document.getElementById('explorer-activity-form');
+  const note = document.getElementById('explorer-activity-note');
+  const title = document.getElementById('explorer-activity-modal-title');
+  const submit = document.getElementById('explorer-activity-submit');
   const closeButtons = modal?.querySelectorAll('[data-close]') || [];
-  const dateInput = form?.elements?.namedItem('date');
-  const timeInput = form?.elements?.namedItem('time');
-  const durationInput = form?.elements?.namedItem('duration');
+
+  const nameInput = document.getElementById('explorer-activity-name');
+  const addressInput = document.getElementById('explorer-activity-address');
+  const dateInput = document.getElementById('explorer-activity-date');
+  const timeInput = document.getElementById('explorer-activity-time');
+  const durationInput = document.getElementById('explorer-activity-duration');
+  const descriptionInput = document.getElementById('explorer-activity-desc');
 
   if (
     !modal ||
     !form ||
     !note ||
+    !title ||
+    !submit ||
+    !(nameInput instanceof HTMLInputElement) ||
+    !(addressInput instanceof HTMLInputElement) ||
     !(dateInput instanceof HTMLInputElement) ||
     !(timeInput instanceof HTMLInputElement) ||
-    !(durationInput instanceof HTMLInputElement)
+    !(durationInput instanceof HTMLInputElement) ||
+    !(descriptionInput instanceof HTMLTextAreaElement)
   ) {
     return async () => null;
   }
@@ -168,7 +184,7 @@ function initActivityScheduleModal() {
   let resolver = null;
   let validateSchedule = null;
 
-  const closeModal = (value) => {
+  const closeModal = (value = null) => {
     if (!resolver) return;
     modal.hidden = true;
     document.body.style.overflow = '';
@@ -181,41 +197,53 @@ function initActivityScheduleModal() {
   const openModal = (options = {}) => new Promise((resolve) => {
     resolver = resolve;
     validateSchedule = typeof options.validate === 'function' ? options.validate : null;
+
+    title.textContent = options.title || 'Ajouter une activite';
+    submit.textContent = options.submitLabel || 'Ajouter';
     note.classList.remove('is-success', 'is-error');
     note.textContent = '';
+
+    const preset = options.preset || {};
     form.reset();
+    nameInput.value = String(preset.name || '');
+    addressInput.value = String(preset.address || '');
+    descriptionInput.value = String(preset.description || '');
+
     dateInput.min = state.startDate || '';
     dateInput.max = state.endDate || '';
-    dateInput.value = state.startDate || getTodayInputValue();
-    timeInput.value = '09:00';
-    durationInput.value = '60';
+    dateInput.value = String(preset.date || state.startDate || getTodayInputValue());
+    timeInput.value = String(preset.startTime || '09:00');
+    durationInput.value = String(preset.durationMinutes || 60);
 
     modal.hidden = false;
     document.body.style.overflow = 'hidden';
-    dateInput.focus();
+    nameInput.focus();
   });
 
-  closeButtons.forEach((button) => button.addEventListener('click', () => closeModal(null)));
+  closeButtons.forEach((button) => button.addEventListener('click', () => closeModal()));
 
   modal.addEventListener('click', (event) => {
-    if (event.target === modal) closeModal(null);
+    if (event.target === modal) closeModal();
   });
 
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && !modal.hidden) closeModal(null);
+    if (event.key === 'Escape' && !modal.hidden) closeModal();
   });
 
   form.addEventListener('submit', (event) => {
     event.preventDefault();
     note.classList.remove('is-success', 'is-error');
 
+    const name = nameInput.value.trim();
+    const address = addressInput.value.trim();
+    const description = descriptionInput.value.trim();
     const date = dateInput.value;
     const startTime = timeInput.value;
     const durationMinutes = Number(durationInput.value);
 
-    if (!date || !startTime || !Number.isFinite(durationMinutes) || durationMinutes <= 0) {
+    if (!name || !startTime || !date || !Number.isFinite(durationMinutes) || durationMinutes <= 0) {
       note.classList.add('is-error');
-      note.textContent = 'Merci de renseigner jour, heure et duree.';
+      note.textContent = 'Merci de renseigner nom, jour, heure et duree.';
       return;
     }
 
@@ -246,7 +274,12 @@ function initActivityScheduleModal() {
       }
     }
 
-    closeModal(schedule);
+    closeModal({
+      name,
+      address,
+      description,
+      schedule
+    });
   });
 
   return openModal;
@@ -376,14 +409,6 @@ function setNote(message, type = '') {
   note.textContent = message || '';
 }
 
-function parseOptionalCost(value) {
-  const raw = String(value || '').trim();
-  if (!raw) return null;
-  const parsed = Number(raw.replace(',', '.'));
-  if (!Number.isFinite(parsed) || parsed < 0) return NaN;
-  return parsed;
-}
-
 function updateBackLink() {
   const back = document.getElementById('explorer-back');
   if (!back) return;
@@ -450,24 +475,34 @@ async function addSuggestion(index) {
 
   const item = visibleSuggestions[index];
   const itemIdentity = getActivityIdentity(item);
-  const requestSchedule = initActivityScheduleModal.instance;
-  const schedule = await requestSchedule({
+  const requestActivity = initActivityEditorModal.instance;
+  const formData = await requestActivity({
+    title: 'Ajouter une activite au voyage',
+    submitLabel: 'Ajouter',
+    preset: {
+      name: item.name || '',
+      address: item.address || '',
+      description: stripScheduleMetadata(item.description || ''),
+      date: state.startDate || getTodayInputValue(),
+      startTime: '09:00',
+      durationMinutes: 60
+    },
     validate: (nextSchedule) => {
       const conflictingActivity = findActivityConflict(nextSchedule);
       if (!conflictingActivity) return '';
       return `Conflit detecte: ${conflictingActivity.name || 'une activite'} est deja prevue a ${formatActivitySchedule(getActivitySchedule(conflictingActivity))}.`;
     }
   });
-  if (!schedule) return;
+  if (!formData) return;
 
   setNote('Ajout en cours...');
 
   try {
     await api.post(`/api/activities/trip/${encodeURIComponent(state.tripId)}`, {
-      name: item.name,
-      address: item.address,
-      description: attachScheduleMetadata(item.description, schedule),
-      activity_date: schedule.date,
+      name: formData.name,
+      address: formData.address,
+      description: attachScheduleMetadata(formData.description, formData.schedule),
+      activity_date: formData.schedule.date,
       rating: item.rating,
       reviews_count: item.reviews_count,
       source: item.source || 'opentripmap',
@@ -483,102 +518,12 @@ async function addSuggestion(index) {
   }
 }
 
-function initCustomActivityModal() {
-  const openButton = document.getElementById('explorer-add-custom');
-  const modal = document.getElementById('custom-activity-modal');
-  const form = document.getElementById('custom-activity-form');
-  const modalNote = document.getElementById('custom-activity-note');
-  const closeButtons = modal?.querySelectorAll('[data-close]') || [];
-
-  if (!openButton || !modal || !form || !modalNote) return;
-
-  const openModal = () => {
-    if (!state.tripId) {
-      setNote('Selectionnez un voyage depuis le planning pour ajouter une activite personnalisee.', 'is-error');
-      return;
-    }
-
-    form.reset();
-    modalNote.classList.remove('is-success', 'is-error');
-    modalNote.textContent = '';
-    modal.hidden = false;
-    document.body.style.overflow = 'hidden';
-    const nameInput = document.getElementById('custom-activity-name');
-    if (nameInput instanceof HTMLElement) nameInput.focus();
-  };
-
-  const closeModal = () => {
-    modal.hidden = true;
-    document.body.style.overflow = '';
-  };
-
-  openButton.addEventListener('click', openModal);
-  closeButtons.forEach((button) => button.addEventListener('click', closeModal));
-
-  modal.addEventListener('click', (event) => {
-    if (event.target === modal) closeModal();
-  });
-
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && !modal.hidden) closeModal();
-  });
-
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-
-    if (!state.tripId) {
-      modalNote.classList.remove('is-success');
-      modalNote.classList.add('is-error');
-      modalNote.textContent = 'Aucun voyage associe.';
-      return;
-    }
-
-    const name = form.elements.namedItem('name')?.value?.trim();
-    const address = form.elements.namedItem('address')?.value?.trim();
-    const estimatedCost = parseOptionalCost(form.elements.namedItem('estimated_cost')?.value);
-
-    if (!name || !address) {
-      modalNote.classList.remove('is-success');
-      modalNote.classList.add('is-error');
-      modalNote.textContent = 'Nom et adresse sont requis.';
-      return;
-    }
-
-    if (Number.isNaN(estimatedCost)) {
-      modalNote.classList.remove('is-success');
-      modalNote.classList.add('is-error');
-      modalNote.textContent = 'Cout invalide.';
-      return;
-    }
-
-    modalNote.classList.remove('is-success', 'is-error');
-    modalNote.textContent = 'Ajout en cours...';
-
-    try {
-      await api.post(`/api/activities/trip/${encodeURIComponent(state.tripId)}`, {
-        name,
-        address,
-        estimated_cost: estimatedCost,
-        source: 'manual'
-      });
-
-      modalNote.classList.add('is-success');
-      modalNote.textContent = 'Activite personnalisee ajoutee.';
-      setNote('Activite personnalisee ajoutee au voyage.', 'is-success');
-      closeModal();
-    } catch (error) {
-      modalNote.classList.remove('is-success');
-      modalNote.classList.add('is-error');
-      modalNote.textContent = error?.message || "Impossible d'ajouter l'activite.";
-    }
-  });
-}
-
 function bindEvents() {
   const destinationInput = document.getElementById('explorer-destination');
   const searchButton = document.getElementById('explorer-search');
   const filterBar = document.getElementById('activity-filter-bar');
   const results = document.getElementById('explorer-results');
+  const customButton = document.getElementById('explorer-add-custom');
 
   if (destinationInput) {
     destinationInput.addEventListener('keydown', async (event) => {
@@ -621,6 +566,48 @@ function bindEvents() {
       await addSuggestion(index);
     });
   }
+
+  if (customButton) {
+    customButton.addEventListener('click', async () => {
+      if (!state.tripId) {
+        setNote('Selectionnez un voyage depuis le planning pour ajouter une activite personnalisee.', 'is-error');
+        return;
+      }
+
+      const requestActivity = initActivityEditorModal.instance;
+      const formData = await requestActivity({
+        title: 'Ajouter une activite personnalisee',
+        submitLabel: 'Ajouter',
+        preset: {
+          date: state.startDate || getTodayInputValue(),
+          startTime: '09:00',
+          durationMinutes: 60
+        },
+        validate: (nextSchedule) => {
+          const conflictingActivity = findActivityConflict(nextSchedule);
+          if (!conflictingActivity) return '';
+          return `Conflit detecte: ${conflictingActivity.name || 'une activite'} est deja prevue a ${formatActivitySchedule(getActivitySchedule(conflictingActivity))}.`;
+        }
+      });
+
+      if (!formData) return;
+      setNote('Ajout en cours...');
+
+      try {
+        await api.post(`/api/activities/trip/${encodeURIComponent(state.tripId)}`, {
+          name: formData.name,
+          address: formData.address,
+          description: attachScheduleMetadata(formData.description, formData.schedule),
+          activity_date: formData.schedule.date,
+          source: 'manual'
+        });
+        await loadTripActivities();
+        setNote('Activite personnalisee ajoutee au voyage.', 'is-success');
+      } catch (error) {
+        setNote(error?.message || "Impossible d'ajouter l'activite.", 'is-error');
+      }
+    });
+  }
 }
 
 function initStateFromQuery() {
@@ -644,9 +631,8 @@ async function initPage() {
   });
   renderFilters();
   updateBackLink();
-  initActivityScheduleModal.instance = initActivityScheduleModal();
+  initActivityEditorModal.instance = initActivityEditorModal();
   bindEvents();
-  initCustomActivityModal();
   await loadTripActivities();
   await fetchSuggestions();
 }

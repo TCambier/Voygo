@@ -9,9 +9,23 @@ import {
 
 function formatDate(dateValue) {
   if (!dateValue) return '';
+  const dateKeyMatch = String(dateValue).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (dateKeyMatch) {
+    const year = Number(dateKeyMatch[1]);
+    const month = Number(dateKeyMatch[2]) - 1;
+    const day = Number(dateKeyMatch[3]);
+    const date = new Date(year, month, day);
+    return date.toLocaleDateString('fr-FR');
+  }
   const date = new Date(dateValue);
   if (Number.isNaN(date.getTime())) return dateValue;
   return date.toLocaleDateString('fr-FR');
+}
+
+function toTimeInputValue(value) {
+  const raw = String(value || '').trim();
+  const match = raw.match(/(\d{2}:\d{2})(?::\d{2})?/);
+  return match ? match[1] : '';
 }
 
 function toDateInputValue(value) {
@@ -101,8 +115,10 @@ function formatActivityRating(rating, reviewsCount) {
 }
 
 function toMinuteOfDay(timeValue) {
-  if (!/^\d{2}:\d{2}$/.test(String(timeValue || ''))) return null;
-  const [hours, minutes] = String(timeValue).split(':').map((part) => Number(part));
+  const match = String(timeValue || '').trim().match(/^(\d{2}):(\d{2})(?::\d{2})?$/);
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
   if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
   if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
   return (hours * 60) + minutes;
@@ -167,6 +183,51 @@ function formatActivitySchedule(schedule) {
   return `${dateLabel} a ${schedule.startTime} (${durationLabel})`;
 }
 
+function getTransportSchedule(item) {
+  const date = normalizeActivityDate(item?.travel_date || '');
+  const startTime = toTimeInputValue(item?.travel_time || '');
+  const durationRaw = Number(item?.duration_minutes);
+  const durationMinutes = Number.isFinite(durationRaw) && durationRaw > 0
+    ? Math.round(durationRaw)
+    : 0;
+
+  if (!date || !startTime || toMinuteOfDay(startTime) === null || durationMinutes <= 0) return null;
+
+  return {
+    date,
+    startTime,
+    durationMinutes
+  };
+}
+
+function findTransportConflict(schedule, excludedTransportId = null) {
+  const start = toMinuteOfDay(schedule.startTime);
+  if (start === null) return null;
+  const end = start + schedule.durationMinutes;
+
+  for (const existing of transports) {
+    if (excludedTransportId && String(existing.id) === String(excludedTransportId)) continue;
+
+    const existingSchedule = getTransportSchedule(existing);
+    if (!existingSchedule || existingSchedule.date !== schedule.date) continue;
+
+    const existingStart = toMinuteOfDay(existingSchedule.startTime);
+    if (existingStart === null) continue;
+    const existingEnd = existingStart + existingSchedule.durationMinutes;
+    const overlap = start < existingEnd && existingStart < end;
+
+    if (overlap) {
+      return existing;
+    }
+  }
+
+  return null;
+}
+
+function formatTransportLabel(item) {
+  return [item?.origin || '-', item?.destination || '-'].join(' -> ');
+}
+
 function normalizeActivityIdentityPart(value) {
   return String(value || '')
     .normalize('NFD')
@@ -221,6 +282,26 @@ function syncPlanningUrl() {
   const nextQuery = params.toString();
   const nextUrl = nextQuery ? `planning.html?${nextQuery}` : 'planning.html';
   window.history.replaceState({}, '', nextUrl);
+  updatePlanningNavigationLinks();
+}
+
+function updatePlanningNavigationLinks() {
+  const nav = document.querySelector('.planning-nav');
+  if (!nav) return;
+
+  const params = new URLSearchParams();
+  if (tripState.id) params.set('tripId', String(tripState.id));
+  if (tripState.destination) params.set('destination', tripState.destination);
+  if (tripState.startDate) params.set('startDate', toDateInputValue(tripState.startDate));
+  if (tripState.endDate) params.set('endDate', toDateInputValue(tripState.endDate));
+
+  const query = params.toString();
+  nav.querySelectorAll('a[href]').forEach((link) => {
+    const href = link.getAttribute('href') || '';
+    const basePath = href.split('?')[0];
+    if (!/\.html$/i.test(basePath)) return;
+    link.setAttribute('href', query ? `${basePath}?${query}` : basePath);
+  });
 }
 
 function filterOutAddedSuggestions(items) {
@@ -489,11 +570,13 @@ function renderTransports() {
     row.dataset.transportId = item.id;
 
     const dateLabel = item.travel_date ? formatDate(item.travel_date) : '-';
+    const timeValue = toTimeInputValue(item.travel_time);
+    const timeLabel = timeValue ? ` a ${timeValue}` : '';
 
     row.innerHTML = `
       <div class="transport-title">
         <span>${item.origin || '-'} -> ${item.destination || '-'} · ${item.mode || 'Transport'}</span>
-        <span class="transport-sub">${dateLabel}</span>
+        <span class="transport-sub">${dateLabel}${timeLabel}</span>
       </div>
       <span>${formatDuration(item.duration_minutes)}</span>
       <span>${formatPrice(item.price)}</span>
@@ -609,10 +692,6 @@ function renderActivitySuggestions() {
 }
 
 async function loadTripActivities() {
-  const list = document.getElementById('trip-activities-list');
-  const empty = document.getElementById('trip-activities-empty');
-  if (!list || !empty) return;
-
   if (!tripState.id) {
     tripActivities = [];
     renderTripActivities();
@@ -698,7 +777,7 @@ function initActivitiesPanel() {
   const tripNote = document.getElementById('trip-activities-note');
   const requestSchedule = initActivityScheduleModal();
 
-  if (!suggestionsList || !tripList || !refreshButton || !loadMoreButton || !suggestionsNote || !tripNote) {
+  if (!suggestionsList || !refreshButton || !loadMoreButton || !suggestionsNote) {
     return;
   }
 
@@ -737,6 +816,10 @@ function initActivitiesPanel() {
     const suggestion = visibleSuggestions[index];
     const schedule = await requestSchedule({
       validate: (nextSchedule) => {
+        const conflictingTransport = findTransportConflict(nextSchedule);
+        if (conflictingTransport) {
+          return `Conflit detecte: le transport ${formatTransportLabel(conflictingTransport)} est deja prevu a ce moment.`;
+        }
         const conflictingActivity = findActivityConflict(nextSchedule);
         if (!conflictingActivity) return '';
         return `Conflit detecte: ${conflictingActivity.name || 'une activite'} est deja prevue a ce moment.`;
@@ -771,7 +854,8 @@ function initActivitiesPanel() {
     }
   });
 
-  tripList.addEventListener('click', async (event) => {
+  if (tripList && tripNote) {
+    tripList.addEventListener('click', async (event) => {
     const target = event.target instanceof Element ? event.target.closest('[data-delete-activity]') : null;
     if (!target) return;
     const row = target.closest('.trip-activity-item');
@@ -794,7 +878,8 @@ function initActivitiesPanel() {
       tripNote.classList.add('is-error');
       tripNote.textContent = error?.message || 'Suppression impossible.';
     }
-  });
+    });
+  }
 }
 
 function renderAccommodations() {
@@ -900,6 +985,7 @@ async function initPlanningPage() {
   tripState.endDate = toDateInputValue(endDate);
 
   syncTripInputs();
+  syncPlanningUrl();
   await loadTransports();
   await loadAccommodations();
   await loadTripActivities();
@@ -1077,6 +1163,7 @@ function initTransportModal() {
 
   const priceInput = form.elements.namedItem('price');
   const durationInput = form.elements.namedItem('duration');
+  const timeInput = form.elements.namedItem('time');
 
   if (priceInput instanceof HTMLInputElement) {
     priceInput.addEventListener('input', () => {
@@ -1092,6 +1179,12 @@ function initTransportModal() {
   if (durationInput instanceof HTMLInputElement) {
     durationInput.addEventListener('input', () => {
       durationInput.value = durationInput.value.replace(/[^\d]/g, '');
+    });
+  }
+
+  if (timeInput instanceof HTMLInputElement) {
+    timeInput.addEventListener('input', () => {
+      timeInput.value = timeInput.value.trim();
     });
   }
 
@@ -1129,6 +1222,7 @@ function initTransportModal() {
     const origin = form.elements.namedItem('from')?.value?.trim();
     const destination = form.elements.namedItem('to')?.value?.trim();
     const travelDate = form.elements.namedItem('date')?.value;
+    const travelTime = form.elements.namedItem('time')?.value;
     const mode = form.elements.namedItem('mode')?.value;
     const priceRaw = form.elements.namedItem('price')?.value;
     const durationRaw = form.elements.namedItem('duration')?.value;
@@ -1151,6 +1245,12 @@ function initTransportModal() {
       return;
     }
 
+    if (toMinuteOfDay(travelTime) === null) {
+      saveNote.classList.add('is-error');
+      saveNote.textContent = 'Merci de renseigner une heure valide.';
+      return;
+    }
+
     try {
       if (priceValue !== null && !Number.isFinite(priceValue)) {
         saveNote.classList.add('is-error');
@@ -1164,10 +1264,37 @@ function initTransportModal() {
         return;
       }
 
+      const schedule = {
+        date: travelDate,
+        startTime: travelTime,
+        durationMinutes: Math.round(durationValue || 0)
+      };
+
+      if (!schedule.date || schedule.durationMinutes <= 0) {
+        saveNote.classList.add('is-error');
+        saveNote.textContent = 'Merci de renseigner jour, heure et duree du transport.';
+        return;
+      }
+
+      const conflictingTransport = findTransportConflict(schedule, transportId || null);
+      if (conflictingTransport) {
+        saveNote.classList.add('is-error');
+        saveNote.textContent = `Conflit detecte avec le transport ${formatTransportLabel(conflictingTransport)}.`;
+        return;
+      }
+
+      const conflictingActivity = findActivityConflict(schedule);
+      if (conflictingActivity) {
+        saveNote.classList.add('is-error');
+        saveNote.textContent = `Conflit detecte avec ${conflictingActivity.name || 'une activite'} deja prevue.`;
+        return;
+      }
+
       const payload = {
         origin,
         destination,
         travel_date: travelDate,
+        travel_time: travelTime,
         mode,
         price: priceValue,
         duration_minutes: durationValue
@@ -1198,7 +1325,7 @@ function initTransportModal() {
       const row = target.closest('.transport-row');
       if (!row) return;
       const transportId = row.dataset.transportId;
-      const current = transports.find((item) => item.id === transportId);
+      const current = transports.find((item) => String(item.id) === String(transportId));
       if (!current) return;
 
       if (target.closest('[data-edit]')) {
@@ -1208,6 +1335,7 @@ function initTransportModal() {
         form.elements.namedItem('from').value = current.origin || '';
         form.elements.namedItem('to').value = current.destination || '';
         form.elements.namedItem('date').value = toDateInputValue(current.travel_date || '');
+        form.elements.namedItem('time').value = toTimeInputValue(current.travel_time || '');
         form.elements.namedItem('mode').value = current.mode || '';
         form.elements.namedItem('price').value = current.price ?? '';
         form.elements.namedItem('duration').value = current.duration_minutes ?? '';

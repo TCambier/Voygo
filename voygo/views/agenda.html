@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voygo - Agenda</title>
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+</head>
+<body>
+    <div id="header-container"></div>
+    <script type="module" src="../controllers/headerController.js"></script>
+
+    <main class="planning-page agenda-page">
+        <section class="planning-hero">
+            <div class="planning-hero-text">
+                <span class="planning-eyebrow">Planification</span>
+                <h1>Agenda de votre voyage</h1>
+                <p>Retrouvez chaque jour de votre sejour sous forme de carte, avec les activites prevues et leurs horaires.</p>
+            </div>
+            <div class="planning-hero-meta">
+                <div class="meta-item">
+                    <span class="meta-label">Voyage</span>
+                    <span id="agenda-trip-name">-</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Dates</span>
+                    <span id="agenda-dates">-</span>
+                </div>
+            </div>
+        </section>
+
+        <div class="planning-nav-box">
+            <nav class="planning-nav" aria-label="Navigation du voyage">
+                <a href="planning.html">Planning</a>
+                <a href="resume.html">Resume</a>
+                <a href="agenda.html" class="is-active" aria-current="page">Agenda</a>
+                <a href="carte.html">Carte</a>
+                <a href="budget.html">Budget</a>
+            </nav>
+        </div>
+
+        <section class="panel agenda-board" aria-live="polite">
+            <div class="panel-title-row">
+                <h2>Votre agenda jour par jour</h2>
+                <button type="button" class="btn-secondary agenda-edit-toggle" id="agenda-edit-toggle">
+                    <i class='bx bx-edit-alt'></i>
+                    Modifier
+                </button>
+            </div>
+            <div class="agenda-days" id="agenda-days"></div>
+            <div class="activity-empty muted" id="agenda-empty">Aucune activite planifiee pour le moment.</div>
+            <span class="settings-feedback" id="agenda-note"></span>
+        </section>
+    </main>
+
+    <div class="modal-backdrop" id="agenda-activity-modal" hidden>
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="agenda-activity-modal-title">Ajouter une activite</h2>
+                <button type="button" class="modal-close" data-close aria-label="Fermer">
+                    <i class='bx bx-x'></i>
+                </button>
+            </div>
+            <form class="modal-body" id="agenda-activity-form">
+                <input type="hidden" id="agenda-activity-id">
+                <input type="hidden" id="agenda-activity-date">
+                <div class="field-group">
+                    <label for="agenda-activity-name">Nom de l'activite</label>
+                    <input class="form-input" id="agenda-activity-name" type="text" placeholder="Ex: Visite du Colossee" required>
+                </div>
+                <div class="field-group">
+                    <label for="agenda-activity-address">Adresse</label>
+                    <input class="form-input" id="agenda-activity-address" type="text" placeholder="Ex: Piazza del Colosseo, Rome">
+                </div>
+                <div class="field-group">
+                    <label for="agenda-activity-time">Heure de debut</label>
+                    <input class="form-input" id="agenda-activity-time" type="time" required>
+                </div>
+                <div class="field-group">
+                    <label for="agenda-activity-duration">Duree (minutes)</label>
+                    <input class="form-input" id="agenda-activity-duration" type="number" min="1" step="1" value="60" required>
+                </div>
+                <div class="field-group">
+                    <label for="agenda-activity-desc">Description (optionnel)</label>
+                    <textarea class="form-input" id="agenda-activity-desc" rows="2" placeholder="Notes, details..."></textarea>
+                </div>
+                <div class="modal-actions">
+                    <span class="settings-feedback" id="agenda-activity-note"></span>
+                    <button type="button" class="btn-ghost" data-close>Annuler</button>
+                    <button type="submit" class="btn-primary" id="agenda-activity-submit">Ajouter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="agenda-transport-modal" hidden>
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="agenda-transport-modal-title">Ajouter un transport</h2>
+                <button type="button" class="modal-close" data-close aria-label="Fermer">
+                    <i class='bx bx-x'></i>
+                </button>
+            </div>
+            <form class="modal-body" id="agenda-transport-form">
+                <input type="hidden" id="agenda-transport-id">
+                <input type="hidden" id="agenda-transport-date">
+                <div class="field-group">
+                    <label for="agenda-transport-from">D'ou partez-vous ?</label>
+                    <input class="form-input" id="agenda-transport-from" type="text" placeholder="Ex: Paris" required>
+                </div>
+                <div class="field-group">
+                    <label for="agenda-transport-to">Ou allez-vous ?</label>
+                    <input class="form-input" id="agenda-transport-to" type="text" placeholder="Ex: Rome" required>
+                </div>
+                <div class="field-group">
+                    <label for="agenda-transport-time">Heure de depart</label>
+                    <input class="form-input" id="agenda-transport-time" type="time" required>
+                </div>
+                <div class="field-group">
+                    <label for="agenda-transport-duration">Temps de trajet (minutes)</label>
+                    <input class="form-input" id="agenda-transport-duration" type="number" min="1" placeholder="Ex: 120">
+                </div>
+                <div class="field-group">
+                    <label for="agenda-transport-mode">Mode de transport</label>
+                    <select class="form-input" id="agenda-transport-mode" required>
+                        <option value="">Selectionner</option>
+                        <option>Avion</option>
+                        <option>Train</option>
+                        <option>Voiture</option>
+                        <option>Bus</option>
+                        <option>Bateau</option>
+                        <option>Autre</option>
+                    </select>
+                </div>
+                <div class="field-group">
+                    <label for="agenda-transport-price">Prix (EUR)</label>
+                    <input class="form-input" id="agenda-transport-price" type="number" min="0" step="0.01" placeholder="Ex: 89.90">
+                </div>
+                <div class="modal-actions">
+                    <span class="settings-feedback" id="agenda-transport-note"></span>
+                    <button type="button" class="btn-ghost" data-close>Annuler</button>
+                    <button type="submit" class="btn-primary" id="agenda-transport-submit">Ajouter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="agenda-accommodation-modal" hidden>
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Ajouter un logement</h2>
+                <button type="button" class="modal-close" data-close aria-label="Fermer">
+                    <i class='bx bx-x'></i>
+                </button>
+            </div>
+            <form class="modal-body" id="agenda-accommodation-form">
+                <div class="field-group">
+                    <label for="agenda-accommodation-name">Nom du logement</label>
+                    <input class="form-input" id="agenda-accommodation-name" type="text" placeholder="Ex: Hotel Roma">
+                </div>
+                <div class="field-group">
+                    <label for="agenda-accommodation-address">Adresse</label>
+                    <input class="form-input" id="agenda-accommodation-address" type="text" placeholder="Ex: Via Nazionale, Rome" required>
+                </div>
+                <div class="field-group">
+                    <label for="agenda-accommodation-checkin">Date d'arrivee</label>
+                    <input class="form-input" id="agenda-accommodation-checkin" type="date" required>
+                </div>
+                <div class="field-group">
+                    <label for="agenda-accommodation-checkout">Date de depart</label>
+                    <input class="form-input" id="agenda-accommodation-checkout" type="date" required>
+                </div>
+                <div class="field-group">
+                    <label for="agenda-accommodation-price">Prix par nuit (EUR)</label>
+                    <input class="form-input" id="agenda-accommodation-price" type="number" min="0" step="0.01" placeholder="Ex: 120">
+                </div>
+                <div class="modal-actions">
+                    <span class="settings-feedback" id="agenda-accommodation-note"></span>
+                    <button type="button" class="btn-ghost" data-close>Annuler</button>
+                    <button type="submit" class="btn-primary">Ajouter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { requireAuth } from '../controllers/authGuardController.js';
+        await requireAuth();
+    </script>
+    <script type="module" src="../controllers/agendaController.js"></script>
+</body>
+</html>

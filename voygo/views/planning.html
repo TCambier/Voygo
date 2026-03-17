@@ -86,13 +86,6 @@
                     <div class="activity-empty muted" id="activity-suggestions-empty">Choisissez une destination pour recevoir des suggestions.</div>
                     <span class="settings-feedback" id="activity-suggestions-note"></span>
 
-                    <div class="activities-divider"></div>
-
-                    <h4 class="activities-subtitle">Activités ajoutées au voyage</h4>
-                    <div class="trip-activities-list" id="trip-activities-list"></div>
-                    <div class="activity-empty muted" id="trip-activities-empty">Aucune activité ajoutée pour le moment.</div>
-                    <span class="settings-feedback" id="trip-activities-note"></span>
-
                     <div class="activity-actions">
                         <button type="button" class="see-more" id="activity-load-more">Voir plus et filtrer</button>
                     </div>
@@ -160,8 +153,12 @@
                     <input class="form-input" id="transport-date" name="date" type="date" required>
                 </div>
                 <div class="field-group">
+                    <label for="transport-time">A quelle heure ?</label>
+                    <input class="form-input" id="transport-time" name="time" type="time" required>
+                </div>
+                <div class="field-group">
                     <label for="transport-duration">Temps de trajet (minutes)</label>
-                    <input class="form-input" id="transport-duration" name="duration" type="number" min="1" placeholder="Ex: 120">
+                    <input class="form-input" id="transport-duration" name="duration" type="number" min="1" placeholder="Ex: 120" required>
                 </div>
                 <div class="field-group">
                     <label for="transport-price">Prix (EUR)</label>
