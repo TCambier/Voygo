@@ -1,4 +1,7 @@
 ﻿import { api } from '../assets/js/api.js';
+import {
+  listAccommodations
+} from './accommodationController.js';
 
 const tripState = {
   id: null,
@@ -14,6 +17,7 @@ let editMode = false;
 let openActivityModal = null;
 let openTransportModal = null;
 let openAccommodationModal = null;
+let accommodations = [];
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -279,6 +283,46 @@ function renderAgenda() {
     grouped.set(schedule.date, list);
   });
 
+  (accommodations || []).forEach((accommodation) => {
+    const startDate = normalizeActivityDate(accommodation?.start_date || '');
+    const endDate = normalizeActivityDate(accommodation?.end_date || '');
+    if (!startDate || !endDate) return;
+
+    const days = createDateRange(startDate, endDate);
+    days.forEach((day, index) => {
+      const list = grouped.get(day) || [];
+      const isFirstDay = index === 0;
+      const isLastDay = index === days.length - 1;
+      
+      if (isFirstDay) {
+        list.push({
+          type: 'accommodation',
+          item: accommodation,
+          accommodationType: 'check-in',
+          schedule: { date: day, startTime: '06:00', durationMinutes: 1440 }
+        });
+      }
+      
+      if (isLastDay && !isFirstDay) {
+        list.push({
+          type: 'accommodation',
+          item: accommodation,
+          accommodationType: 'check-out',
+          schedule: { date: day, startTime: '21:00', durationMinutes: 180 }
+        });
+      } else if (isFirstDay && isLastDay) {
+        list.push({
+          type: 'accommodation',
+          item: accommodation,
+          accommodationType: 'check-out',
+          schedule: { date: day, startTime: '21:00', durationMinutes: 180 }
+        });
+      }
+      
+      grouped.set(day, list);
+    });
+  });
+
   grouped.forEach((list, key) => {
     list.sort((a, b) => {
       const left = toMinuteOfDay(a.schedule.startTime);
@@ -312,7 +356,7 @@ function renderAgenda() {
       if (editMode) parts.push(renderSeparator(day, '09:00'));
 
       entries.forEach((entry) => {
-        const { type, item, schedule } = entry;
+        const { type, item, schedule, accommodationType } = entry;
         const timeLabel = schedule.startTime || '--:--';
         const duration = formatDuration(schedule.durationMinutes);
         const itemId = escapeHtml(String(item?.id || ''));
@@ -335,6 +379,26 @@ function renderAgenda() {
                 <p class="agenda-item-meta">Temps de trajet: ${escapeHtml(duration)}</p>
               </div>
               ${editActions}
+            </article>
+          `);
+        } else if (type === 'accommodation') {
+          const safeName = escapeHtml(item?.name || item?.address || 'Logement');
+          const safeAddress = escapeHtml(item?.address || 'Adresse indisponible');
+          const safeLabel = accommodationType === 'check-in' ? 'Arrivée' : 'Départ';
+          const badgeClass = accommodationType === 'check-in' ? 'is-checkin' : 'is-checkout';
+          const deleteOnly = `
+            <div class="agenda-edit-actions">
+              <button type="button" class="btn-icon danger" data-agenda-delete title="Supprimer"><i class='bx bx-trash'></i></button>
+            </div>`;
+          parts.push(`
+            <article class="agenda-item is-accommodation ${badgeClass}" data-item-type="accommodation" data-item-id="${itemId}">
+              <div class="agenda-time">${escapeHtml(timeLabel)}</div>
+              <div class="agenda-item-content">
+                <span class="agenda-badge">${safeLabel}</span>
+                <h3>${safeName}</h3>
+                <p class="agenda-item-meta">${safeAddress}</p>
+              </div>
+              ${editMode ? deleteOnly : ''}
             </article>
           `);
         } else {
@@ -496,16 +560,18 @@ function openEditForm(type, id) {
 }
 
 async function handleDeleteItem(type, id) {
-  const label = type === 'transport' ? 'ce transport' : 'cette activite';
+  const label = type === 'transport' ? 'ce transport' : type === 'accommodation' ? 'ce logement' : 'cette activite';
   if (!window.confirm(`Supprimer ${label} de l'agenda ?`)) return;
   const note = document.getElementById('agenda-note');
   try {
     if (type === 'transport') {
       await api.delete(`/api/transports/${encodeURIComponent(id)}`);
+    } else if (type === 'accommodation') {
+      await api.delete(`/api/accommodations/${encodeURIComponent(id)}`);
     } else {
       await api.delete(`/api/activities/${encodeURIComponent(id)}`);
     }
-    await Promise.all([loadActivities(), loadTransports()]);
+    await Promise.all([loadActivities(), loadTransports(), loadAccommodations()]);
     renderAgenda();
   } catch (error) {
     if (note) {
@@ -513,6 +579,54 @@ async function handleDeleteItem(type, id) {
       note.textContent = error?.message || 'Suppression impossible.';
     }
   }
+}
+
+function findActivityConflict(schedule, excludedActivityId = null) {
+  const start = toMinuteOfDay(schedule.startTime);
+  if (start === null) return null;
+  const end = start + schedule.durationMinutes;
+
+  for (const existing of (tripState.activities || [])) {
+    if (excludedActivityId && String(existing.id) === String(excludedActivityId)) continue;
+
+    const existingSchedule = getActivitySchedule(existing);
+    if (!existingSchedule || existingSchedule.date !== schedule.date) continue;
+
+    const existingStart = toMinuteOfDay(existingSchedule.startTime);
+    if (existingStart === null) continue;
+    const existingEnd = existingStart + existingSchedule.durationMinutes;
+    const overlap = start < existingEnd && existingStart < end;
+
+    if (overlap) {
+      return existing;
+    }
+  }
+
+  return null;
+}
+
+function findTransportConflict(schedule, excludedTransportId = null) {
+  const start = toMinuteOfDay(schedule.startTime);
+  if (start === null) return null;
+  const end = start + schedule.durationMinutes;
+
+  for (const existing of (tripState.transports || [])) {
+    if (excludedTransportId && String(existing.id) === String(excludedTransportId)) continue;
+
+    const existingSchedule = getTransportSchedule(existing);
+    if (!existingSchedule || existingSchedule.date !== schedule.date) continue;
+
+    const existingStart = toMinuteOfDay(existingSchedule.startTime);
+    if (existingStart === null) continue;
+    const existingEnd = existingStart + existingSchedule.durationMinutes;
+    const overlap = start < existingEnd && existingStart < end;
+
+    if (overlap) {
+      return existing;
+    }
+  }
+
+  return null;
 }
 
 function initActivityModal() {
@@ -580,6 +694,27 @@ function initActivityModal() {
         return;
       }
 
+      if (!date || toMinuteOfDay(time) === null) {
+        note.classList.add('is-error');
+        note.textContent = "Date ou heure invalide.";
+        return;
+      }
+
+      const schedule = { date, startTime: time, durationMinutes: duration };
+      const conflictingActivity = findActivityConflict(schedule, id || null);
+      if (conflictingActivity) {
+        note.classList.add('is-error');
+        note.textContent = `Conflit detecte: ${conflictingActivity.name || 'une activite'} est deja prevue a ce moment.`;
+        return;
+      }
+
+      const conflictingTransport = findTransportConflict(schedule);
+      if (conflictingTransport) {
+        note.classList.add('is-error');
+        note.textContent = `Conflit detecte: un transport est deja prevu a ce moment.`;
+        return;
+      }
+
       const metadata = JSON.stringify({ date, time, duration_minutes: duration });
       const fullDesc = [desc, `[VOYGO_SCHEDULE]${metadata}[/VOYGO_SCHEDULE]`].filter(Boolean).join('\n\n');
       note.textContent = 'Enregistrement...';
@@ -597,7 +732,7 @@ function initActivityModal() {
         }
         note.classList.add('is-success');
         note.textContent = isEdit ? 'Activite mise a jour.' : 'Activite ajoutee.';
-        await Promise.all([loadActivities(), loadTransports()]);
+        await Promise.all([loadActivities(), loadTransports(), loadAccommodations()]);
         renderAgenda();
         window.setTimeout(close, 800);
       } catch (error) {
@@ -676,6 +811,28 @@ function initTransportModal() {
         note.textContent = "Merci de renseigner l'origine, la destination, l'heure et le mode.";
         return;
       }
+
+      if (!date || toMinuteOfDay(time) === null || duration <= 0) {
+        note.classList.add('is-error');
+        note.textContent = "Date, heure ou duree invalide.";
+        return;
+      }
+
+      const schedule = { date, startTime: time, durationMinutes: duration };
+      const conflictingTransport = findTransportConflict(schedule, id || null);
+      if (conflictingTransport) {
+        note.classList.add('is-error');
+        note.textContent = `Conflit detecte: le transport ${conflictingTransport.origin || '-'} -> ${conflictingTransport.destination || '-'} est deja prevu a ce moment.`;
+        return;
+      }
+
+      const conflictingActivity = findActivityConflict(schedule);
+      if (conflictingActivity) {
+        note.classList.add('is-error');
+        note.textContent = `Conflit detecte: ${conflictingActivity.name || 'une activite'} est deja prevue a ce moment.`;
+        return;
+      }
+
       note.textContent = 'Enregistrement...';
 
       try {
@@ -693,7 +850,7 @@ function initTransportModal() {
         }
         note.classList.add('is-success');
         note.textContent = isEdit ? 'Transport mis a jour.' : 'Transport ajoute.';
-        await Promise.all([loadActivities(), loadTransports()]);
+        await Promise.all([loadActivities(), loadTransports(), loadAccommodations()]);
         renderAgenda();
         window.setTimeout(close, 800);
       } catch (error) {
@@ -867,6 +1024,25 @@ async function loadTransports() {
   }
 }
 
+async function loadAccommodations() {
+  if (!tripState.id) {
+    accommodations = [];
+    return;
+  }
+
+  try {
+    const all = await listAccommodations();
+    accommodations = (all || []).filter((item) => String(item.trip_id) === String(tripState.id));
+  } catch (error) {
+    accommodations = [];
+    const note = document.getElementById('agenda-note');
+    if (note) {
+      note.classList.add('is-error');
+      note.textContent = error?.message || 'Impossible de charger les logements.';
+    }
+  }
+}
+
 async function initAgendaPage() {
   const returnTo = `agenda.html${window.location.search || ''}`;
   try {
@@ -883,7 +1059,7 @@ async function initAgendaPage() {
   await loadTrip();
   updateMeta();
   updateNavigationLinks();
-  await Promise.all([loadActivities(), loadTransports()]);
+  await Promise.all([loadActivities(), loadTransports(), loadAccommodations()]);
   renderAgenda();
   initEditMode();
   initAgendaInteractions();
