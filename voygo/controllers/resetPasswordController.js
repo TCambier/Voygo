@@ -2,9 +2,14 @@ import { resetPassword } from './userController.js';
 
 function getAccessTokenFromHash() {
     const hash = window.location.hash || '';
-    if (!hash.startsWith('#')) return null;
-    const params = new URLSearchParams(hash.slice(1));
-    return params.get('access_token');
+    if (hash.startsWith('#')) {
+        const hashParams = new URLSearchParams(hash.slice(1));
+        const tokenFromHash = hashParams.get('access_token');
+        if (tokenFromHash) return tokenFromHash;
+    }
+
+    const queryParams = new URLSearchParams(window.location.search || '');
+    return queryParams.get('access_token');
 }
 
 window.addEventListener('load', () => {

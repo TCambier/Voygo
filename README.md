@@ -188,7 +188,7 @@ Améliorations possibles du projet :
 
 # Backend Node.js (nouveau)
 
-1. Copier `.env.example` vers `.env` et renseigner `SUPABASE_URL`, `SUPABASE_ANON_KEY` et `OPENTRIPMAP_API_KEY`.
+1. Copier `.env.example` vers `.env` et renseigner `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` et `OPENTRIPMAP_API_KEY`.
 2. Installer les dependances : `npm install`
 3. Lancer le serveur : `npm run dev`
 4. Ouvrir l'application : `http://localhost:3000`

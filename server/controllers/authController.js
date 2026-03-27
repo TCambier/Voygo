@@ -1,5 +1,6 @@
-import { supabaseAuth, getSupabaseForUser } from '../services/supabase.js';
+import { supabaseAuth, supabaseAdmin, getSupabaseForUser } from '../services/supabase.js';
 import { setAuthCookies, clearAuthCookies } from '../utils/cookies.js';
+import { config } from '../config.js';
 
 function isMissingTableError(error) {
   if (!error) return false;
@@ -47,6 +48,32 @@ function buildUserPayload(user) {
     email: user.email,
     first_name: user.user_metadata?.first_name || '',
     last_name: user.user_metadata?.last_name || ''
+  };
+}
+
+function isUserAlreadyDeleted(errorMessage = '') {
+  const message = String(errorMessage || '').toLowerCase();
+  return message.includes('user not found') || message.includes('not found');
+}
+
+async function deleteAuthUserViaAdminRest(userId) {
+  const response = await fetch(`${config.supabaseUrl}/auth/v1/admin/users/${userId}`, {
+    method: 'DELETE',
+    headers: {
+      apikey: config.supabaseServiceRoleKey,
+      Authorization: `Bearer ${config.supabaseServiceRoleKey}`
+    }
+  });
+
+  const body = await response.json().catch(() => null);
+  const errorMessage =
+    body?.msg || body?.error_description || body?.error || `HTTP ${response.status}`;
+
+  return {
+    ok: response.ok,
+    errorMessage,
+    status: response.status,
+    body
   };
 }
 
@@ -146,10 +173,56 @@ export async function resetPassword(req, res) {
     return res.status(400).json({ error: 'Token ou mot de passe manquant.' });
   }
 
+  if (String(password).length < 8) {
+    return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 8 caracteres.' });
+  }
+
+  const { data: userData, error: userError } = await supabaseAuth.auth.getUser(accessToken);
+  if (userError || !userData?.user) {
+    return res.status(400).json({ error: 'Lien de reinitialisation invalide ou expire.' });
+  }
+
+  if (supabaseAdmin) {
+    const { error: adminError } = await supabaseAdmin.auth.admin.updateUserById(userData.user.id, {
+      password
+    });
+
+    if (adminError) {
+      return res.status(400).json({ error: adminError.message || 'Mise a jour impossible.' });
+    }
+
+    return res.json({ success: true });
+  }
+
   const client = getSupabaseForUser(accessToken);
   const { error } = await client.auth.updateUser({ password });
-  if (error) {
-    return res.status(400).json({ error: error.message || 'Mise a jour impossible.' });
+  if (!error) {
+    return res.json({ success: true });
+  }
+
+  const fallbackResponse = await fetch(`${config.supabaseUrl}/auth/v1/user`, {
+    method: 'PUT',
+    headers: {
+      apikey: config.supabaseAnonKey,
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ password })
+  });
+
+  const fallbackBody = await fallbackResponse
+    .json()
+    .catch(() => null);
+
+  if (!fallbackResponse.ok) {
+    return res.status(400).json({
+      error:
+        fallbackBody?.msg ||
+        fallbackBody?.error_description ||
+        fallbackBody?.error ||
+        error.message ||
+        'Mise a jour impossible.'
+    });
   }
 
   return res.json({ success: true });
@@ -207,20 +280,62 @@ export async function updatePassword(req, res) {
 
 export async function deleteAccount(req, res) {
   const client = getSupabaseForUser(req.accessToken);
+  const userId = req.user.id;
 
   try {
-    await deleteAllUserData(client, req.user.id);
+    await deleteAllUserData(client, userId);
   } catch (error) {
     return res.status(400).json({
       error: error.message || 'Impossible de supprimer les donnees liees au compte.'
     });
   }
 
-  const { error } = await client.functions.invoke('delete-account');
-  if (error) {
-    return res.status(400).json({
-      error: "Impossible de supprimer le compte auth. Verifiez la fonction serveur 'delete-account'."
-    });
+  if (supabaseAdmin) {
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    if (error) {
+      console.error('[auth/delete] admin.deleteUser failed', {
+        userId,
+        message: error.message,
+        code: error.code || null,
+        status: error.status || null,
+        name: error.name || null
+      });
+
+      if (!isUserAlreadyDeleted(error.message)) {
+        const restResult = await deleteAuthUserViaAdminRest(userId);
+        if (!restResult.ok && !isUserAlreadyDeleted(restResult.errorMessage)) {
+          return res.status(400).json({
+            error:
+              `${error.message || 'Impossible de supprimer le compte auth.'}` +
+              ` (code: ${error.code || 'n/a'}) ; REST fallback: ${restResult.errorMessage}`
+          });
+        }
+      }
+    }
+  } else {
+    const { error } = await client.functions.invoke('delete-account');
+    if (error) {
+      console.error('[auth/delete] edge function fallback failed', {
+        userId,
+        message: error.message,
+        name: error.name || null,
+        context: error.context || null,
+        details: error.details || null
+      });
+      return res.status(400).json({
+        error:
+          "Impossible de supprimer le compte auth. SUPABASE_SERVICE_ROLE_KEY n'est pas active dans le serveur en cours (redemarrage requis) ou la fonction 'delete-account' n'est pas deployeee."
+      });
+    }
+  }
+
+  try {
+    const { error: signOutError } = await client.auth.signOut();
+    if (signOutError) {
+      // We still clear server cookies below to finish local logout.
+    }
+  } catch (err) {
+    // Ignore sign-out failures because account deletion already succeeded.
   }
 
   clearAuthCookies(res);
