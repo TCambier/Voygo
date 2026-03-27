@@ -56,6 +56,16 @@ function isUserAlreadyDeleted(errorMessage = '') {
   return message.includes('user not found') || message.includes('not found');
 }
 
+function isStrongPassword(password = '') {
+  const pwd = String(password);
+  const hasUpperCase = /[A-Z]/.test(pwd);
+  const hasLowerCase = /[a-z]/.test(pwd);
+  const hasNumbers = /\d/.test(pwd);
+  const hasSymbols = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd);
+
+  return hasUpperCase && hasLowerCase && hasNumbers && hasSymbols;
+}
+
 async function deleteAuthUserViaAdminRest(userId) {
   const response = await fetch(`${config.supabaseUrl}/auth/v1/admin/users/${userId}`, {
     method: 'DELETE',
@@ -173,8 +183,10 @@ export async function resetPassword(req, res) {
     return res.status(400).json({ error: 'Token ou mot de passe manquant.' });
   }
 
-  if (String(password).length < 8) {
-    return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 8 caracteres.' });
+  if (!isStrongPassword(password)) {
+    return res.status(400).json({
+      error: 'Le mot de passe doit contenir au minimum une majuscule, une minuscule, un chiffre et un symbole.'
+    });
   }
 
   const { data: userData, error: userError } = await supabaseAuth.auth.getUser(accessToken);
@@ -266,6 +278,12 @@ export async function updatePassword(req, res) {
   const { password } = req.body || {};
   if (!password) {
     return res.status(400).json({ error: 'Mot de passe requis.' });
+  }
+
+  if (!isStrongPassword(password)) {
+    return res.status(400).json({
+      error: 'Le mot de passe doit contenir au minimum une majuscule, une minuscule, un chiffre et un symbole.'
+    });
   }
 
   const client = getSupabaseForUser(req.accessToken);

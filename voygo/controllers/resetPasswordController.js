@@ -1,5 +1,14 @@
 import { resetPassword } from './userController.js';
 
+function isPasswordStrong(password = '') {
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumbers = /\d/.test(password);
+    const hasSymbols = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+
+    return hasUpperCase && hasLowerCase && hasNumbers && hasSymbols;
+}
+
 function getAccessTokenFromHash() {
     const hash = window.location.hash || '';
     if (hash.startsWith('#')) {
@@ -43,8 +52,8 @@ window.addEventListener('load', () => {
         const password = newPassword.value;
         const confirmation = confirmPassword.value;
 
-        if (password.length < 8) {
-            setError('Le mot de passe doit contenir au moins 8 caractÃ¨res.');
+        if (!isPasswordStrong(password)) {
+            setError('Le mot de passe doit contenir au minimum une majuscule, une minuscule, un chiffre et un symbole');
             return;
         }
         if (password !== confirmation) {
