@@ -1,6 +1,45 @@
 import { supabaseAuth, getSupabaseForUser } from '../services/supabase.js';
 import { setAuthCookies, clearAuthCookies } from '../utils/cookies.js';
 
+function isMissingTableError(error) {
+  if (!error) return false;
+  const code = String(error.code || '').toUpperCase();
+  if (code === '42P01' || code === 'PGRST106') return true;
+  const message = `${error.message || ''} ${error.details || ''}`.toLowerCase();
+  return (
+    message.includes('does not exist') ||
+    (message.includes('relation') && message.includes('not found')) ||
+    message.includes('schema cache') ||
+    (message.includes('not found') && message.includes('schema'))
+  );
+}
+
+async function deleteAllUserData(client, userId) {
+  const tables = [
+    'transports',
+    'activities',
+    'accommodations',
+    'budgets',
+    'notes',
+    'calendar_entries',
+    'markers',
+    'logements',
+    'activites',
+    'trips'
+  ];
+
+  for (const table of tables) {
+    const { error } = await client
+      .from(table)
+      .delete()
+      .eq('user_id', userId);
+
+    if (error && !isMissingTableError(error)) {
+      throw new Error(error.message || `Suppression impossible (${table}).`);
+    }
+  }
+}
+
 function buildUserPayload(user) {
   if (!user) return null;
   return {
@@ -168,10 +207,19 @@ export async function updatePassword(req, res) {
 
 export async function deleteAccount(req, res) {
   const client = getSupabaseForUser(req.accessToken);
+
+  try {
+    await deleteAllUserData(client, req.user.id);
+  } catch (error) {
+    return res.status(400).json({
+      error: error.message || 'Impossible de supprimer les donnees liees au compte.'
+    });
+  }
+
   const { error } = await client.functions.invoke('delete-account');
   if (error) {
     return res.status(400).json({
-      error: "Impossible de supprimer le compte. Configurez la fonction 'delete-account' cote serveur."
+      error: "Impossible de supprimer le compte auth. Verifiez la fonction serveur 'delete-account'."
     });
   }
 

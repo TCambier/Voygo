@@ -463,6 +463,13 @@
       box-shadow: 0 12px 28px rgba(255,107,107,.3);
     }
 
+    body.dark-theme .origin-card,
+    body.dark-theme .tech-card,
+    body.dark-theme .cta-box {
+      background: linear-gradient(140deg, var(--bg-secondary), var(--bg-tertiary));
+      border-color: var(--border-color);
+    }
+
     /* ── RESPONSIVE ─────────────────────────────────────────── */
     @media (max-width: 1024px) {
       .about-origin   { grid-template-columns: 1fr; padding: 60px 30px; gap: 40px; }

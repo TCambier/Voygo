@@ -118,7 +118,7 @@ deleteButton?.addEventListener('click', async () => {
   } catch (error) {
     setFeedback(
       deleteFeedback,
-      error.message || "Impossible de supprimer le compte. Configurez la fonction 'delete-account' cote serveur.",
+      error.message || 'Impossible de supprimer le compte pour le moment.',
       'error'
     );
   }
