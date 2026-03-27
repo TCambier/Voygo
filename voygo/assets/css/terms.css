@@ -132,6 +132,13 @@
     }
     .tos-highlight strong { color: var(--text-primary); }
 
+    body.dark-theme .tos-notice,
+    body.dark-theme .tos-list li,
+    body.dark-theme .tos-highlight {
+      background: linear-gradient(140deg, var(--bg-secondary), var(--bg-tertiary));
+      border-color: var(--border-color);
+    }
+
     @media (max-width: 1024px) {
       .tos-page { padding: 30px; }
       .voyages-hero { grid-template-columns: 1fr; }

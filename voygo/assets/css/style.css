@@ -32,6 +32,65 @@ body.dark-theme {
     --header-border: #333333;
 }
 
+body.dark-theme .planning-hero,
+body.dark-theme .planning-nav-box,
+body.dark-theme .panel,
+body.dark-theme .voyage-card,
+body.dark-theme .voyages-callout,
+body.dark-theme .settings-hero,
+body.dark-theme .settings-card,
+body.dark-theme .modal {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.35);
+}
+
+body.dark-theme .planning-nav a,
+body.dark-theme .tag,
+body.dark-theme .activity-filter-chip,
+body.dark-theme .voyages-search,
+body.dark-theme .form-input,
+body.dark-theme .filter-group select,
+body.dark-theme .modal-close,
+body.dark-theme .btn-ghost,
+body.dark-theme .resume-kpi-card,
+body.dark-theme .resume-simple-list li {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+body.dark-theme .meta-item,
+body.dark-theme .stat-card,
+body.dark-theme .btn-secondary,
+body.dark-theme .voyages-empty,
+body.dark-theme .voyages-loading,
+body.dark-theme .modal-header,
+body.dark-theme .agenda-day-card,
+body.dark-theme .agenda-item {
+    background: linear-gradient(140deg, var(--bg-secondary), var(--bg-tertiary));
+    border-color: var(--border-color);
+}
+
+body.dark-theme .activity-schedule,
+body.dark-theme .agenda-badge,
+body.dark-theme .agenda-item.is-transport .agenda-badge {
+    background: color-mix(in srgb, var(--accent) 20%, var(--bg-secondary));
+    color: var(--text-primary);
+}
+
+body.dark-theme .status.upcoming {
+    color: #5eead4;
+}
+
+body.dark-theme .status.done {
+    color: #fbbf24;
+}
+
+body.dark-theme .status.in-progress {
+    color: #fb7185;
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: var(--bg-primary);
@@ -1339,6 +1398,113 @@ body.dark-theme .hero-plane img {
     justify-content: flex-end;
 }
 
+.resume-page {
+    gap: 20px;
+}
+
+.resume-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.resume-panel {
+    min-height: 300px;
+}
+
+.resume-map-panel {
+    min-height: 380px;
+}
+
+.resume-panel h2 {
+    font-size: 22px;
+}
+
+.resume-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.resume-kpi-card {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 12px;
+    border: 1px solid color-mix(in srgb, var(--accent) 14%, var(--border-color));
+    background: color-mix(in srgb, var(--accent) 6%, var(--bg-secondary));
+}
+
+.resume-kpi-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    display: inline-grid;
+    place-items: center;
+    font-size: 18px;
+    color: var(--accent-strong);
+    background: color-mix(in srgb, var(--accent) 14%, #ffffff);
+}
+
+.resume-kpi-label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.resume-kpi-value {
+    display: block;
+    margin-top: 2px;
+    font-size: 15px;
+}
+
+.resume-list {
+    margin-top: 6px;
+}
+
+.resume-simple-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.resume-simple-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    padding: 9px 12px;
+    border-radius: 12px;
+    border: 1px solid color-mix(in srgb, var(--accent) 14%, var(--border-color));
+    background: var(--bg-primary);
+    font-size: 13px;
+}
+
+.resume-simple-list li strong {
+    text-align: right;
+}
+
+.resume-agenda-days {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.resume-agenda-days .agenda-item {
+    grid-template-columns: 66px minmax(0, 1fr);
+}
+
+.resume-agenda-days .agenda-badge {
+    gap: 4px;
+}
+
+.resume-map-panel .carte-map {
+    height: 320px;
+}
+
 .see-more {
     margin-top: 10px;
     margin-left: auto;
@@ -1944,6 +2110,14 @@ body.dark-theme .hero-plane img {
         padding: 30px;
     }
 
+    .resume-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .resume-agenda-days {
+        grid-template-columns: 1fr;
+    }
+
     .planning-edit-grid {
         grid-template-columns: 1fr;
     }
@@ -1982,6 +2156,14 @@ body.dark-theme .hero-plane img {
 
     .planning-hero {
         padding: 22px;
+    }
+
+    .resume-kpi-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .resume-map-panel .carte-map {
+        height: 280px;
     }
 
     .agenda-item {

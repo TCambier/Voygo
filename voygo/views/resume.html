@@ -2,15 +2,97 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Resume</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voygo - Resume</title>
     <link rel="stylesheet" href="../assets/css/style.css">
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""
+    >
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 </head>
 <body>
     <div id="header-container"></div>
     <script type="module" src="../controllers/headerController.js"></script>
 
-    <!-- resume page content goes here -->
+    <main class="planning-page resume-page">
+        <section class="planning-hero">
+            <div class="planning-hero-text">
+                <span class="planning-eyebrow">Planification</span>
+                <h1>Resume de votre voyage</h1>
+                <p>Retrouvez en un seul endroit votre budget, vos infos de planning, votre agenda et la vue carte.</p>
+            </div>
+            <div class="planning-hero-meta">
+                <div class="meta-item">
+                    <span class="meta-label">Voyage</span>
+                    <span id="resume-trip-name">-</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Dates</span>
+                    <span id="resume-dates">-</span>
+                </div>
+            </div>
+        </section>
+
+        <div class="planning-nav-box">
+            <nav class="planning-nav" aria-label="Navigation du voyage">
+                <a href="planning.html">Planning</a>
+                <a href="resume.html" class="is-active" aria-current="page">Resume</a>
+                <a href="agenda.html">Agenda</a>
+                <a href="carte.html">Carte</a>
+                <a href="budget.html">Budget</a>
+            </nav>
+        </div>
+
+        <section class="resume-grid">
+            <article class="panel resume-panel" id="resume-budget-panel">
+                <div class="panel-title-row">
+                    <h2>Budget</h2>
+                </div>
+                <div class="resume-kpi-grid" id="resume-budget-kpis"></div>
+                <div class="resume-list" id="resume-budget-list"></div>
+            </article>
+
+            <article class="panel resume-panel" id="resume-planning-panel">
+                <div class="panel-title-row">
+                    <h2>Planning</h2>
+                </div>
+                <div class="resume-kpi-grid" id="resume-planning-kpis"></div>
+                <div class="resume-list" id="resume-planning-list"></div>
+            </article>
+
+            <article class="panel resume-panel" id="resume-agenda-panel">
+                <div class="panel-title-row">
+                    <h2>Agenda</h2>
+                </div>
+                <div class="resume-agenda-days" id="resume-agenda-days"></div>
+                <div class="activity-empty muted" id="resume-agenda-empty">Aucun element planifie pour le moment.</div>
+            </article>
+
+            <article class="panel resume-panel resume-map-panel" id="resume-carte-panel">
+                <div class="panel-title-row">
+                    <h2>Carte</h2>
+                </div>
+                <div class="carte-stats" id="resume-carte-stats"></div>
+                <div class="carte-map" id="resume-map" role="img" aria-label="Carte du resume"></div>
+                <div class="activity-empty muted" id="resume-map-empty">Aucune activite localisable pour ce voyage.</div>
+            </article>
+        </section>
+
+        <span class="settings-feedback" id="resume-note"></span>
+    </main>
+
+    <script
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""
+    ></script>
+    <script type="module">
+        import { requireAuth } from '../controllers/authGuardController.js';
+        await requireAuth();
+    </script>
 
     <script type="module" src="../controllers/resumePageController.js"></script>
 </body>

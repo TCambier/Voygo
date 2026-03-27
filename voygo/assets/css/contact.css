@@ -158,6 +158,16 @@
     margin-top: 6px;
 }
 
+body.dark-theme .contact-faq li {
+    background: linear-gradient(140deg, var(--bg-secondary), var(--bg-tertiary));
+    border-color: var(--border-color);
+}
+
+body.dark-theme .contact-field .form-input {
+    background: var(--bg-tertiary);
+    border-color: var(--border-color);
+}
+
 @media (max-width: 1024px) {
     .contact-page {
         padding: 30px;

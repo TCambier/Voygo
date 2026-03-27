@@ -205,6 +205,19 @@
       color: #b45309;
     }
 
+    body.dark-theme .pp-notice,
+    body.dark-theme .pp-list li,
+    body.dark-theme .pp-highlight,
+    body.dark-theme .right-card,
+    body.dark-theme .pp-table th {
+      background: linear-gradient(140deg, var(--bg-secondary), var(--bg-tertiary));
+      border-color: var(--border-color);
+    }
+
+    body.dark-theme .pp-table tr:hover td {
+      background: color-mix(in srgb, var(--accent) 10%, var(--bg-secondary));
+    }
+
     @media (max-width: 1024px) {
       .pp-page { padding: 30px; }
       .voyages-hero { grid-template-columns: 1fr; }
