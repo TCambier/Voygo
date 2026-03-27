@@ -40,7 +40,7 @@ window.addEventListener('load', () => {
     }
 
     if (!accessToken) {
-        setError('Lien invalide ou expirÃ©. Demandez un nouveau lien.');
+        setError('Lien invalide ou expiré. Demandez un nouveau lien.');
         submitBtn.disabled = true;
         return;
     }
@@ -62,17 +62,17 @@ window.addEventListener('load', () => {
         }
 
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Mise Ã  jour...';
+        submitBtn.textContent = 'Mise à jour...';
 
         const result = await resetPassword(accessToken, password);
         if (result.success) {
-            submitBtn.textContent = 'Mot de passe mis Ã  jour';
+            submitBtn.textContent = 'Mot de passe mis à jour';
             window.location.replace('login.html?reset=success');
             return;
         }
 
-        setError(result.error || 'Impossible de mettre Ã  jour le mot de passe.');
+        setError(result.error || 'Impossible de mettre à jour le mot de passe.');
         submitBtn.disabled = false;
-        submitBtn.textContent = 'RÃ©initialiser';
+        submitBtn.textContent = 'Réinitialiser';
     });
 });
