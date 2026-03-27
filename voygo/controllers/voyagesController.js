@@ -14,8 +14,19 @@ const statBudgetNote = document.getElementById('stat-budget-note');
 const createTripButton = document.getElementById('create-trip-btn');
 const createTripEmptyButton = document.getElementById('create-trip-empty-btn');
 const launchPlanningButton = document.getElementById('launch-planning-btn');
+const shareModalBackdrop = document.getElementById('share-trip-modal-backdrop');
+const shareTripForm = document.getElementById('share-trip-form');
+const shareTripTitle = document.getElementById('share-trip-title');
+const shareTripEmailInput = document.getElementById('share-trip-email');
+const shareTripPermissionSelect = document.getElementById('share-trip-permission');
+const shareTripFeedback = document.getElementById('share-trip-feedback');
+const shareTripSubmitButton = document.getElementById('share-trip-submit');
+const shareTripExistingEmpty = document.getElementById('share-trip-existing-empty');
+const shareTripSharesList = document.getElementById('share-trip-shares-list');
 
 let allTrips = [];
+let selectedTripToShare = null;
+let currentTripShares = [];
 
 function formatDate(dateValue) {
     if (!dateValue) return '';
@@ -105,13 +116,22 @@ function buildTripCard(trip, index) {
     if (budget) metaItems.push(`<span><i class='bx bx-wallet'></i> ${formatCurrency(budget)}</span>`);
     metaItems.push(`<span><i class='bx bx-map'></i> ${trip.steps_count ?? trip.steps ?? '0'} étape${(trip.steps_count ?? trip.steps ?? 0) > 1 ? 's' : ''}</span>`);
 
+    const accessMode = trip.access_mode || 'owner';
+    const isOwner = accessMode === 'owner';
+    if (!isOwner) {
+        const permissionLabel = trip.can_edit ? 'Partage : lecture + modification' : 'Partage : lecture seule';
+        metaItems.push(`<span><i class='bx bx-link-alt'></i> ${permissionLabel}</span>`);
+    }
+
     const query = new URLSearchParams();
     if (trip.id) query.set('tripId', trip.id);
     if (trip.destination) query.set('destination', trip.destination);
     if (trip.start_date) query.set('startDate', trip.start_date);
     if (trip.end_date) query.set('endDate', trip.end_date);
+    query.set('tripAccess', accessMode);
 
-    const canDelete = Boolean(trip.id);
+    const canDelete = Boolean(trip.id) && isOwner;
+    const canShare = Boolean(trip.id) && isOwner;
 
     card.innerHTML = `
         <div class="voyage-card-header">
@@ -133,6 +153,7 @@ function buildTripCard(trip, index) {
         </div>
         <div class="voyage-actions">
             <button class="btn-secondary" data-open="${query.toString()}">Ouvrir</button>
+            <button class="btn-ghost" data-share="${trip.id || ''}" ${canShare ? '' : 'disabled'}>Partager</button>
             <button class="btn-danger" data-delete="${trip.id || ''}" ${canDelete ? '' : 'disabled'}>Supprimer</button>
         </div>
     `;
@@ -234,6 +255,157 @@ async function deleteTrip(tripId) {
     await api.delete(`/api/trips/${encodeURIComponent(tripId)}`);
 }
 
+function setShareFeedback(message, type = 'info') {
+    if (!shareTripFeedback) return;
+    shareTripFeedback.textContent = message || '';
+    shareTripFeedback.dataset.type = type;
+    shareTripFeedback.hidden = !message;
+}
+
+function renderTripShares() {
+    if (!shareTripExistingEmpty || !shareTripSharesList) return;
+
+    if (!currentTripShares.length) {
+        shareTripExistingEmpty.hidden = false;
+        shareTripSharesList.hidden = true;
+        shareTripSharesList.innerHTML = '';
+        return;
+    }
+
+    shareTripExistingEmpty.hidden = true;
+    shareTripSharesList.hidden = false;
+    shareTripSharesList.innerHTML = currentTripShares.map((share) => `
+        <div class="share-trip-row" data-user-id="${share.shared_with_user_id}">
+            <div class="share-trip-row-main">
+                <strong>${share.shared_with_email || 'Compte partage'}</strong>
+            </div>
+            <div class="share-trip-row-actions">
+                <select class="form-input share-trip-row-permission" data-share-permission-user="${share.shared_with_user_id}">
+                    <option value="read" ${share.permission === 'read' ? 'selected' : ''}>Lecture seule</option>
+                    <option value="edit" ${share.permission === 'edit' ? 'selected' : ''}>Lecture + modification</option>
+                </select>
+                <button type="button" class="btn-danger share-trip-row-remove" data-share-remove-user="${share.shared_with_user_id}">Retirer</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function loadTripShares() {
+    if (!selectedTripToShare?.id) return;
+
+    try {
+        const result = await api.get(`/api/trips/${encodeURIComponent(selectedTripToShare.id)}/share`);
+        currentTripShares = Array.isArray(result?.data) ? result.data : [];
+    } catch (error) {
+        currentTripShares = [];
+        setShareFeedback(error?.message || 'Impossible de charger les partages existants.', 'error');
+    }
+
+    renderTripShares();
+}
+
+async function updateSharePermission(sharedWithUserId, permission) {
+    if (!selectedTripToShare?.id || !sharedWithUserId) return;
+    await api.patch(`/api/trips/${encodeURIComponent(selectedTripToShare.id)}/share/${encodeURIComponent(sharedWithUserId)}`, {
+        permission
+    });
+}
+
+async function revokeShare(sharedWithUserId) {
+    if (!selectedTripToShare?.id || !sharedWithUserId) return;
+    await api.delete(`/api/trips/${encodeURIComponent(selectedTripToShare.id)}/share/${encodeURIComponent(sharedWithUserId)}`);
+}
+
+function openShareModal(trip) {
+    if (!shareModalBackdrop || !shareTripForm || !trip) return;
+    selectedTripToShare = trip;
+    currentTripShares = [];
+
+    if (shareTripTitle) {
+        shareTripTitle.textContent = resolveTitle(trip);
+    }
+    if (shareTripEmailInput) {
+        shareTripEmailInput.value = '';
+    }
+    if (shareTripPermissionSelect) {
+        shareTripPermissionSelect.value = 'read';
+    }
+    setShareFeedback('', 'info');
+
+    shareModalBackdrop.hidden = false;
+    shareModalBackdrop.setAttribute('aria-hidden', 'false');
+    shareTripEmailInput?.focus();
+    loadTripShares();
+}
+
+function closeShareModal() {
+    if (!shareModalBackdrop) return;
+    shareModalBackdrop.hidden = true;
+    shareModalBackdrop.setAttribute('aria-hidden', 'true');
+    selectedTripToShare = null;
+    currentTripShares = [];
+    renderTripShares();
+    setShareFeedback('', 'info');
+}
+
+async function verifyEmailExists(email) {
+    const result = await api.get(`/api/auth/email-exists?email=${encodeURIComponent(email)}`);
+    return Boolean(result?.exists);
+}
+
+async function submitTripShare(event) {
+    event.preventDefault();
+    if (!selectedTripToShare?.id) return;
+
+    const email = shareTripEmailInput?.value.trim().toLowerCase() || '';
+    const permission = shareTripPermissionSelect?.value === 'edit' ? 'edit' : 'read';
+
+    if (!email) {
+        setShareFeedback('Veuillez saisir une adresse email.', 'error');
+        return;
+    }
+
+    if (!email.includes('@')) {
+        setShareFeedback('Adresse email invalide.', 'error');
+        return;
+    }
+
+    if (shareTripSubmitButton) {
+        shareTripSubmitButton.disabled = true;
+        shareTripSubmitButton.textContent = 'Verification...';
+    }
+
+    try {
+        const exists = await verifyEmailExists(email);
+        if (!exists) {
+            setShareFeedback("Ce compte n'existe pas.", 'error');
+            return;
+        }
+
+        if (shareTripSubmitButton) {
+            shareTripSubmitButton.textContent = 'Partage...';
+        }
+
+        await api.post(`/api/trips/${encodeURIComponent(selectedTripToShare.id)}/share`, {
+            email,
+            permission
+        });
+
+        setShareFeedback('Voyage partage avec succes.', 'success');
+        if (shareTripEmailInput) {
+            shareTripEmailInput.value = '';
+        }
+        await loadTripShares();
+    } catch (error) {
+        setShareFeedback(error?.message || 'Partage impossible pour le moment.', 'error');
+    } finally {
+        if (shareTripSubmitButton) {
+            shareTripSubmitButton.disabled = false;
+            shareTripSubmitButton.textContent = 'Partager';
+        }
+    }
+}
+
 async function initVoyagesPage() {
     if (!grid || !emptyState) return;
     grid.innerHTML = '<div class="voyages-loading">Chargement des voyages...</div>';
@@ -291,7 +463,76 @@ document.addEventListener('click', async (event) => {
         }
         return;
     }
+
+    const shareButton = target.closest('button[data-share]');
+    if (shareButton) {
+        const tripId = shareButton.getAttribute('data-share');
+        if (!tripId) return;
+
+        const trip = allTrips.find((item) => String(item.id) === String(tripId));
+        if (!trip) return;
+        openShareModal(trip);
+        return;
+    }
+
+    if (target.closest('[data-share-close]')) {
+        closeShareModal();
+    }
+
+    const removeShareButton = target.closest('button[data-share-remove-user]');
+    if (removeShareButton) {
+        const sharedWithUserId = removeShareButton.getAttribute('data-share-remove-user');
+        if (!sharedWithUserId) return;
+
+        const confirmed = window.confirm('Retirer l\'acces de ce compte a ce voyage ?');
+        if (!confirmed) return;
+
+        removeShareButton.disabled = true;
+        try {
+            await revokeShare(sharedWithUserId);
+            setShareFeedback('Acces retire avec succes.', 'success');
+            await loadTripShares();
+        } catch (error) {
+            setShareFeedback(error?.message || 'Suppression du partage impossible.', 'error');
+            removeShareButton.disabled = false;
+        }
+        return;
+    }
 });
+
+shareTripSharesList?.addEventListener('change', async (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLSelectElement)) return;
+    if (!target.matches('[data-share-permission-user]')) return;
+
+    const sharedWithUserId = target.getAttribute('data-share-permission-user');
+    if (!sharedWithUserId) return;
+
+    const permission = target.value === 'edit' ? 'edit' : 'read';
+    target.disabled = true;
+    try {
+        await updateSharePermission(sharedWithUserId, permission);
+        setShareFeedback('Droit de partage mis a jour.', 'success');
+        await loadTripShares();
+    } catch (error) {
+        setShareFeedback(error?.message || 'Mise a jour du partage impossible.', 'error');
+        target.disabled = false;
+    }
+});
+
+shareModalBackdrop?.addEventListener('click', (event) => {
+    if (event.target === shareModalBackdrop) {
+        closeShareModal();
+    }
+});
+
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !shareModalBackdrop?.hidden) {
+        closeShareModal();
+    }
+});
+
+shareTripForm?.addEventListener('submit', submitTripShare);
 
 searchInput?.addEventListener('input', applyFilters);
 statusFilter?.addEventListener('change', applyFilters);

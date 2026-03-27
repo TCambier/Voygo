@@ -6,6 +6,12 @@ export async function listAccommodations() {
     return result?.data || [];
 }
 
+export async function listAccommodationsByTrip(tripId) {
+    if (!tripId) return [];
+    const result = await api.get(`/api/accommodations?tripId=${encodeURIComponent(tripId)}`);
+    return result?.data || [];
+}
+
 export async function createAccommodation(item) {
     const result = await api.post('/api/accommodations', item);
     return result?.data;

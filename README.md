@@ -199,4 +199,10 @@ Executer le script SQL suivant dans Supabase avant d'utiliser les suggestions d'
 
 - `Docs/sql/activities.sql`
 
+## SQL requis pour le partage de voyages
+
+Executer le script SQL suivant dans Supabase pour activer le partage de voyage par email :
+
+- `Docs/sql/trip_shares.sql`
+
 Les suggestions d'activites et leurs descriptions utilisent OpenTripMap en langue francaise (`/0.1/fr/...`).

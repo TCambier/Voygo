@@ -1,4 +1,5 @@
 import { getSupabaseForUser } from '../services/supabase.js';
+import { getAccessDbClient, getTripAccess } from '../utils/tripAccess.js';
 
 function normalizeDate(value) {
   const raw = String(value || '').trim();
@@ -89,12 +90,23 @@ function findConflictingTransport(transports, transportSchedule, excludedTranspo
 export async function listTransports(req, res) {
   const { tripId } = req.params;
   const client = getSupabaseForUser(req.accessToken);
+  const db = getAccessDbClient(client);
 
-  const { data, error } = await client
+  let access;
+  try {
+    access = await getTripAccess(db, tripId, req.user.id);
+  } catch (error) {
+    return res.status(400).json({ error: error.message || 'Verification des droits impossible.' });
+  }
+
+  if (!access) {
+    return res.status(404).json({ error: 'Voyage introuvable.' });
+  }
+
+  const { data, error } = await db
     .from('transports')
     .select('id,origin,destination,travel_date,travel_time,mode,price,duration_minutes,created_at,trip_id')
     .eq('trip_id', tripId)
-    .eq('user_id', req.user.id)
     .order('travel_date', { ascending: true })
     .order('travel_time', { ascending: true });
 
@@ -109,12 +121,28 @@ export async function createTransport(req, res) {
   const { tripId } = req.params;
   const payload = req.body || {};
   const client = getSupabaseForUser(req.accessToken);
+  const db = getAccessDbClient(client);
+
+  let access;
+  try {
+    access = await getTripAccess(db, tripId, req.user.id);
+  } catch (error) {
+    return res.status(400).json({ error: error.message || 'Verification des droits impossible.' });
+  }
+
+  if (!access) {
+    return res.status(404).json({ error: 'Voyage introuvable.' });
+  }
+
+  if (!access.canEdit) {
+    return res.status(403).json({ error: 'Ce voyage est en lecture seule.' });
+  }
 
   const insertPayload = {
     ...payload,
     travel_time: normalizeTransportTime(payload.travel_time),
     trip_id: tripId,
-    user_id: req.user.id
+    user_id: access.trip.user_id
   };
 
   const nextSchedule = extractTransportSchedule(insertPayload);
@@ -123,16 +151,15 @@ export async function createTransport(req, res) {
   }
 
   const [activitiesResult, transportsResult] = await Promise.all([
-    client
+    db
       .from('activities')
       .select('id,activity_date,description,name')
       .eq('trip_id', tripId)
-      .eq('user_id', req.user.id),
-    client
+      ,
+    db
       .from('transports')
       .select('id,origin,destination,travel_date,travel_time,duration_minutes')
       .eq('trip_id', tripId)
-      .eq('user_id', req.user.id)
   ]);
 
   if (activitiesResult.error || transportsResult.error) {
@@ -149,7 +176,7 @@ export async function createTransport(req, res) {
     return res.status(409).json({ error: 'Un autre transport est deja prevu sur ce creneau.' });
   }
 
-  const { data, error } = await client
+  const { data, error } = await db
     .from('transports')
     .insert(insertPayload)
     .select('id,origin,destination,travel_date,travel_time,mode,price,duration_minutes,created_at,trip_id')
@@ -166,16 +193,31 @@ export async function updateTransport(req, res) {
   const { id } = req.params;
   const payload = req.body || {};
   const client = getSupabaseForUser(req.accessToken);
+  const db = getAccessDbClient(client);
 
-  const { data: currentTransport, error: currentError } = await client
+  const { data: currentTransport, error: currentError } = await db
     .from('transports')
     .select('id,trip_id,origin,destination,travel_date,travel_time,mode,price,duration_minutes')
     .eq('id', id)
-    .eq('user_id', req.user.id)
     .single();
 
   if (currentError || !currentTransport) {
     return res.status(404).json({ error: 'Transport introuvable.' });
+  }
+
+  let access;
+  try {
+    access = await getTripAccess(db, currentTransport.trip_id, req.user.id);
+  } catch (error) {
+    return res.status(400).json({ error: error.message || 'Verification des droits impossible.' });
+  }
+
+  if (!access) {
+    return res.status(404).json({ error: 'Voyage introuvable.' });
+  }
+
+  if (!access.canEdit) {
+    return res.status(403).json({ error: 'Ce voyage est en lecture seule.' });
   }
 
   const nextTransport = { ...currentTransport, ...payload };
@@ -190,16 +232,14 @@ export async function updateTransport(req, res) {
 
   if (nextSchedule) {
     const [activitiesResult, transportsResult] = await Promise.all([
-      client
+      db
         .from('activities')
         .select('id,activity_date,description,name')
-        .eq('trip_id', currentTransport.trip_id)
-        .eq('user_id', req.user.id),
-      client
+        .eq('trip_id', currentTransport.trip_id),
+      db
         .from('transports')
         .select('id,origin,destination,travel_date,travel_time,duration_minutes')
         .eq('trip_id', currentTransport.trip_id)
-        .eq('user_id', req.user.id)
     ]);
 
     if (activitiesResult.error || transportsResult.error) {
@@ -217,11 +257,10 @@ export async function updateTransport(req, res) {
     }
   }
 
-  const { data, error } = await client
+  const { data, error } = await db
     .from('transports')
     .update(payload)
     .eq('id', id)
-    .eq('user_id', req.user.id)
     .select('id,origin,destination,travel_date,travel_time,mode,price,duration_minutes,created_at,trip_id')
     .single();
 
@@ -235,12 +274,37 @@ export async function updateTransport(req, res) {
 export async function deleteTransport(req, res) {
   const { id } = req.params;
   const client = getSupabaseForUser(req.accessToken);
+  const db = getAccessDbClient(client);
 
-  const { error } = await client
+  const { data: existing, error: existingError } = await db
+    .from('transports')
+    .select('id,trip_id')
+    .eq('id', id)
+    .single();
+
+  if (existingError || !existing) {
+    return res.status(404).json({ error: 'Transport introuvable.' });
+  }
+
+  let access;
+  try {
+    access = await getTripAccess(db, existing.trip_id, req.user.id);
+  } catch (error) {
+    return res.status(400).json({ error: error.message || 'Verification des droits impossible.' });
+  }
+
+  if (!access) {
+    return res.status(404).json({ error: 'Voyage introuvable.' });
+  }
+
+  if (!access.canEdit) {
+    return res.status(403).json({ error: 'Ce voyage est en lecture seule.' });
+  }
+
+  const { error } = await db
     .from('transports')
     .delete()
-    .eq('id', id)
-    .eq('user_id', req.user.id);
+    .eq('id', id);
 
   if (error) {
     return res.status(400).json({ error: error.message || 'Suppression impossible.' });

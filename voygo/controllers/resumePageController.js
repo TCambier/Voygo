@@ -1,5 +1,5 @@
 import { api } from '../assets/js/api.js';
-import { listAccommodations } from './accommodationController.js';
+import { listAccommodationsByTrip } from './accommodationController.js';
 
 const DAY_COLORS = ['#ff6b6b', '#ff3d71', '#2ec4b6', '#ffd166', '#6c63ff', '#ff8fab'];
 
@@ -264,13 +264,37 @@ function updateNavigationLinks() {
   if (!nav) return;
 
   const params = new URLSearchParams();
+  const currentParams = new URLSearchParams(window.location.search);
   if (tripState.id) params.set('tripId', String(tripState.id));
   if (tripState.destination) params.set('destination', tripState.destination);
   if (tripState.startDate) params.set('startDate', tripState.startDate);
   if (tripState.endDate) params.set('endDate', tripState.endDate);
+  const tripAccess = currentParams.get('tripAccess');
+  if (tripAccess) params.set('tripAccess', tripAccess);
 
   const query = params.toString();
+  const planningHref = query ? `planning.html?${query}` : 'planning.html';
+
+  let planningLink = nav.querySelector('a[data-nav="planning"]') || nav.querySelector('a[href^="planning.html"]');
+  if (!planningLink) {
+    planningLink = document.createElement('a');
+    planningLink.setAttribute('data-nav', 'planning');
+    nav.prepend(planningLink);
+  }
+
+  planningLink.textContent = 'Planing';
+  planningLink.setAttribute('href', planningHref);
+  if (planningLink.classList.contains('is-active')) {
+    planningLink.classList.remove('is-active');
+  }
+  planningLink.removeAttribute('aria-current');
+
+  if (nav.firstElementChild !== planningLink) {
+    nav.prepend(planningLink);
+  }
+
   nav.querySelectorAll('a[href]').forEach((link) => {
+    if (link === planningLink) return;
     const href = link.getAttribute('href') || '';
     const basePath = href.split('?')[0];
     if (!/\.html$/i.test(basePath)) return;
@@ -313,8 +337,7 @@ async function loadAccommodations() {
   }
 
   try {
-    const all = await listAccommodations();
-    tripState.accommodations = (all || []).filter((item) => String(item.trip_id) === String(tripState.id));
+    tripState.accommodations = await listAccommodationsByTrip(tripState.id);
   } catch {
     tripState.accommodations = [];
   }

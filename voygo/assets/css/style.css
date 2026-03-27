@@ -100,6 +100,24 @@ body {
     transition: background 0.3s ease, color 0.3s ease;
 }
 
+/* Read-only trip mode: hide all edit controls defensively at UI level */
+body.is-read-only-trip .planning-page #trip-save,
+body.is-read-only-trip .planning-page [data-open-accommodation],
+body.is-read-only-trip .planning-page [data-open-transport],
+body.is-read-only-trip .planning-page [data-add-accommodation],
+body.is-read-only-trip .planning-page [data-add-suggestion],
+body.is-read-only-trip .planning-page [data-edit],
+body.is-read-only-trip .planning-page [data-delete],
+body.is-read-only-trip .planning-page [data-delete-activity],
+body.is-read-only-trip .agenda-page #agenda-edit-toggle,
+body.is-read-only-trip .agenda-page .agenda-separator,
+body.is-read-only-trip .agenda-page [data-agenda-edit],
+body.is-read-only-trip .agenda-page [data-agenda-delete],
+body.is-read-only-trip .activity-explorer-page #explorer-add-custom,
+body.is-read-only-trip .activity-explorer-page [data-add-suggestion] {
+    display: none !important;
+}
+
 /* Header / Navbar */
 #header-container {
     position: fixed;
@@ -2266,6 +2284,82 @@ body.dark-theme .hero-plane img {
     justify-content: flex-end;
     gap: 10px;
     margin-top: 6px;
+}
+
+.share-trip-subtitle {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.share-trip-feedback {
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.share-trip-feedback[data-type="error"] {
+    background: color-mix(in srgb, #dc2626 14%, var(--bg-secondary));
+    color: #b91c1c;
+    border: 1px solid color-mix(in srgb, #dc2626 32%, transparent);
+}
+
+.share-trip-feedback[data-type="success"] {
+    background: color-mix(in srgb, #059669 14%, var(--bg-secondary));
+    color: #047857;
+    border: 1px solid color-mix(in srgb, #059669 30%, transparent);
+}
+
+.share-trip-existing {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.share-trip-existing h3 {
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.share-trip-existing-empty {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.share-trip-shares-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.share-trip-row {
+    border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border-color));
+    border-radius: 12px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: color-mix(in srgb, var(--bg-secondary) 88%, var(--bg-tertiary));
+}
+
+.share-trip-row-main {
+    font-size: 13px;
+}
+
+.share-trip-row-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.share-trip-row-permission {
+    flex: 1;
+}
+
+.share-trip-row-remove {
+    padding: 8px 12px;
 }
 
 .settings-page {

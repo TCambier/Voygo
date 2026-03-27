@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Voygo - Planification</title>
-    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="../assets/css/style.css?v=20260327d">
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 </head>
 <body>
@@ -96,7 +96,7 @@
                 <article class="panel content-panel accommodation-panel">
                     <div class="panel-title-row">
                         <h3>Logement</h3>
-                        <button type="button" class="btn-secondary" data-open-accommodation>
+                        <button type="button" class="btn-secondary" data-open-accommodation hidden>
                             <i class='bx bx-plus'></i>
                             Ajouter
                         </button>
@@ -110,7 +110,7 @@
             <article class="panel content-panel transport-panel">
                 <div class="panel-title-row">
                     <h3>Transports</h3>
-                    <button type="button" class="btn-secondary" data-open-transport>
+                    <button type="button" class="btn-secondary" data-open-transport hidden>
                         <i class='bx bx-plus'></i>
                         Ajouter
                     </button>
@@ -263,6 +263,6 @@
         import { requireAuth } from '../controllers/authGuardController.js';
         await requireAuth();
     </script>
-    <script type="module" src="../controllers/planningController.js"></script>
+    <script type="module" src="../controllers/planningController.js?v=20260327d"></script>
 </body>
 </html>

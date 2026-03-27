@@ -1,7 +1,7 @@
 import { api } from '../assets/js/api.js';
 import { initCountryAutocomplete } from './countryController.js';
 import {
-  listAccommodations,
+  listAccommodationsByTrip,
   createAccommodation,
   updateAccommodation,
   deleteAccommodation
@@ -65,7 +65,9 @@ const tripState = {
   name: '',
   destination: '',
   startDate: '',
-  endDate: ''
+  endDate: '',
+  accessMode: 'owner',
+  canEdit: true
 };
 
 let transports = [];
@@ -297,6 +299,14 @@ function normalizeDestination(value) {
   return String(value || '').trim().toLowerCase();
 }
 
+function isReadOnlyTrip() {
+  return !tripState.canEdit;
+}
+
+function applyReadOnlyUiState() {
+  document.body.classList.toggle('is-read-only-trip', isReadOnlyTrip());
+}
+
 function syncPlanningUrl() {
   const params = new URLSearchParams(window.location.search);
   if (tripState.id) {
@@ -323,6 +333,12 @@ function syncPlanningUrl() {
     params.delete('endDate');
   }
 
+  if (tripState.accessMode) {
+    params.set('tripAccess', tripState.accessMode);
+  } else {
+    params.delete('tripAccess');
+  }
+
   const nextQuery = params.toString();
   const nextUrl = nextQuery ? `planning.html?${nextQuery}` : 'planning.html';
   window.history.replaceState({}, '', nextUrl);
@@ -338,6 +354,7 @@ function updatePlanningNavigationLinks() {
   if (tripState.destination) params.set('destination', tripState.destination);
   if (tripState.startDate) params.set('startDate', toDateInputValue(tripState.startDate));
   if (tripState.endDate) params.set('endDate', toDateInputValue(tripState.endDate));
+  if (tripState.accessMode) params.set('tripAccess', tripState.accessMode);
 
   const query = params.toString();
   nav.querySelectorAll('a[href]').forEach((link) => {
@@ -617,7 +634,9 @@ function renderTransports() {
     const timeValue = toTimeInputValue(item.travel_time);
     const timeLabel = timeValue ? ` a ${timeValue}` : '';
 
-    row.innerHTML = `
+    const actionsMarkup = isReadOnlyTrip()
+      ? ''
+      : `
       <div class="transport-title">
         <span>${item.origin || '-'} -> ${item.destination || '-'} · ${item.mode || 'Transport'}</span>
         <span class="transport-sub">${dateLabel}${timeLabel}</span>
@@ -630,6 +649,18 @@ function renderTransports() {
       </div>
     `;
 
+    row.innerHTML = isReadOnlyTrip()
+      ? `
+      <div class="transport-title">
+        <span>${item.origin || '-'} -> ${item.destination || '-'} · ${item.mode || 'Transport'}</span>
+        <span class="transport-sub">${dateLabel}${timeLabel}</span>
+      </div>
+      <span>${formatDuration(item.duration_minutes)}</span>
+      <span>${formatPrice(item.price)}</span>
+      <div class="transport-actions"></div>
+    `
+      : actionsMarkup;
+
     list.appendChild(row);
   });
 }
@@ -641,8 +672,7 @@ async function loadAccommodations() {
     return;
   }
   try {
-    const all = await listAccommodations();
-    accommodations = (all || []).filter((item) => String(item.trip_id) === String(tripState.id));
+    accommodations = await listAccommodationsByTrip(tripState.id);
   } catch (error) {
     console.warn('Impossible de charger les logements.', error);
     accommodations = [];
@@ -711,6 +741,15 @@ function renderActivitySuggestions() {
       ? `<a class="btn-ghost" target="_blank" rel="noopener" href="${escapeHtml(item.map_url)}">Voir la fiche</a>`
       : '';
 
+    const addButton = isReadOnlyTrip()
+      ? ''
+      : `
+        <button type="button" class="btn-secondary" data-add-suggestion="${index}">
+          <i class='bx bx-plus'></i>
+          Ajouter au voyage
+        </button>
+      `;
+
     row.innerHTML = `
       <div class="activity-suggestion-head">
         <div>
@@ -721,10 +760,7 @@ function renderActivitySuggestions() {
         <span class="activity-rating">${safeRating}</span>
       </div>
       <div class="activity-item-actions">
-        <button type="button" class="btn-secondary" data-add-suggestion="${index}">
-          <i class='bx bx-plus'></i>
-          Ajouter au voyage
-        </button>
+        ${addButton}
         ${mapLink}
       </div>
     `;
@@ -789,6 +825,10 @@ function renderTripActivities() {
       ? `<div class="activity-schedule"><i class='bx bx-time-five'></i>${escapeHtml(formatActivitySchedule(schedule))}</div>`
       : '';
 
+    const deleteButton = isReadOnlyTrip()
+      ? ''
+      : `<button type="button" class="btn-icon danger" data-delete-activity title="Supprimer"><i class='bx bx-trash'></i></button>`;
+
     row.innerHTML = `
       <div class="trip-activity-head">
         <div>
@@ -800,7 +840,7 @@ function renderTripActivities() {
         <span class="activity-rating">${safeRating}</span>
       </div>
       <div class="activity-item-actions">
-        <button type="button" class="btn-icon danger" data-delete-activity title="Supprimer"><i class='bx bx-trash'></i></button>
+        ${deleteButton}
       </div>
     `;
 
@@ -825,6 +865,10 @@ function initActivitiesPanel() {
     return;
   }
 
+  if (isReadOnlyTrip()) {
+    loadMoreButton.hidden = true;
+  }
+
   refreshButton.addEventListener('click', async () => {
     suggestionsNote.classList.remove('is-success', 'is-error');
     suggestionsNote.textContent = 'Chargement des suggestions...';
@@ -844,12 +888,14 @@ function initActivitiesPanel() {
     if (destination) params.set('destination', destination);
     if (tripState.startDate) params.set('startDate', toDateInputValue(tripState.startDate));
     if (tripState.endDate) params.set('endDate', toDateInputValue(tripState.endDate));
+    if (tripState.accessMode) params.set('tripAccess', tripState.accessMode);
 
     const query = params.toString();
     window.location.href = query ? `activity-explorer.html?${query}` : 'activity-explorer.html';
   });
 
   suggestionsList.addEventListener('click', async (event) => {
+    if (isReadOnlyTrip()) return;
     const target = event.target instanceof Element ? event.target.closest('[data-add-suggestion]') : null;
     if (!target) return;
     const index = Number.parseInt(target.getAttribute('data-add-suggestion') || '', 10);
@@ -900,6 +946,7 @@ function initActivitiesPanel() {
 
   if (tripList && tripNote) {
     tripList.addEventListener('click', async (event) => {
+    if (isReadOnlyTrip()) return;
     const target = event.target instanceof Element ? event.target.closest('[data-delete-activity]') : null;
     if (!target) return;
     const row = target.closest('.trip-activity-item');
@@ -950,6 +997,13 @@ function renderAccommodations() {
     const total = Number.isFinite(Number(price)) && nights ? Number(price) * nights : null;
     const title = item.name || item.address || 'Logement';
 
+    const actionButtons = isReadOnlyTrip()
+      ? ''
+      : `
+          <button type="button" class="btn-icon" data-edit title="Modifier"><i class='bx bx-edit'></i></button>
+          <button type="button" class="btn-icon danger" data-delete title="Supprimer"><i class='bx bx-trash'></i></button>
+      `;
+
     card.innerHTML = `
       <div class="accommodation-content">
         <div class="accommodation-title">${title}</div>
@@ -960,8 +1014,7 @@ function renderAccommodations() {
           <span>${total ? `${formatPrice(total)} total` : '-'}</span>
         </div>
         <div class="accommodation-actions">
-          <button type="button" class="btn-icon" data-edit title="Modifier"><i class='bx bx-edit'></i></button>
-          <button type="button" class="btn-icon danger" data-delete title="Supprimer"><i class='bx bx-trash'></i></button>
+          ${actionButtons}
         </div>
       </div>
     `;
@@ -969,12 +1022,14 @@ function renderAccommodations() {
     list.appendChild(card);
   });
 
-  const addCard = document.createElement('button');
-  addCard.type = 'button';
-  addCard.className = 'accommodation-add-card';
-  addCard.setAttribute('data-add-accommodation', '');
-  addCard.innerHTML = "<i class='bx bx-plus'></i> Ajouter un logement";
-  list.appendChild(addCard);
+  if (!isReadOnlyTrip()) {
+    const addCard = document.createElement('button');
+    addCard.type = 'button';
+    addCard.className = 'accommodation-add-card';
+    addCard.setAttribute('data-add-accommodation', '');
+    addCard.innerHTML = "<i class='bx bx-plus'></i> Ajouter un logement";
+    list.appendChild(addCard);
+  }
 }
 
 async function initPlanningPage() {
@@ -993,9 +1048,13 @@ async function initPlanningPage() {
 
   const params = new URLSearchParams(window.location.search);
   const tripId = params.get('tripId');
+  const requestedAccessMode = params.get('tripAccess') || '';
   let destination = params.get('destination') || '';
   let startDate = params.get('startDate') || '';
   let endDate = params.get('endDate') || '';
+
+  tripState.accessMode = requestedAccessMode || 'owner';
+  tripState.canEdit = requestedAccessMode !== 'read';
 
   if (tripId) {
     try {
@@ -1004,6 +1063,8 @@ async function initPlanningPage() {
       if (data) {
         tripState.id = data.id;
         tripState.name = data.name || '';
+        tripState.accessMode = data.access_mode || tripState.accessMode || 'owner';
+        tripState.canEdit = data.can_edit !== false;
         destination = data.destination || destination;
         startDate = toDateInputValue(data.start_date || startDate);
         endDate = toDateInputValue(data.end_date || endDate);
@@ -1027,6 +1088,7 @@ async function initPlanningPage() {
   tripState.destination = destination;
   tripState.startDate = toDateInputValue(startDate);
   tripState.endDate = toDateInputValue(endDate);
+  applyReadOnlyUiState();
 
   syncTripInputs();
   syncPlanningUrl();
@@ -1045,6 +1107,16 @@ function initTripEditor() {
   const saveNote = document.getElementById('trip-save-note');
 
   if (!nameInput || !destinationInput || !startInput || !endInput || !saveButton || !saveNote) return;
+
+  if (isReadOnlyTrip()) {
+    saveButton.hidden = true;
+    [nameInput, destinationInput, startInput, endInput].forEach((input) => {
+      input.setAttribute('disabled', 'disabled');
+    });
+    saveNote.classList.add('is-success');
+    saveNote.textContent = 'Mode lecture seule: vous pouvez consulter ce voyage sans le modifier.';
+    return;
+  }
 
   if (!tripState.id) {
     saveButton.disabled = true;
@@ -1260,6 +1332,12 @@ function initTransportModal() {
 
   if (!modal || !openButton || !form || !saveNote || !submitButton) return;
 
+  if (isReadOnlyTrip()) {
+    openButton.hidden = true;
+    return;
+  }
+  openButton.hidden = false;
+
   const openModal = () => {
     modal.hidden = false;
     document.body.style.overflow = 'hidden';
@@ -1326,6 +1404,12 @@ function initTransportModal() {
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
+    if (isReadOnlyTrip()) {
+      saveNote.classList.remove('is-success');
+      saveNote.classList.add('is-error');
+      saveNote.textContent = 'Mode lecture seule: modification indisponible.';
+      return;
+    }
     saveNote.classList.remove('is-success', 'is-error');
     saveNote.textContent = 'Enregistrement...';
 
@@ -1436,6 +1520,7 @@ function initTransportModal() {
   const list = document.getElementById('transport-list');
   if (list) {
     list.addEventListener('click', async (event) => {
+      if (isReadOnlyTrip()) return;
       const target = event.target instanceof Element ? event.target : null;
       if (!target) return;
       const row = target.closest('.transport-row');
@@ -1487,6 +1572,12 @@ function initAccommodationModal() {
   if (!modal || !openButton || !form || !saveNote || !submitButton || !nightsInput) {
     return;
   }
+
+  if (isReadOnlyTrip()) {
+    openButton.hidden = true;
+    return;
+  }
+  openButton.hidden = false;
 
   const resetForm = () => {
     form.reset();
@@ -1589,6 +1680,12 @@ function initAccommodationModal() {
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
+    if (isReadOnlyTrip()) {
+      saveNote.classList.remove('is-success');
+      saveNote.classList.add('is-error');
+      saveNote.textContent = 'Mode lecture seule: modification indisponible.';
+      return;
+    }
     saveNote.classList.remove('is-success', 'is-error');
     saveNote.textContent = 'Enregistrement...';
 
@@ -1666,11 +1763,16 @@ function initAccommodationModal() {
   });
 }
 
-initPlanningPage().then(initTripEditor);
-initTransportModal();
-initAccommodationModal();
-initActivitiesPanel();
-initCountryAutocomplete();
+async function bootstrapPlanningPage() {
+  await initPlanningPage();
+  initTripEditor();
+  initTransportModal();
+  initAccommodationModal();
+  initActivitiesPanel();
+  initCountryAutocomplete();
+}
+
+bootstrapPlanningPage();
 
 
 

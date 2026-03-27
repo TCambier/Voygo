@@ -1,6 +1,6 @@
 ﻿import { api } from '../assets/js/api.js';
 import {
-  listAccommodations
+  listAccommodationsByTrip
 } from './accommodationController.js';
 
 const tripState = {
@@ -9,6 +9,8 @@ const tripState = {
   destination: '',
   startDate: '',
   endDate: '',
+  accessMode: 'owner',
+  canEdit: true,
   activities: [],
   transports: []
 };
@@ -214,6 +216,7 @@ function updateNavigationLinks() {
   if (tripState.destination) params.set('destination', tripState.destination);
   if (tripState.startDate) params.set('startDate', tripState.startDate);
   if (tripState.endDate) params.set('endDate', tripState.endDate);
+  if (tripState.accessMode) params.set('tripAccess', tripState.accessMode);
 
   const query = params.toString();
   nav.querySelectorAll('a[href]').forEach((link) => {
@@ -222,6 +225,14 @@ function updateNavigationLinks() {
     if (!/\.html$/i.test(basePath)) return;
     link.setAttribute('href', query ? `${basePath}?${query}` : basePath);
   });
+}
+
+function isReadOnlyTrip() {
+  return !tripState.canEdit;
+}
+
+function applyReadOnlyUiState() {
+  document.body.classList.toggle('is-read-only-trip', isReadOnlyTrip());
 }
 
 function computeEndTime(schedule) {
@@ -445,6 +456,14 @@ function initEditMode() {
   const toggleBtn = document.getElementById('agenda-edit-toggle');
   if (!toggleBtn) return;
 
+  if (isReadOnlyTrip()) {
+    toggleBtn.hidden = true;
+    editMode = false;
+    return;
+  }
+
+  toggleBtn.hidden = false;
+
   toggleBtn.addEventListener('click', () => {
     editMode = !editMode;
     toggleBtn.innerHTML = editMode
@@ -468,6 +487,7 @@ function initAgendaInteractions() {
   };
 
   daysNode.addEventListener('click', (event) => {
+    if (isReadOnlyTrip()) return;
     if (!editMode) return;
 
     const trigger = event.target.closest('.agenda-separator-trigger');
@@ -950,9 +970,13 @@ function initAccommodationModal() {
 async function loadTrip() {
   const params = new URLSearchParams(window.location.search);
   const tripIdParam = params.get('tripId');
+  const requestedAccessMode = params.get('tripAccess') || '';
   let destination = params.get('destination') || '';
   let startDate = toDateInputValue(params.get('startDate') || '');
   let endDate = toDateInputValue(params.get('endDate') || '');
+
+  tripState.accessMode = requestedAccessMode || 'owner';
+  tripState.canEdit = requestedAccessMode !== 'read';
 
   if (tripIdParam) {
     try {
@@ -961,6 +985,8 @@ async function loadTrip() {
       if (trip) {
         tripState.id = trip.id;
         tripState.name = trip.name || '';
+        tripState.accessMode = trip.access_mode || tripState.accessMode || 'owner';
+        tripState.canEdit = trip.can_edit !== false;
         destination = trip.destination || destination;
         startDate = toDateInputValue(trip.start_date || startDate);
         endDate = toDateInputValue(trip.end_date || endDate);
@@ -1031,8 +1057,7 @@ async function loadAccommodations() {
   }
 
   try {
-    const all = await listAccommodations();
-    accommodations = (all || []).filter((item) => String(item.trip_id) === String(tripState.id));
+    accommodations = await listAccommodationsByTrip(tripState.id);
   } catch (error) {
     accommodations = [];
     const note = document.getElementById('agenda-note');
@@ -1057,8 +1082,16 @@ async function initAgendaPage() {
   }
 
   await loadTrip();
+  applyReadOnlyUiState();
   updateMeta();
   updateNavigationLinks();
+
+  const note = document.getElementById('agenda-note');
+  if (isReadOnlyTrip() && note) {
+    note.classList.add('is-success');
+    note.textContent = 'Mode lecture seule: vous pouvez consulter l agenda sans le modifier.';
+  }
+
   await Promise.all([loadActivities(), loadTransports(), loadAccommodations()]);
   renderAgenda();
   initEditMode();

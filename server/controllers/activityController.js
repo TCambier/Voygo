@@ -1,17 +1,6 @@
 import { config } from '../config.js';
 import { getSupabaseForUser } from '../services/supabase.js';
-
-async function ensureTripOwnership(client, tripId, userId) {
-  const { data, error } = await client
-    .from('trips')
-    .select('id')
-    .eq('id', tripId)
-    .eq('user_id', userId)
-    .single();
-
-  if (error || !data) return false;
-  return true;
-}
+import { getAccessDbClient, getTripAccess } from '../utils/tripAccess.js';
 
 function readScheduleMetadataFromDescription(description) {
   const text = String(description || '');
@@ -405,17 +394,23 @@ export async function suggestActivities(req, res) {
 export async function listActivitiesByTrip(req, res) {
   const { tripId } = req.params;
   const client = getSupabaseForUser(req.accessToken);
+  const db = getAccessDbClient(client);
 
-  const ownsTrip = await ensureTripOwnership(client, tripId, req.user.id);
-  if (!ownsTrip) {
+  let access;
+  try {
+    access = await getTripAccess(db, tripId, req.user.id);
+  } catch (error) {
+    return res.status(400).json({ error: error.message || 'Verification des droits impossible.' });
+  }
+
+  if (!access) {
     return res.status(404).json({ error: 'Voyage introuvable.' });
   }
 
-  const { data, error } = await client
+  const { data, error } = await db
     .from('activities')
     .select('id,trip_id,name,address,description,activity_date,rating,reviews_count,estimated_cost,source,source_place_id,map_url,created_at')
     .eq('trip_id', tripId)
-    .eq('user_id', req.user.id)
     .order('created_at', { ascending: true });
 
   if (error) {
@@ -429,15 +424,26 @@ export async function createActivity(req, res) {
   const { tripId } = req.params;
   const payload = req.body || {};
   const client = getSupabaseForUser(req.accessToken);
+  const db = getAccessDbClient(client);
 
-  const ownsTrip = await ensureTripOwnership(client, tripId, req.user.id);
-  if (!ownsTrip) {
+  let access;
+  try {
+    access = await getTripAccess(db, tripId, req.user.id);
+  } catch (error) {
+    return res.status(400).json({ error: error.message || 'Verification des droits impossible.' });
+  }
+
+  if (!access) {
     return res.status(404).json({ error: 'Voyage introuvable.' });
+  }
+
+  if (!access.canEdit) {
+    return res.status(403).json({ error: 'Ce voyage est en lecture seule.' });
   }
 
   const insertPayload = {
     trip_id: tripId,
-    user_id: req.user.id,
+    user_id: access.trip.user_id,
     name: String(payload.name || '').trim() || 'Activite',
     address: payload.address || null,
     description: payload.description || null,
@@ -453,16 +459,14 @@ export async function createActivity(req, res) {
   const newSchedule = extractScheduleFromActivity(insertPayload);
   if (newSchedule) {
     const [activitiesResult, transportsResult] = await Promise.all([
-      client
+      db
         .from('activities')
         .select('id,activity_date,description')
-        .eq('trip_id', tripId)
-        .eq('user_id', req.user.id),
-      client
+        .eq('trip_id', tripId),
+      db
         .from('transports')
         .select('id,travel_date,travel_time,duration_minutes')
         .eq('trip_id', tripId)
-        .eq('user_id', req.user.id)
     ]);
 
     if (activitiesResult.error || transportsResult.error) {
@@ -478,7 +482,7 @@ export async function createActivity(req, res) {
     }
   }
 
-  const { data, error } = await client
+  const { data, error } = await db
     .from('activities')
     .insert(insertPayload)
     .select('id,trip_id,name,address,description,activity_date,rating,reviews_count,estimated_cost,source,source_place_id,map_url,created_at')
@@ -495,12 +499,37 @@ export async function updateActivity(req, res) {
   const { id } = req.params;
   const payload = req.body || {};
   const client = getSupabaseForUser(req.accessToken);
+  const db = getAccessDbClient(client);
 
-  const { data, error } = await client
+  const { data: existing, error: existingError } = await db
+    .from('activities')
+    .select('id,trip_id')
+    .eq('id', id)
+    .single();
+
+  if (existingError || !existing) {
+    return res.status(404).json({ error: 'Activite introuvable.' });
+  }
+
+  let access;
+  try {
+    access = await getTripAccess(db, existing.trip_id, req.user.id);
+  } catch (error) {
+    return res.status(400).json({ error: error.message || 'Verification des droits impossible.' });
+  }
+
+  if (!access) {
+    return res.status(404).json({ error: 'Voyage introuvable.' });
+  }
+
+  if (!access.canEdit) {
+    return res.status(403).json({ error: 'Ce voyage est en lecture seule.' });
+  }
+
+  const { data, error } = await db
     .from('activities')
     .update(payload)
     .eq('id', id)
-    .eq('user_id', req.user.id)
     .select('id,trip_id,name,address,description,activity_date,rating,reviews_count,estimated_cost,source,source_place_id,map_url,created_at')
     .single();
 
@@ -514,12 +543,37 @@ export async function updateActivity(req, res) {
 export async function deleteActivity(req, res) {
   const { id } = req.params;
   const client = getSupabaseForUser(req.accessToken);
+  const db = getAccessDbClient(client);
 
-  const { error } = await client
+  const { data: existing, error: existingError } = await db
+    .from('activities')
+    .select('id,trip_id')
+    .eq('id', id)
+    .single();
+
+  if (existingError || !existing) {
+    return res.status(404).json({ error: 'Activite introuvable.' });
+  }
+
+  let access;
+  try {
+    access = await getTripAccess(db, existing.trip_id, req.user.id);
+  } catch (error) {
+    return res.status(400).json({ error: error.message || 'Verification des droits impossible.' });
+  }
+
+  if (!access) {
+    return res.status(404).json({ error: 'Voyage introuvable.' });
+  }
+
+  if (!access.canEdit) {
+    return res.status(403).json({ error: 'Ce voyage est en lecture seule.' });
+  }
+
+  const { error } = await db
     .from('activities')
     .delete()
-    .eq('id', id)
-    .eq('user_id', req.user.id);
+    .eq('id', id);
 
   if (error) {
     return res.status(400).json({ error: error.message || 'Suppression impossible.' });

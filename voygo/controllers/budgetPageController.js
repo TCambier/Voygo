@@ -1,7 +1,7 @@
 import { api } from '../assets/js/api.js';
 import { listBudgets, createBudget, updateBudget, deleteBudget } from './budgetController.js';
 import { listTransports, createTransport } from './transportController.js';
-import { listAccommodations, createAccommodation } from './accommodationController.js';
+import { listAccommodationsByTrip, createAccommodation } from './accommodationController.js';
 
 const CATEGORY_LABELS = {
   transport: 'Transport',
@@ -726,20 +726,25 @@ async function loadBudgets() {
 }
 
 async function loadRelatedEntries() {
-  try {
-    const accommodations = await listAccommodations();
-    state.accommodations = Array.isArray(accommodations) ? accommodations : [];
-  } catch (error) {
-    state.accommodations = [];
-    console.warn('Chargement logements impossible:', error);
-  }
-
   const tripIds = state.trips.map((trip) => String(trip.id)).filter(Boolean);
   if (!tripIds.length) {
+    state.accommodations = [];
     state.transports = [];
     rebuildEntries();
     return;
   }
+
+  const accommodationResults = await Promise.all(
+    tripIds.map(async (tripId) => {
+      try {
+        const items = await listAccommodationsByTrip(tripId);
+        return Array.isArray(items) ? items : [];
+      } catch {
+        return [];
+      }
+    })
+  );
+  state.accommodations = accommodationResults.flat();
 
   const transportResults = await Promise.all(
     tripIds.map(async (tripId) => {

@@ -17,10 +17,20 @@ const state = {
   destination: '',
   startDate: '',
   endDate: '',
+  accessMode: 'owner',
+  canEdit: true,
   filter: 'all',
   suggestions: [],
   tripActivities: []
 };
+
+function isReadOnlyTrip() {
+  return !state.canEdit;
+}
+
+function applyReadOnlyUiState() {
+  document.body.classList.toggle('is-read-only-trip', isReadOnlyTrip());
+}
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -418,6 +428,7 @@ function updateBackLink() {
   if (state.destination) params.set('destination', state.destination);
   if (state.startDate) params.set('startDate', state.startDate);
   if (state.endDate) params.set('endDate', state.endDate);
+  if (state.accessMode) params.set('tripAccess', state.accessMode);
 
   const query = params.toString();
   back.href = query ? `planning.html?${query}` : 'planning.html';
@@ -470,6 +481,10 @@ async function fetchSuggestions() {
 }
 
 async function addSuggestion(index) {
+  if (isReadOnlyTrip()) {
+    setNote('Mode lecture seule: ajout indisponible.', 'is-error');
+    return;
+  }
   const visibleSuggestions = getVisibleSuggestions();
   if (!state.tripId || !visibleSuggestions[index]) return;
 
@@ -559,6 +574,7 @@ function bindEvents() {
 
   if (results) {
     results.addEventListener('click', async (event) => {
+      if (isReadOnlyTrip()) return;
       const target = event.target instanceof Element ? event.target.closest('[data-add-suggestion]') : null;
       if (!target) return;
       const index = Number.parseInt(target.getAttribute('data-add-suggestion') || '', 10);
@@ -568,7 +584,12 @@ function bindEvents() {
   }
 
   if (customButton) {
+    customButton.hidden = isReadOnlyTrip();
     customButton.addEventListener('click', async () => {
+      if (isReadOnlyTrip()) {
+        setNote('Mode lecture seule: ajout indisponible.', 'is-error');
+        return;
+      }
       if (!state.tripId) {
         setNote('Selectionnez un voyage depuis le planning pour ajouter une activite personnalisee.', 'is-error');
         return;
@@ -618,13 +639,36 @@ function initStateFromQuery() {
   state.destination = destination;
   state.startDate = params.get('startDate') || '';
   state.endDate = params.get('endDate') || '';
+  state.accessMode = params.get('tripAccess') || 'owner';
+  state.canEdit = state.accessMode !== 'read';
 
   const destinationInput = document.getElementById('explorer-destination');
   if (destinationInput) destinationInput.value = destination;
 }
 
+async function resolveTripAccess() {
+  if (!state.tripId) {
+    applyReadOnlyUiState();
+    return;
+  }
+
+  try {
+    const result = await api.get(`/api/trips/${encodeURIComponent(state.tripId)}`);
+    const trip = result?.data;
+    if (trip) {
+      state.accessMode = trip.access_mode || state.accessMode || 'owner';
+      state.canEdit = trip.can_edit !== false;
+    }
+  } catch {
+    // Keep query-param fallback when request fails.
+  }
+
+  applyReadOnlyUiState();
+}
+
 async function initPage() {
   initStateFromQuery();
+  await resolveTripAccess();
   initCountryAutocomplete({
     inputSelector: '#explorer-destination',
     listSelector: '#explorer-destination-suggestions'

@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mes voyages</title>
-    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="../assets/css/style.css?v=20260327a">
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 </head>
 <body>
@@ -98,11 +98,52 @@
         </section>
     </main>
 
+    <div class="modal-backdrop" id="share-trip-modal-backdrop" hidden aria-hidden="true">
+        <section class="modal share-trip-modal" role="dialog" aria-modal="true" aria-labelledby="share-trip-heading">
+            <header class="modal-header">
+                <div>
+                    <h2 id="share-trip-heading">Partager le voyage</h2>
+                    <p class="share-trip-subtitle">Voyage: <strong id="share-trip-title">-</strong></p>
+                </div>
+                <button type="button" class="modal-close" aria-label="Fermer" data-share-close>
+                    <i class='bx bx-x'></i>
+                </button>
+            </header>
+            <form class="modal-body" id="share-trip-form">
+                <div class="field-group">
+                    <label for="share-trip-email">Adresse email du compte a inviter</label>
+                    <input id="share-trip-email" class="form-input" type="email" placeholder="exemple@email.com" required>
+                </div>
+
+                <div class="field-group">
+                    <label for="share-trip-permission">Parametre de partage</label>
+                    <select id="share-trip-permission" class="form-input">
+                        <option value="read">Lecture seule</option>
+                        <option value="edit">Lecture + modification</option>
+                    </select>
+                </div>
+
+                <p id="share-trip-feedback" class="share-trip-feedback" hidden></p>
+
+                <div class="share-trip-existing">
+                    <h3>Acces deja partages</h3>
+                    <p class="share-trip-existing-empty" id="share-trip-existing-empty">Aucun partage actif pour ce voyage.</p>
+                    <div class="share-trip-shares-list" id="share-trip-shares-list" hidden></div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" data-share-close>Annuler</button>
+                    <button type="submit" class="btn-primary" id="share-trip-submit">Partager</button>
+                </div>
+            </form>
+        </section>
+    </div>
+
     <script type="module">
         import { requireAuth } from '../controllers/authGuardController.js';
         await requireAuth();
     </script>
-    <script type="module" src="../controllers/voyagesController.js"></script>
+    <script type="module" src="../controllers/voyagesController.js?v=20260327a"></script>
 </body>
 </html>
 
