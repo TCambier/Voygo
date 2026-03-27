@@ -206,6 +206,20 @@ function getAccommodationsOutsideTripDates(nextStartDate, nextEndDate) {
   });
 }
 
+function getTransportDateKey(item) {
+  return normalizeActivityDate(item?.travel_date || '');
+}
+
+function getTransportsOutsideTripDates(nextStartDate, nextEndDate) {
+  if (!nextStartDate || !nextEndDate) return [];
+
+  return (transports || []).filter((transport) => {
+    const dateKey = getTransportDateKey(transport);
+    if (!dateKey) return false;
+    return dateKey < nextStartDate || dateKey > nextEndDate;
+  });
+}
+
 function formatActivitySchedule(schedule) {
   if (!schedule) return '';
   const dateLabel = formatDate(schedule.date);
@@ -1104,7 +1118,8 @@ function initTripEditor() {
     if (!destinationChanged && dateRangeChanged) {
       const activitiesOutsideDates = getActivitiesOutsideTripDates(payload.start_date, payload.end_date);
       const accommodationsOutsideDates = getAccommodationsOutsideTripDates(payload.start_date, payload.end_date);
-      const impactedCount = activitiesOutsideDates.length + accommodationsOutsideDates.length;
+      const transportsOutsideDates = getTransportsOutsideTripDates(payload.start_date, payload.end_date);
+      const impactedCount = activitiesOutsideDates.length + accommodationsOutsideDates.length + transportsOutsideDates.length;
       if (impactedCount > 0) {
         const impactedParts = [];
         if (activitiesOutsideDates.length > 0) {
@@ -1112,6 +1127,9 @@ function initTripEditor() {
         }
         if (accommodationsOutsideDates.length > 0) {
           impactedParts.push(`${accommodationsOutsideDates.length} logement(s)`);
+        }
+        if (transportsOutsideDates.length > 0) {
+          impactedParts.push(`${transportsOutsideDates.length} transport(s)`);
         }
 
         const confirmed = window.confirm(
@@ -1144,6 +1162,7 @@ function initTripEditor() {
       if (!destinationChanged && dateRangeChanged) {
         const activitiesOutsideDates = getActivitiesOutsideTripDates(payload.start_date, payload.end_date);
         const accommodationsOutsideDates = getAccommodationsOutsideTripDates(payload.start_date, payload.end_date);
+        const transportsOutsideDates = getTransportsOutsideTripDates(payload.start_date, payload.end_date);
 
         if (activitiesOutsideDates.length > 0) {
           await Promise.all(
@@ -1165,6 +1184,17 @@ function initTripEditor() {
 
           const deletedAccommodationIds = new Set(accommodationsOutsideDates.map((accommodation) => String(accommodation.id)));
           accommodations = accommodations.filter((accommodation) => !deletedAccommodationIds.has(String(accommodation.id)));
+        }
+
+        if (transportsOutsideDates.length > 0) {
+          await Promise.all(
+            transportsOutsideDates
+              .filter((transport) => transport?.id)
+              .map((transport) => api.delete(`/api/transports/${encodeURIComponent(transport.id)}`))
+          );
+
+          const deletedTransportIds = new Set(transportsOutsideDates.map((transport) => String(transport.id)));
+          transports = transports.filter((transport) => !deletedTransportIds.has(String(transport.id)));
         }
       }
 
