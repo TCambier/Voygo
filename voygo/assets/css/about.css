@@ -36,41 +36,6 @@
       transition: background .3s ease, color .3s ease;
     }
 
-    /* ── HEADER (identique style.css) ───────────────────────── */
-    .header {
-      display: flex;
-      align-items: center;
-      padding: 15px 50px;
-      background: var(--header-bg);
-      width: 100%;
-      border-bottom: 1px solid var(--header-border);
-      box-shadow: 0 8px 20px rgba(255,107,107,.12);
-      transition: background .3s ease, border-color .3s ease;
-    }
-    .navbar-left .logo-text {
-      font-size: 22px; font-weight: 800;
-      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      letter-spacing: -.5px;
-    }
-    .navbar-menu { display:flex; align-items:center; gap:24px; margin-left:36px; }
-    .navbar-menu a {
-      color: var(--text-primary); text-decoration: none;
-      font-weight: 600; font-size: 15px; transition: color .3s;
-    }
-    .navbar-menu a:hover, .navbar-menu a.active { color: var(--accent-strong); }
-    .navbar-right { display:flex; align-items:center; gap:20px; margin-left:auto; }
-    .btn-theme {
-      background:none; border:none; font-size:24px; cursor:pointer;
-      padding:5px; display:flex; align-items:center; transition:transform .3s;
-    }
-    .btn-theme:hover { transform:scale(1.2); }
-    .btn-connexion {
-      padding:10px 24px; background:var(--accent); color:#fff;
-      text-decoration:none; border-radius:25px; font-weight:600; transition:background .3s;
-    }
-    .btn-connexion:hover { background:var(--accent-strong); }
-
     /* ── ABOUT PAGE ──────────────────────────────────────────── */
     .about-page {
       min-height: calc(100vh - 70px);
@@ -509,8 +474,6 @@
     }
 
     @media (max-width: 768px) {
-      .header { padding: 15px 20px; }
-      .navbar-menu { display: none; }
       .about-hero  { padding: 50px 20px 60px; }
       .about-hero h1 { font-size: 30px; }
       .about-origin, .about-features, .about-tech, .about-team, .about-cta {

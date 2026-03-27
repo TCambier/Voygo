@@ -1478,6 +1478,91 @@ body.dark-theme .hero-plane img {
     font-size: 13px;
 }
 
+.carte-page {
+    gap: 20px;
+}
+
+.carte-panel {
+    gap: 14px;
+}
+
+.carte-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.carte-toolbar h2 {
+    font-size: 22px;
+}
+
+.carte-filter-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.carte-filter-wrap label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+.carte-filter-wrap .form-input {
+    min-width: 210px;
+}
+
+.carte-stats {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.carte-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border-color));
+    background: color-mix(in srgb, var(--accent) 8%, var(--bg-secondary));
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.carte-map {
+    width: 100%;
+    height: 560px;
+    border-radius: 16px;
+    border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border-color));
+    box-shadow: 0 16px 34px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+.carte-map .leaflet-popup-content-wrapper,
+.carte-map .leaflet-popup-tip {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.carte-map .leaflet-popup-content {
+    color: var(--text-primary);
+    line-height: 1.45;
+}
+
+.carte-map .leaflet-control-attribution {
+    background: color-mix(in srgb, var(--bg-secondary) 86%, transparent);
+    color: var(--text-secondary);
+}
+
+.carte-map .leaflet-control-attribution a {
+    color: var(--accent-strong);
+}
+
 /* ---- Agenda edit mode ---- */
 .agenda-edit-toggle.is-active {
     background: linear-gradient(135deg, var(--accent), var(--accent-strong));
@@ -1906,6 +1991,23 @@ body.dark-theme .hero-plane img {
 
     .agenda-time {
         font-size: 18px;
+    }
+
+    .carte-toolbar {
+        align-items: stretch;
+    }
+
+    .carte-filter-wrap {
+        width: 100%;
+    }
+
+    .carte-filter-wrap .form-input {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .carte-map {
+        height: 420px;
     }
 
     .settings-page {

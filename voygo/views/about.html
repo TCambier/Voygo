@@ -235,23 +235,5 @@
 
 </main>
 
-<script>
-  // Dark / light theme toggle (identique au reste du site)
-  const toggle = document.getElementById('themeToggle');
-  const icon   = toggle.querySelector('.theme-icon');
-
-  function applyTheme(dark) {
-    document.body.classList.toggle('dark-theme', dark);
-    icon.textContent = dark ? '☀️' : '🌙';
-    localStorage.setItem('voygo-theme', dark ? 'dark' : 'light');
-  }
-
-  // Init from stored preference
-  applyTheme(localStorage.getItem('voygo-theme') === 'dark');
-
-  toggle.addEventListener('click', () => {
-    applyTheme(!document.body.classList.contains('dark-theme'));
-  });
-</script>
 </body>
 </html>

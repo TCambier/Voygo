@@ -2,15 +2,80 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Carte</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voygo - Carte</title>
     <link rel="stylesheet" href="../assets/css/style.css">
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""
+    >
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 </head>
 <body>
     <div id="header-container"></div>
     <script type="module" src="../controllers/headerController.js"></script>
 
-    <!-- carte page content goes here -->
+    <main class="planning-page carte-page">
+        <section class="planning-hero">
+            <div class="planning-hero-text">
+                <span class="planning-eyebrow">Planification</span>
+                <h1>Carte de votre itineraire</h1>
+                <p>Visualisez vos activites sur OpenStreetMap et suivez le trace de votre parcours jour par jour.</p>
+            </div>
+            <div class="planning-hero-meta">
+                <div class="meta-item">
+                    <span class="meta-label">Voyage</span>
+                    <span id="carte-trip-name">-</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Dates</span>
+                    <span id="carte-dates">-</span>
+                </div>
+            </div>
+        </section>
+
+        <div class="planning-nav-box">
+            <nav class="planning-nav" aria-label="Navigation du voyage">
+                <a href="planning.html">Planning</a>
+                <a href="resume.html">Resume</a>
+                <a href="agenda.html">Agenda</a>
+                <a href="carte.html" class="is-active" aria-current="page">Carte</a>
+                <a href="budget.html">Budget</a>
+            </nav>
+        </div>
+
+        <section class="panel carte-panel" aria-live="polite">
+            <div class="panel-title-row carte-toolbar">
+                <div>
+                    <h2>Trace des activites</h2>
+                    <p class="muted">Choisissez un jour pour afficher uniquement son trace, ou tous les jours.</p>
+                </div>
+                <div class="carte-filter-wrap">
+                    <label for="carte-day-filter">Jour</label>
+                    <select id="carte-day-filter" class="form-input">
+                        <option value="all">Tous les jours</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="carte-stats" id="carte-stats"></div>
+            <div class="carte-map" id="carte-map" role="img" aria-label="Carte des activites"></div>
+            <div class="activity-empty muted" id="carte-empty">Aucune activite localisable pour ce voyage.</div>
+            <span class="settings-feedback" id="carte-note"></span>
+        </section>
+    </main>
+
+    <script
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""
+    ></script>
+    <script type="module">
+        import { requireAuth } from '../controllers/authGuardController.js';
+        await requireAuth();
+    </script>
 
     <script type="module" src="../controllers/cartePageController.js"></script>
 </body>
