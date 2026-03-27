@@ -176,6 +176,36 @@ function getActivitySchedule(item) {
   };
 }
 
+function getActivityDateKey(item) {
+  const metadata = readScheduleMetadata(item?.description);
+  return normalizeActivityDate(metadata?.date || item?.activity_date || '');
+}
+
+function getActivitiesOutsideTripDates(nextStartDate, nextEndDate) {
+  if (!nextStartDate || !nextEndDate) return [];
+
+  return (tripActivities || []).filter((activity) => {
+    const dateKey = getActivityDateKey(activity);
+    if (!dateKey) return false;
+    return dateKey < nextStartDate || dateKey > nextEndDate;
+  });
+}
+
+function getAccommodationDateKey(value) {
+  return normalizeActivityDate(value || '');
+}
+
+function getAccommodationsOutsideTripDates(nextStartDate, nextEndDate) {
+  if (!nextStartDate || !nextEndDate) return [];
+
+  return (accommodations || []).filter((accommodation) => {
+    const startDate = getAccommodationDateKey(accommodation?.start_date);
+    const endDate = getAccommodationDateKey(accommodation?.end_date);
+    if (!startDate || !endDate) return false;
+    return startDate < nextStartDate || endDate > nextEndDate;
+  });
+}
+
 function formatActivitySchedule(schedule) {
   if (!schedule) return '';
   const dateLabel = formatDate(schedule.date);
@@ -1067,6 +1097,35 @@ function initTripEditor() {
     }
 
     const destinationChanged = normalizeDestination(payload.destination) !== normalizeDestination(tripState.destination);
+    const dateRangeChanged =
+      toDateInputValue(payload.start_date || '') !== toDateInputValue(tripState.startDate || '')
+      || toDateInputValue(payload.end_date || '') !== toDateInputValue(tripState.endDate || '');
+
+    if (!destinationChanged && dateRangeChanged) {
+      const activitiesOutsideDates = getActivitiesOutsideTripDates(payload.start_date, payload.end_date);
+      const accommodationsOutsideDates = getAccommodationsOutsideTripDates(payload.start_date, payload.end_date);
+      const impactedCount = activitiesOutsideDates.length + accommodationsOutsideDates.length;
+      if (impactedCount > 0) {
+        const impactedParts = [];
+        if (activitiesOutsideDates.length > 0) {
+          impactedParts.push(`${activitiesOutsideDates.length} activite(s)`);
+        }
+        if (accommodationsOutsideDates.length > 0) {
+          impactedParts.push(`${accommodationsOutsideDates.length} logement(s)`);
+        }
+
+        const confirmed = window.confirm(
+          `${impactedParts.join(' et ')} sont en dehors des nouvelles dates du voyage. `
+          + 'Ils seront supprimes avant lenregistrement. Voulez-vous continuer ?'
+        );
+
+        if (!confirmed) {
+          saveNote.textContent = '';
+          return;
+        }
+      }
+    }
+
     if (destinationChanged) {
       const confirmed = window.confirm(
         'Changer la destination va remplacer ce voyage par un nouveau voyage avec la nouvelle destination. Toutes les activites, tous les logements et tous les transports lies au voyage actuel seront supprimes. Voulez-vous continuer ?'
@@ -1081,6 +1140,33 @@ function initTripEditor() {
     try {
       let data = null;
       let replacedTrip = false;
+
+      if (!destinationChanged && dateRangeChanged) {
+        const activitiesOutsideDates = getActivitiesOutsideTripDates(payload.start_date, payload.end_date);
+        const accommodationsOutsideDates = getAccommodationsOutsideTripDates(payload.start_date, payload.end_date);
+
+        if (activitiesOutsideDates.length > 0) {
+          await Promise.all(
+            activitiesOutsideDates
+              .filter((activity) => activity?.id)
+              .map((activity) => api.delete(`/api/activities/${encodeURIComponent(activity.id)}`))
+          );
+
+          const deletedIds = new Set(activitiesOutsideDates.map((activity) => String(activity.id)));
+          tripActivities = tripActivities.filter((activity) => !deletedIds.has(String(activity.id)));
+        }
+
+        if (accommodationsOutsideDates.length > 0) {
+          await Promise.all(
+            accommodationsOutsideDates
+              .filter((accommodation) => accommodation?.id)
+              .map((accommodation) => api.delete(`/api/accommodations/${encodeURIComponent(accommodation.id)}`))
+          );
+
+          const deletedAccommodationIds = new Set(accommodationsOutsideDates.map((accommodation) => String(accommodation.id)));
+          accommodations = accommodations.filter((accommodation) => !deletedAccommodationIds.has(String(accommodation.id)));
+        }
+      }
 
       if (destinationChanged) {
         const previousTripId = tripState.id;
