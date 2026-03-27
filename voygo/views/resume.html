@@ -22,7 +22,7 @@
             <div class="planning-hero-text">
                 <span class="planning-eyebrow">Planification</span>
                 <h1>Resume de votre voyage</h1>
-                <p>Retrouvez en un seul endroit votre budget, vos infos de planning, votre agenda et la vue carte.</p>
+                <p>Retrouvez en un seul endroit votre budget, vos infos de planning et la vue carte dans une synthese unique.</p>
             </div>
             <div class="planning-hero-meta">
                 <div class="meta-item">
@@ -40,35 +40,36 @@
             <nav class="planning-nav" aria-label="Navigation du voyage">
                 <a href="planning.html">Planning</a>
                 <a href="resume.html" class="is-active" aria-current="page">Resume</a>
-                <a href="agenda.html">Agenda</a>
                 <a href="carte.html">Carte</a>
                 <a href="budget.html">Budget</a>
             </nav>
         </div>
 
         <section class="resume-grid">
-            <article class="panel resume-panel" id="resume-budget-panel">
+            <article class="panel resume-panel resume-overview-panel" id="resume-overview-panel">
                 <div class="panel-title-row">
-                    <h2>Budget</h2>
+                    <h2>Synthese complete</h2>
+                    <button type="button" class="btn-secondary resume-export-btn" id="resume-export-pdf-btn">
+                        <i class='bx bx-download'></i>
+                        Exporter Voyage (PDF)
+                    </button>
                 </div>
-                <div class="resume-kpi-grid" id="resume-budget-kpis"></div>
-                <div class="resume-list" id="resume-budget-list"></div>
-            </article>
+                <div class="resume-kpi-grid resume-kpi-grid-wide" id="resume-overview-kpis"></div>
 
-            <article class="panel resume-panel" id="resume-planning-panel">
-                <div class="panel-title-row">
-                    <h2>Planning</h2>
-                </div>
-                <div class="resume-kpi-grid" id="resume-planning-kpis"></div>
-                <div class="resume-list" id="resume-planning-list"></div>
-            </article>
+                <div class="resume-highlights" id="resume-highlights"></div>
 
-            <article class="panel resume-panel" id="resume-agenda-panel">
-                <div class="panel-title-row">
-                    <h2>Agenda</h2>
+                <div class="resume-insights-grid" id="resume-insights"></div>
+
+                <div class="resume-overview-lists">
+                    <section class="resume-list-block">
+                        <h3>Budget</h3>
+                        <div class="resume-list" id="resume-budget-list"></div>
+                    </section>
+                    <section class="resume-list-block">
+                        <h3>Planning</h3>
+                        <div class="resume-list" id="resume-planning-list"></div>
+                    </section>
                 </div>
-                <div class="resume-agenda-days" id="resume-agenda-days"></div>
-                <div class="activity-empty muted" id="resume-agenda-empty">Aucun element planifie pour le moment.</div>
             </article>
 
             <article class="panel resume-panel resume-map-panel" id="resume-carte-panel">
@@ -78,6 +79,7 @@
                 <div class="carte-stats" id="resume-carte-stats"></div>
                 <div class="carte-map" id="resume-map" role="img" aria-label="Carte du resume"></div>
                 <div class="activity-empty muted" id="resume-map-empty">Aucune activite localisable pour ce voyage.</div>
+                <div class="resume-map-activities" id="resume-map-activities"></div>
             </article>
         </section>
 
@@ -89,6 +91,7 @@
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
         crossorigin=""
     ></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script type="module">
         import { requireAuth } from '../controllers/authGuardController.js';
         await requireAuth();

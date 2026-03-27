@@ -73,6 +73,12 @@ function formatDuration(value) {
   return `${mins}min`;
 }
 
+function formatPercent(value) {
+  const amount = Number(value);
+  if (!Number.isFinite(amount) || amount <= 0) return '0%';
+  return `${Math.round(amount)}%`;
+}
+
 function toDateInputValue(value) {
   if (!value) return '';
   if (typeof value === 'string') {
@@ -402,11 +408,7 @@ function collectTimelineEntries() {
   return entries;
 }
 
-function renderBudget() {
-  const kpiNode = document.getElementById('resume-budget-kpis');
-  const listNode = document.getElementById('resume-budget-list');
-  if (!kpiNode || !listNode) return;
-
+function buildBudgetBreakdown() {
   const transportTotal = (tripState.transports || []).reduce((sum, item) => {
     const price = Number(item?.price);
     return Number.isFinite(price) ? sum + price : sum;
@@ -426,13 +428,6 @@ function renderBudget() {
   const activitiesTotal = activitiesWithPrice.reduce((sum, value) => sum + value, 0);
 
   const total = transportTotal + accommodationTotal + activitiesTotal;
-
-  kpiNode.innerHTML = [
-    makeKpiCard('Total estime', formatPrice(total), 'bx-wallet'),
-    makeKpiCard('Transports', formatPrice(transportTotal), 'bx-car'),
-    makeKpiCard('Logements', formatPrice(accommodationTotal), 'bx-building-house'),
-    makeKpiCard('Activites payantes', formatPrice(activitiesTotal), 'bx-map')
-  ].join('');
 
   const breakdown = [];
   (tripState.transports || []).forEach((item) => {
@@ -459,38 +454,147 @@ function renderBudget() {
     .sort((a, b) => b.value - a.value)
     .slice(0, 6);
 
-  if (!topBreakdown.length) {
-    listNode.innerHTML = '<p class="muted">Aucune depense enregistree pour le moment.</p>';
-    return;
-  }
-
-  listNode.innerHTML = `
-    <ul class="resume-simple-list">
-      ${topBreakdown.map((item) => `
-        <li>
-          <span>${escapeHtml(item.label)}</span>
-          <strong>${escapeHtml(formatPrice(item.value))}</strong>
-        </li>
-      `).join('')}
-    </ul>
-  `;
+  return {
+    total,
+    transportTotal,
+    accommodationTotal,
+    activitiesTotal,
+    topBreakdown
+  };
 }
 
-function renderPlanning() {
-  const kpiNode = document.getElementById('resume-planning-kpis');
-  const listNode = document.getElementById('resume-planning-list');
-  if (!kpiNode || !listNode) return;
+function renderOverview() {
+  const kpiNode = document.getElementById('resume-overview-kpis');
+  const highlightsNode = document.getElementById('resume-highlights');
+  const insightsNode = document.getElementById('resume-insights');
+  const budgetListNode = document.getElementById('resume-budget-list');
+  const planningListNode = document.getElementById('resume-planning-list');
+  if (!kpiNode || !highlightsNode || !insightsNode || !budgetListNode || !planningListNode) return;
+
+  const {
+    total,
+    transportTotal,
+    accommodationTotal,
+    activitiesTotal,
+    topBreakdown
+  } = buildBudgetBreakdown();
 
   const entries = collectTimelineEntries();
   const nights = computeNights(tripState.startDate, tripState.endDate);
   const nextEntry = entries.find((entry) => Boolean(entry.date));
+  const dayCount = Math.max(createDateRange(tripState.startDate, tripState.endDate).length, nights > 0 ? nights + 1 : 0, 1);
+  const budgetPerDay = total > 0 ? total / dayCount : 0;
+  const scheduledDays = new Set(entries.map((entry) => entry.date).filter(Boolean));
+  const eventsPerScheduledDay = scheduledDays.size > 0 ? (entries.length / scheduledDays.size) : 0;
+  const uniqueTransportModes = new Set((tripState.transports || []).map((item) => String(item?.mode || '').trim()).filter(Boolean));
+
+  const transportRatio = total > 0 ? (transportTotal / total) * 100 : 0;
+  const accommodationRatio = total > 0 ? (accommodationTotal / total) * 100 : 0;
+  const activitiesRatio = total > 0 ? (activitiesTotal / total) * 100 : 0;
 
   kpiNode.innerHTML = [
+    makeKpiCard('Total estime', formatPrice(total), 'bx-wallet'),
     makeKpiCard('Activites', String(tripState.activities.length), 'bx-map-pin'),
     makeKpiCard('Transports', String(tripState.transports.length), 'bx-car'),
     makeKpiCard('Logements', String(tripState.accommodations.length), 'bx-building-house'),
-    makeKpiCard('Nuits', String(nights || 0), 'bx-moon')
+    makeKpiCard('Nuits', String(nights || 0), 'bx-moon'),
+    makeKpiCard('Activites payantes', formatPrice(activitiesTotal), 'bx-map')
   ].join('');
+
+  highlightsNode.innerHTML = [
+    `
+      <article class="resume-highlight-card">
+        <span class="resume-highlight-icon"><i class='bx bx-calendar-event'></i></span>
+        <div>
+          <p class="resume-highlight-title">Jours planifies</p>
+          <strong class="resume-highlight-value">${escapeHtml(String(scheduledDays.size || 0))}</strong>
+          <p class="resume-highlight-note">sur ${escapeHtml(String(dayCount))} jour(s) de voyage</p>
+        </div>
+      </article>
+    `,
+    `
+      <article class="resume-highlight-card">
+        <span class="resume-highlight-icon"><i class='bx bx-trending-up'></i></span>
+        <div>
+          <p class="resume-highlight-title">Rythme moyen</p>
+          <strong class="resume-highlight-value">${escapeHtml((eventsPerScheduledDay > 0 ? eventsPerScheduledDay.toFixed(1) : '0.0'))}</strong>
+          <p class="resume-highlight-note">etape(s) par jour actif</p>
+        </div>
+      </article>
+    `,
+    `
+      <article class="resume-highlight-card">
+        <span class="resume-highlight-icon"><i class='bx bx-euro'></i></span>
+        <div>
+          <p class="resume-highlight-title">Cout moyen</p>
+          <strong class="resume-highlight-value">${escapeHtml(formatPrice(budgetPerDay))}</strong>
+          <p class="resume-highlight-note">par jour de voyage</p>
+        </div>
+      </article>
+    `
+  ].join('');
+
+  insightsNode.innerHTML = `
+    <article class="resume-insight-card">
+      <h3>Repartition budget</h3>
+      <div class="resume-budget-split">
+        <div class="split-row">
+          <span>Transports</span>
+          <strong>${escapeHtml(formatPercent(transportRatio))}</strong>
+        </div>
+        <div class="split-bar"><span style="width:${Math.max(0, Math.min(100, transportRatio))}%;"></span></div>
+
+        <div class="split-row">
+          <span>Logements</span>
+          <strong>${escapeHtml(formatPercent(accommodationRatio))}</strong>
+        </div>
+        <div class="split-bar split-accommodation"><span style="width:${Math.max(0, Math.min(100, accommodationRatio))}%;"></span></div>
+
+        <div class="split-row">
+          <span>Activites</span>
+          <strong>${escapeHtml(formatPercent(activitiesRatio))}</strong>
+        </div>
+        <div class="split-bar split-activities"><span style="width:${Math.max(0, Math.min(100, activitiesRatio))}%;"></span></div>
+      </div>
+    </article>
+
+    <article class="resume-insight-card">
+      <h3>Lecture rapide</h3>
+      <ul class="resume-fact-list">
+        <li><span>Destination</span><strong>${escapeHtml(tripState.destination || '-')}</strong></li>
+        <li><span>Duree</span><strong>${escapeHtml(String(dayCount))} jour(s)</strong></li>
+        <li><span>Modes de transport</span><strong>${escapeHtml(String(uniqueTransportModes.size || 0))}</strong></li>
+        <li><span>Activites localisees</span><strong>${escapeHtml(String((tripState.localizedActivities || []).length))}</strong></li>
+      </ul>
+    </article>
+  `;
+
+  if (!topBreakdown.length) {
+    budgetListNode.innerHTML = '<p class="muted">Aucune depense enregistree pour le moment.</p>';
+  } else {
+    budgetListNode.innerHTML = `
+      <ul class="resume-simple-list">
+        <li>
+          <span>Total estime</span>
+          <strong>${escapeHtml(formatPrice(total))}</strong>
+        </li>
+        <li>
+          <span>Transports</span>
+          <strong>${escapeHtml(formatPrice(transportTotal))}</strong>
+        </li>
+        <li>
+          <span>Logements</span>
+          <strong>${escapeHtml(formatPrice(accommodationTotal))}</strong>
+        </li>
+        ${topBreakdown.map((item) => `
+          <li>
+            <span>${escapeHtml(item.label)}</span>
+            <strong>${escapeHtml(formatPrice(item.value))}</strong>
+          </li>
+        `).join('')}
+      </ul>
+    `;
+  }
 
   const planningItems = [
     ['Destination', tripState.destination || '-'],
@@ -499,7 +603,7 @@ function renderPlanning() {
     ['Prochaine etape', nextEntry ? `${nextEntry.date ? formatDate(nextEntry.date) : '-'} a ${nextEntry.time || '--:--'} - ${nextEntry.title}` : 'Aucune etape planifiee']
   ];
 
-  listNode.innerHTML = `
+  planningListNode.innerHTML = `
     <ul class="resume-simple-list">
       ${planningItems.map(([label, value]) => `
         <li>
@@ -509,65 +613,6 @@ function renderPlanning() {
       `).join('')}
     </ul>
   `;
-}
-
-function renderAgenda() {
-  const daysNode = document.getElementById('resume-agenda-days');
-  const emptyNode = document.getElementById('resume-agenda-empty');
-  if (!daysNode || !emptyNode) return;
-
-  const entries = collectTimelineEntries();
-  if (!entries.length) {
-    daysNode.innerHTML = '';
-    emptyNode.hidden = false;
-    return;
-  }
-
-  const grouped = new Map();
-  entries.forEach((entry) => {
-    const key = entry.date || 'no-date';
-    const bucket = grouped.get(key) || [];
-    bucket.push(entry);
-    grouped.set(key, bucket);
-  });
-
-  let dayKeys = createDateRange(tripState.startDate, tripState.endDate);
-  if (!dayKeys.length) {
-    dayKeys = Array.from(grouped.keys()).sort((a, b) => a.localeCompare(b));
-  }
-
-  const visibleKeys = dayKeys.filter((key) => (grouped.get(key) || []).length > 0).slice(0, 8);
-  if (!visibleKeys.length && grouped.has('no-date')) {
-    visibleKeys.push('no-date');
-  }
-
-  daysNode.innerHTML = visibleKeys.map((key) => {
-    const items = grouped.get(key) || [];
-    const dayLabel = key === 'no-date' ? 'Sans date precise' : formatDateLong(key);
-    return `
-      <article class="agenda-day-card">
-        <div class="agenda-day-head">
-          <h3>${escapeHtml(dayLabel)}</h3>
-        </div>
-        <div class="agenda-day-list">
-          ${items.map((item) => `
-            <article class="agenda-item ${item.type === 'transport' ? 'is-transport' : ''}">
-              <div class="agenda-time">${escapeHtml(item.time || '--:--')}</div>
-              <div class="agenda-item-content">
-                <span class="agenda-badge"><i class='bx ${item.icon}'></i>${escapeHtml(item.type)}</span>
-                <h3>${escapeHtml(item.title || '-')}</h3>
-                <p class="agenda-item-meta">${escapeHtml(item.subtitle || '-')}</p>
-                ${item.duration > 0 ? `<p class="agenda-item-meta">Duree: ${escapeHtml(formatDuration(item.duration))}</p>` : ''}
-                ${item.description ? `<p class="agenda-item-desc">${escapeHtml(item.description)}</p>` : ''}
-              </div>
-            </article>
-          `).join('')}
-        </div>
-      </article>
-    `;
-  }).join('');
-
-  emptyNode.hidden = visibleKeys.length > 0;
 }
 
 function parseCoordsFromMapUrl(mapUrl) {
@@ -712,9 +757,400 @@ function groupActivitiesByDay(list) {
   return grouped;
 }
 
+function safePdfFilePart(value) {
+  return String(value || 'voyage')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '') || 'voyage';
+}
+
+function loadImageAsDataUrl(src) {
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.crossOrigin = 'anonymous';
+    image.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = image.naturalWidth || image.width;
+        canvas.height = image.naturalHeight || image.height;
+        const context = canvas.getContext('2d');
+        if (!context) {
+          resolve(null);
+          return;
+        }
+        context.drawImage(image, 0, 0);
+        resolve({
+          dataUrl: canvas.toDataURL('image/png'),
+          width: image.naturalWidth || image.width || 0,
+          height: image.naturalHeight || image.height || 0
+        });
+      } catch {
+        resolve(null);
+      }
+    };
+    image.onerror = () => resolve(null);
+    image.src = src;
+  });
+}
+
+function createPdfReportWriter(doc, options = {}) {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const marginX = 14;
+  const headerBottom = 42;
+  const topY = 50;
+  const bottomY = pageHeight - 18;
+  const lineHeight = 5.5;
+  const textWidth = pageWidth - (marginX * 2);
+  const logoInfo = options.logoInfo || null;
+  let y = topY;
+
+  function drawHeader() {
+    doc.setFillColor(255, 107, 107);
+    doc.rect(0, 0, pageWidth, headerBottom, 'F');
+
+    const logoSlotW = 68;
+    const logoSlotH = 26;
+    const logoSlotX = marginX;
+    const logoSlotY = 5;
+    const headerTextX = marginX + (logoInfo?.dataUrl ? logoSlotW + 6 : 0);
+
+    if (logoInfo?.dataUrl) {
+      try {
+        const logoWidth = Number(logoInfo.width);
+        const logoHeight = Number(logoInfo.height);
+        const ratio = (logoWidth > 0 && logoHeight > 0) ? (logoWidth / logoHeight) : (logoSlotW / logoSlotH);
+
+        let drawW = logoSlotW;
+        let drawH = drawW / ratio;
+        if (drawH > logoSlotH) {
+          drawH = logoSlotH;
+          drawW = drawH * ratio;
+        }
+
+        const drawX = logoSlotX + ((logoSlotW - drawW) / 2);
+        const drawY = logoSlotY + ((logoSlotH - drawH) / 2);
+        doc.addImage(logoInfo.dataUrl, 'PNG', drawX, drawY, drawW, drawH);
+      } catch {
+        // ignore logo draw issues and continue with text header
+      }
+    }
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.setTextColor(255, 255, 255);
+    doc.text('Rapport de voyage', headerTextX, 18);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text(options.reportSubtitle || 'Synthese complete', headerTextX, 26);
+
+    doc.setTextColor(31, 41, 55);
+  }
+
+  function drawFooter(pageNumber, totalPages) {
+    doc.setDrawColor(231, 216, 201);
+    doc.setLineWidth(0.3);
+    doc.line(marginX, pageHeight - 13, pageWidth - marginX, pageHeight - 13);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(95, 107, 122);
+    doc.text('Voygo', marginX, pageHeight - 8);
+    doc.text(`Page ${pageNumber}/${totalPages}`, pageWidth - marginX, pageHeight - 8, { align: 'right' });
+    doc.setTextColor(31, 41, 55);
+  }
+
+  function ensureSpace(height = lineHeight) {
+    if (y + height <= bottomY) return;
+    doc.addPage();
+    y = topY;
+    drawHeader();
+  }
+
+  function addGap(height = 2) {
+    ensureSpace(height);
+    y += height;
+  }
+
+  function writeText(text, optionsText = {}) {
+    const size = optionsText.size || 10.5;
+    const spacingAfter = optionsText.spacingAfter ?? 1.5;
+    const style = optionsText.bold ? 'bold' : 'normal';
+
+    doc.setFont('helvetica', style);
+    doc.setFontSize(size);
+    const lines = doc.splitTextToSize(String(text || ''), textWidth);
+    ensureSpace(lines.length * lineHeight);
+    doc.text(lines, marginX, y);
+    y += (lines.length * lineHeight) + spacingAfter;
+  }
+
+  function writeSectionTitle(title) {
+    ensureSpace(10);
+    doc.setFillColor(255, 243, 232);
+    doc.roundedRect(marginX, y - 1, textWidth, 8, 2, 2, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11.5);
+    doc.setTextColor(190, 24, 93);
+    doc.text(String(title || ''), marginX + 3, y + 4.2);
+    doc.setTextColor(31, 41, 55);
+    y += 10;
+  }
+
+  function writeBudgetTable(rows) {
+    const leftX = marginX;
+    const width = textWidth;
+    const headerH = 7;
+    const rowH = 7;
+    const col1W = width * 0.7;
+    const col2W = width - col1W;
+    const safeRows = Array.isArray(rows) ? rows : [];
+
+    ensureSpace(headerH + (rowH * Math.max(1, safeRows.length)) + 2);
+
+    doc.setFillColor(255, 107, 107);
+    doc.rect(leftX, y, width, headerH, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(255, 255, 255);
+    doc.text('Poste budget', leftX + 3, y + 4.7);
+    doc.text('Montant', leftX + width - 3, y + 4.7, { align: 'right' });
+
+    y += headerH;
+    doc.setTextColor(31, 41, 55);
+    doc.setDrawColor(231, 216, 201);
+    doc.setLineWidth(0.2);
+
+    if (!safeRows.length) {
+      doc.rect(leftX, y, width, rowH, 'S');
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.text('Aucune donnee budget disponible', leftX + 3, y + 4.7);
+      y += rowH + 2;
+      return;
+    }
+
+    safeRows.forEach((row, index) => {
+      if (index % 2 === 0) {
+        doc.setFillColor(255, 251, 246);
+        doc.rect(leftX, y, width, rowH, 'F');
+      }
+      doc.rect(leftX, y, width, rowH, 'S');
+      doc.line(leftX + col1W, y, leftX + col1W, y + rowH);
+
+      doc.setFont('helvetica', index === 0 ? 'bold' : 'normal');
+      doc.setFontSize(9.8);
+      doc.text(String(row?.label || '-'), leftX + 3, y + 4.7);
+      doc.text(String(row?.value || '-'), leftX + col1W + col2W - 3, y + 4.7, { align: 'right' });
+      y += rowH;
+    });
+
+    y += 2;
+  }
+
+  function finalize() {
+    const totalPages = doc.getNumberOfPages();
+    for (let page = 1; page <= totalPages; page += 1) {
+      doc.setPage(page);
+      drawFooter(page, totalPages);
+    }
+  }
+
+  drawHeader();
+  y = topY;
+
+  return {
+    addGap,
+    writeText,
+    writeSectionTitle,
+    writeBudgetTable,
+    finalize
+  };
+}
+
+async function exportResumeToPdf() {
+  if (!tripState.id) {
+    setNote('Selectionnez un voyage avant export PDF.', 'error');
+    return;
+  }
+
+  const jsPdfLib = window.jspdf?.jsPDF;
+  if (!jsPdfLib) {
+    setNote('Export PDF indisponible: bibliotheque non chargee.', 'error');
+    return;
+  }
+
+  try {
+    const doc = new jsPdfLib({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const logoInfo = await loadImageAsDataUrl('../assets/images/banner.png');
+    const writer = createPdfReportWriter(doc, {
+      logoInfo,
+      reportSubtitle: `${tripState.name || tripState.destination || 'Voyage'} - ${new Date().toLocaleDateString('fr-FR')}`
+    });
+
+    const dateRange = [formatDate(tripState.startDate), formatDate(tripState.endDate)].filter(Boolean).join(' - ') || '-';
+    const budgetData = buildBudgetBreakdown();
+    const timelineEntries = collectTimelineEntries();
+    const localized = [...(tripState.localizedActivities || [])].sort((left, right) => {
+      const leftDate = String(left?.schedule?.date || '9999-12-31');
+      const rightDate = String(right?.schedule?.date || '9999-12-31');
+      if (leftDate !== rightDate) return leftDate.localeCompare(rightDate);
+
+      const leftTime = toMinuteOfDay(left?.schedule?.startTime || '');
+      const rightTime = toMinuteOfDay(right?.schedule?.startTime || '');
+      if (leftTime === null && rightTime === null) return 0;
+      if (leftTime === null) return 1;
+      if (rightTime === null) return -1;
+      return leftTime - rightTime;
+    });
+
+    writer.writeSectionTitle('Fiche voyage');
+    writer.writeText(`Voyage: ${tripState.name || tripState.destination || '-'}`, { bold: true, size: 12, spacingAfter: 1.2 });
+    writer.writeText(`Destination: ${tripState.destination || '-'}`);
+    writer.writeText(`Dates: ${dateRange}`);
+    writer.writeText(`Genere le: ${new Date().toLocaleDateString('fr-FR')} ${new Date().toLocaleTimeString('fr-FR')}`);
+    writer.addGap(1);
+
+    writer.writeSectionTitle('Budget (tableau)');
+    writer.writeBudgetTable([
+      { label: 'Total estime', value: formatPrice(budgetData.total) },
+      { label: 'Transports', value: formatPrice(budgetData.transportTotal) },
+      { label: 'Logements', value: formatPrice(budgetData.accommodationTotal) },
+      { label: 'Activites payantes', value: formatPrice(budgetData.activitiesTotal) }
+    ]);
+
+    writer.writeSectionTitle('Chiffres cles');
+    writer.writeText(`- Activites: ${tripState.activities.length}`);
+    writer.writeText(`- Transports: ${tripState.transports.length}`);
+    writer.writeText(`- Logements: ${tripState.accommodations.length}`);
+    writer.writeText(`- Activites localisees: ${localized.length}`);
+    writer.addGap(1);
+
+    writer.writeSectionTitle('Top depenses');
+    if (!budgetData.topBreakdown.length) {
+      writer.writeText('- Aucune depense detaillee disponible.');
+    } else {
+      budgetData.topBreakdown.slice(0, 10).forEach((item, index) => {
+        writer.writeText(`${index + 1}. ${item.label}: ${formatPrice(item.value)}`);
+      });
+    }
+    writer.addGap(1);
+
+    writer.writeSectionTitle('Etapes du planning');
+    if (!timelineEntries.length) {
+      writer.writeText('- Aucune etape planifiee.');
+    } else {
+      timelineEntries.slice(0, 30).forEach((entry, index) => {
+        const when = `${entry.date ? formatDate(entry.date) : 'Date non renseignee'} ${entry.time || '--:--'}`;
+        const where = entry.subtitle || '-';
+        writer.writeText(`${index + 1}. ${entry.title} (${when}) - ${where}`);
+      });
+      if (timelineEntries.length > 30) {
+        writer.writeText(`... ${timelineEntries.length - 30} autre(s) etape(s) non affichee(s).`);
+      }
+    }
+    writer.addGap(1);
+
+    writer.writeSectionTitle('Activites localisees (carte)');
+    if (!localized.length) {
+      writer.writeText('- Aucune activite localisee.');
+    } else {
+      localized.slice(0, 40).forEach((item, index) => {
+        const day = item?.schedule?.date ? formatDate(item.schedule.date) : 'Date non renseignee';
+        const time = item?.schedule?.startTime || '--:--';
+        const lat = Number(item?.coords?.lat);
+        const lon = Number(item?.coords?.lon);
+        const geo = Number.isFinite(lat) && Number.isFinite(lon)
+          ? ` [${lat.toFixed(4)}, ${lon.toFixed(4)}]`
+          : '';
+        writer.writeText(`${index + 1}. ${item?.name || 'Activite'} - ${day} ${time} - ${item?.address || 'Adresse non renseignee'}${geo}`);
+      });
+      if (localized.length > 40) {
+        writer.writeText(`... ${localized.length - 40} autre(s) activite(s) non affichee(s).`);
+      }
+    }
+
+    writer.finalize();
+
+    const fileName = `voygo-resume-${safePdfFilePart(tripState.name || tripState.destination || tripState.id)}.pdf`;
+    doc.save(fileName);
+    setNote('Resume exporte en PDF avec succes.', 'success');
+  } catch (error) {
+    console.error('PDF export failed:', error);
+    setNote('Impossible de generer le PDF.', 'error');
+  }
+}
+
+function bindExportButton() {
+  const button = document.getElementById('resume-export-pdf-btn');
+  if (!button) return;
+
+  button.addEventListener('click', async () => {
+    if (button.disabled) return;
+    button.disabled = true;
+    const previousLabel = button.innerHTML;
+    button.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Generation PDF...";
+
+    try {
+      await exportResumeToPdf();
+    } finally {
+      button.disabled = false;
+      button.innerHTML = previousLabel;
+    }
+  });
+}
+
 function renderMapSection() {
   const emptyNode = document.getElementById('resume-map-empty');
   const statsNode = document.getElementById('resume-carte-stats');
+  const activitiesNode = document.getElementById('resume-map-activities');
+
+  const entries = tripState.localizedActivities || [];
+  const hasEntries = entries.length > 0;
+
+  if (activitiesNode) {
+    if (!hasEntries) {
+      activitiesNode.innerHTML = '';
+    } else {
+      const sortedEntries = [...entries].sort((left, right) => {
+        const leftDate = String(left?.schedule?.date || '9999-12-31');
+        const rightDate = String(right?.schedule?.date || '9999-12-31');
+        if (leftDate !== rightDate) return leftDate.localeCompare(rightDate);
+
+        const leftTime = toMinuteOfDay(left?.schedule?.startTime || '');
+        const rightTime = toMinuteOfDay(right?.schedule?.startTime || '');
+        if (leftTime === null && rightTime === null) return 0;
+        if (leftTime === null) return 1;
+        if (rightTime === null) return -1;
+        return leftTime - rightTime;
+      });
+
+      const previewEntries = sortedEntries.slice(0, 8);
+      activitiesNode.innerHTML = `
+        <h3>Activites localisees</h3>
+        <ul class="resume-map-activity-list">
+          ${previewEntries.map((item) => {
+            const day = item?.schedule?.date ? formatDate(item.schedule.date) : 'Date non renseignee';
+            const time = item?.schedule?.startTime || '--:--';
+            return `
+              <li class="resume-map-activity-item">
+                <span class="resume-map-activity-dot"></span>
+                <div class="resume-map-activity-content">
+                  <p class="resume-map-activity-title">${escapeHtml(item?.name || 'Activite')}</p>
+                  <p class="resume-map-activity-meta">${escapeHtml(day)} - ${escapeHtml(time)}</p>
+                  <p class="resume-map-activity-address">${escapeHtml(item?.address || 'Adresse non renseignee')}</p>
+                </div>
+              </li>
+            `;
+          }).join('')}
+        </ul>
+        ${sortedEntries.length > previewEntries.length ? `<p class="resume-map-more">${escapeHtml(String(sortedEntries.length - previewEntries.length))} activite(s) supplementaire(s) sur la carte.</p>` : ''}
+      `;
+    }
+  }
 
   ensureMap();
   if (!map || !markerLayer || !traceLayer) {
@@ -726,8 +1162,6 @@ function renderMapSection() {
   markerLayer.clearLayers();
   traceLayer.clearLayers();
 
-  const entries = tripState.localizedActivities || [];
-  const hasEntries = entries.length > 0;
   if (emptyNode) emptyNode.hidden = hasEntries;
 
   if (!hasEntries) {
@@ -791,14 +1225,13 @@ function renderMapSection() {
 
 export async function initResumePage() {
   try {
+    bindExportButton();
     await loadTrip();
     updateMeta();
     updateNavigationLinks();
 
     if (!tripState.id) {
-      renderBudget();
-      renderPlanning();
-      renderAgenda();
+      renderOverview();
       renderMapSection();
       setNote('Selectionnez un voyage depuis Planning pour afficher le resume.', 'error');
       return;
@@ -807,9 +1240,7 @@ export async function initResumePage() {
     await Promise.all([loadActivities(), loadTransports(), loadAccommodations()]);
     await localizeActivities();
 
-    renderBudget();
-    renderPlanning();
-    renderAgenda();
+    renderOverview();
     renderMapSection();
   } catch (error) {
     console.error('Resume page init failed:', error);
