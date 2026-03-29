@@ -1,3 +1,10 @@
+/**
+ * @voygo-doc
+ * Module: headerController
+ * Fichier: voygo\controllers\headerController.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
 import { supabase } from '../assets/js/supabase.js';
 
 const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
@@ -29,6 +36,7 @@ async function loadHeader() {
     }
 }
  
+// Initialise le bloc fonctionnel 'initMobileMenu'.
 function initMobileMenu() {
     if (!isBrowser) return;
     const menu = document.querySelector('.navbar-menu');
@@ -101,6 +109,7 @@ function initMobileMenu() {
     }
 }
  
+// Retourne l'information calculee par 'getStoredUser'.
 function getStoredUser() {
     if (!isBrowser) return null;
     try {
@@ -114,6 +123,7 @@ function getStoredUser() {
     }
 }
 
+// Resout les informations calculees par 'resolveAuthUser'.
 async function resolveAuthUser() {
     if (!isBrowser) return null;
     try {
@@ -134,6 +144,7 @@ async function resolveAuthUser() {
     return null;
 }
 
+// Construit le rendu pour 'renderAccountSlot'.
 function renderAccountSlot(user) {
     if (!isBrowser) return;
     const slot = document.getElementById('header-account-slot');
@@ -169,6 +180,7 @@ function renderAccountSlot(user) {
     setupAccountMenu();
 }
  
+// Applique les mises a jour de 'updateNavForAuth'.
 function updateNavForAuth(user) {
     if (!isBrowser) return;
     const link = document.getElementById('nav-my-trips');
@@ -179,6 +191,7 @@ function updateNavForAuth(user) {
     link.style.display = user ? '' : 'none';
 }
 
+// Met a jour l'etat pilote par 'setupAccountMenu'.
 function setupAccountMenu() {
     if (!isBrowser) return;
     const toggle = document.getElementById('account-toggle');
@@ -230,6 +243,7 @@ function setupAccountMenu() {
     }
 }
  
+// Applique les mises a jour de 'updateThemeIcon'.
 function updateThemeIcon() {
     if (!isBrowser) return;
     const icon = document.querySelector('.theme-icon');
@@ -239,6 +253,7 @@ function updateThemeIcon() {
     icon.classList.toggle('bx-moon', !isDark);
 }
  
+// Gere la logique principale de 'toggleTheme'.
 function toggleTheme() {
     if (!isBrowser) return;
     document.body.classList.toggle('dark-theme');
@@ -246,6 +261,7 @@ function toggleTheme() {
     updateThemeIcon();
 }
 
+// Initialise le bloc fonctionnel 'initHeader'.
 export function initHeader() {
     if (!isBrowser) return;
     if (localStorage.getItem('theme') === 'dark') {

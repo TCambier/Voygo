@@ -1,3 +1,10 @@
+/**
+ * @voygo-doc
+ * Module: cartePageController
+ * Fichier: voygo\controllers\cartePageController.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
 import { api } from '../assets/js/api.js';
 
 const tripState = {
@@ -16,6 +23,7 @@ let map = null;
 let markerLayer = null;
 let traceLayer = null;
 
+// Gere la logique principale de 'escapeHtml'.
 function escapeHtml(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -25,6 +33,7 @@ function escapeHtml(value) {
     .replace(/'/g, '&#039;');
 }
 
+// Met a jour l'etat pilote par 'setNote'.
 function setNote(message, kind = 'info') {
   const note = document.getElementById('carte-note');
   if (!note) return;
@@ -34,6 +43,7 @@ function setNote(message, kind = 'info') {
   note.textContent = message || '';
 }
 
+// Formate la valeur traitee par 'formatDate'.
 function formatDate(dateValue) {
   if (!dateValue) return '';
   const date = new Date(`${dateValue}T00:00:00`);
@@ -41,6 +51,7 @@ function formatDate(dateValue) {
   return date.toLocaleDateString('fr-FR');
 }
 
+// Gere la logique principale de 'toDateInputValue'.
 function toDateInputValue(value) {
   if (!value) return '';
   if (typeof value === 'string') {
@@ -51,6 +62,7 @@ function toDateInputValue(value) {
   return date.toISOString().slice(0, 10);
 }
 
+// Analyse l'entree geree par 'parseDateKey'.
 function parseDateKey(value) {
   const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!match) return null;
@@ -61,6 +73,7 @@ function parseDateKey(value) {
   return { year, month, day };
 }
 
+// Formate la valeur traitee par 'formatDateKeyFromUtc'.
 function formatDateKeyFromUtc(date) {
   const year = date.getUTCFullYear();
   const month = String(date.getUTCMonth() + 1).padStart(2, '0');
@@ -68,6 +81,7 @@ function formatDateKeyFromUtc(date) {
   return `${year}-${month}-${day}`;
 }
 
+// Cree les donnees gerees par 'createDateRange'.
 function createDateRange(startDate, endDate) {
   const startParts = parseDateKey(startDate);
   const endParts = parseDateKey(endDate);
@@ -86,6 +100,7 @@ function createDateRange(startDate, endDate) {
   return days;
 }
 
+// Gere la logique principale de 'readFallbackTrip'.
 function readFallbackTrip() {
   const stored = localStorage.getItem('voygo_current_trip');
   if (!stored) return null;
@@ -96,6 +111,7 @@ function readFallbackTrip() {
   }
 }
 
+// Gere la logique principale de 'readScheduleMetadata'.
 function readScheduleMetadata(description) {
   const text = String(description || '');
   const match = text.match(/\[VOYGO_SCHEDULE\]([\s\S]*?)\[\/VOYGO_SCHEDULE\]/);
@@ -109,18 +125,21 @@ function readScheduleMetadata(description) {
   }
 }
 
+// Normalise les donnees pour 'normalizeActivityDate'.
 function normalizeActivityDate(value) {
   const raw = String(value || '').trim();
   if (!raw) return '';
   return raw.includes('T') ? raw.split('T')[0] : raw;
 }
 
+// Gere la logique principale de 'toTimeDisplayValue'.
 function toTimeDisplayValue(value) {
   const raw = String(value || '').trim();
   const match = raw.match(/(\d{2}:\d{2})(?::\d{2})?/);
   return match ? match[1] : '';
 }
 
+// Gere la logique principale de 'toMinuteOfDay'.
 function toMinuteOfDay(timeValue) {
   const match = String(timeValue || '').trim().match(/^(\d{2}):(\d{2})(?::\d{2})?$/);
   if (!match) return null;
@@ -131,6 +150,7 @@ function toMinuteOfDay(timeValue) {
   return (hours * 60) + minutes;
 }
 
+// Retourne l'information calculee par 'getActivitySchedule'.
 function getActivitySchedule(item) {
   const metadata = readScheduleMetadata(item?.description);
   const date = normalizeActivityDate(metadata?.date || item?.activity_date || '');
@@ -138,6 +158,7 @@ function getActivitySchedule(item) {
   return { date, startTime };
 }
 
+// Analyse l'entree geree par 'parseCoordsFromMapUrl'.
 function parseCoordsFromMapUrl(mapUrl) {
   const text = String(mapUrl || '').trim();
   if (!text) return null;
@@ -160,10 +181,12 @@ function parseCoordsFromMapUrl(mapUrl) {
   return null;
 }
 
+// Gere la logique principale de 'makeAddressCacheKey'.
 function makeAddressCacheKey(address) {
   return String(address || '').trim().toLowerCase();
 }
 
+// Charge les donnees necessaires pour 'loadGeocodeCache'.
 function loadGeocodeCache() {
   const raw = localStorage.getItem('voygo_geocode_cache');
   if (!raw) return {};
@@ -175,6 +198,7 @@ function loadGeocodeCache() {
   }
 }
 
+// Gere la logique principale de 'saveGeocodeCache'.
 function saveGeocodeCache(cache) {
   try {
     localStorage.setItem('voygo_geocode_cache', JSON.stringify(cache));
@@ -183,6 +207,7 @@ function saveGeocodeCache(cache) {
   }
 }
 
+// Gere la logique principale de 'geocodeAddress'.
 async function geocodeAddress(address, destination, cache) {
   const key = makeAddressCacheKey(address);
   if (!key) return null;
@@ -223,6 +248,7 @@ async function geocodeAddress(address, destination, cache) {
   }
 }
 
+// Applique les mises a jour de 'updateMeta'.
 function updateMeta() {
   const nameNode = document.getElementById('carte-trip-name');
   const datesNode = document.getElementById('carte-dates');
@@ -238,6 +264,7 @@ function updateMeta() {
   }
 }
 
+// Applique les mises a jour de 'updateNavigationLinks'.
 function updateNavigationLinks() {
   const nav = document.querySelector('.planning-nav');
   if (!nav) return;
@@ -257,11 +284,13 @@ function updateNavigationLinks() {
   });
 }
 
+// Gere la logique principale de 'buildDayOptionLabel'.
 function buildDayOptionLabel(day, index) {
   const dateLabel = formatDate(day);
   return `Jour ${index + 1}${dateLabel ? ` - ${dateLabel}` : ''}`;
 }
 
+// Gere la logique principale de 'populateDayFilter'.
 function populateDayFilter() {
   const filter = document.getElementById('carte-day-filter');
   if (!(filter instanceof HTMLSelectElement)) return;
@@ -286,6 +315,7 @@ function populateDayFilter() {
   });
 }
 
+// Gere la logique principale de 'ensureMap'.
 function ensureMap() {
   if (map) return;
 
@@ -302,6 +332,7 @@ function ensureMap() {
   traceLayer = window.L.layerGroup().addTo(map);
 }
 
+// Gere la logique principale de 'groupActivitiesByDay'.
 function groupActivitiesByDay(list) {
   const grouped = new Map();
   list.forEach((item) => {
@@ -326,6 +357,7 @@ function groupActivitiesByDay(list) {
   return grouped;
 }
 
+// Applique les mises a jour de 'updateStats'.
 function updateStats(entries) {
   const statsNode = document.getElementById('carte-stats');
   if (!statsNode) return;
@@ -342,6 +374,7 @@ function updateStats(entries) {
   `;
 }
 
+// Construit le rendu pour 'renderMap'.
 function renderMap(filterValue = 'all') {
   ensureMap();
   if (!map || !markerLayer || !traceLayer) return;
@@ -409,6 +442,7 @@ function renderMap(filterValue = 'all') {
   }
 }
 
+// Charge les donnees necessaires pour 'loadTrip'.
 async function loadTrip() {
   const params = new URLSearchParams(window.location.search);
   const fallbackTrip = readFallbackTrip();
@@ -440,6 +474,7 @@ async function loadTrip() {
   }
 }
 
+// Charge les donnees necessaires pour 'loadActivities'.
 async function loadActivities() {
   if (!tripState.id) {
     tripState.activities = [];
@@ -471,6 +506,7 @@ async function loadActivities() {
   tripState.localizedActivities = localized;
 }
 
+// Gere la logique principale de 'bindFilter'.
 function bindFilter() {
   const filter = document.getElementById('carte-day-filter');
   if (!(filter instanceof HTMLSelectElement)) return;
@@ -480,6 +516,7 @@ function bindFilter() {
   });
 }
 
+// Initialise le bloc fonctionnel 'initCartePage'.
 export async function initCartePage() {
   try {
     await loadTrip();

@@ -1,5 +1,13 @@
+/**
+ * @voygo-doc
+ * Module: countryController
+ * Fichier: voygo\controllers\countryController.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
 import { searchCountries } from '../models/country.js';
 
+// Gere la logique principale de 'debounce'.
 function debounce(fn, delay = 250) {
   let timeoutId;
   return (...args) => {
@@ -8,6 +16,7 @@ function debounce(fn, delay = 250) {
   };
 }
 
+// Initialise le bloc fonctionnel 'initCountryAutocomplete'.
 export function initCountryAutocomplete(options = {}) {
   const inputSelector = options.inputSelector || '#pays';
   const listSelector = options.listSelector || '#country-suggestions';

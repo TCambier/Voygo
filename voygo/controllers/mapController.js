@@ -1,3 +1,10 @@
+/**
+ * @voygo-doc
+ * Module: mapController
+ * Fichier: voygo\controllers\mapController.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
 // mapController.js
 // Responsible for rendering the Leaflet map. Data such as markers or
 // locations can be pulled from Supabase if you'd like to persist them.

@@ -1,3 +1,10 @@
+/**
+ * @voygo-doc
+ * Module: resourceRoutes
+ * Fichier: server\routes\resourceRoutes.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { listResource, createResource, updateResource, deleteResource } from '../controllers/resourceController.js';

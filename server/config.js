@@ -1,3 +1,10 @@
+/**
+ * @voygo-doc
+ * Module: config
+ * Fichier: server\config.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';

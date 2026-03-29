@@ -1,3 +1,10 @@
+/**
+ * @voygo-doc
+ * Module: activityExplorerController
+ * Fichier: voygo\controllers\activityExplorerController.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
 import { api } from '../assets/js/api.js';
 import { initCountryAutocomplete } from './countryController.js';
 
@@ -24,14 +31,17 @@ const state = {
   tripActivities: []
 };
 
+// Verifie la condition exposee par 'isReadOnlyTrip'.
 function isReadOnlyTrip() {
   return !state.canEdit;
 }
 
+// Gere la logique principale de 'applyReadOnlyUiState'.
 function applyReadOnlyUiState() {
   document.body.classList.toggle('is-read-only-trip', isReadOnlyTrip());
 }
 
+// Gere la logique principale de 'escapeHtml'.
 function escapeHtml(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -41,6 +51,7 @@ function escapeHtml(value) {
     .replace(/'/g, '&#039;');
 }
 
+// Formate la valeur traitee par 'formatActivityRating'.
 function formatActivityRating(rating, reviewsCount) {
   const safeRating = Number(rating);
   const safeReviews = Number(reviewsCount);
@@ -52,6 +63,7 @@ function formatActivityRating(rating, reviewsCount) {
   return `${note} / 5 (${safeReviews} avis)`;
 }
 
+// Formate la valeur traitee par 'formatDate'.
 function formatDate(dateValue) {
   if (!dateValue) return '';
   const date = new Date(dateValue);
@@ -59,6 +71,7 @@ function formatDate(dateValue) {
   return date.toLocaleDateString('fr-FR');
 }
 
+// Formate la valeur traitee par 'formatDuration'.
 function formatDuration(value) {
   const minutes = Number(value);
   if (!Number.isFinite(minutes) || minutes <= 0) return '-';
@@ -69,10 +82,12 @@ function formatDuration(value) {
   return `${mins}min`;
 }
 
+// Retourne l'information calculee par 'getTodayInputValue'.
 function getTodayInputValue() {
   return new Date().toISOString().slice(0, 10);
 }
 
+// Gere la logique principale de 'toMinuteOfDay'.
 function toMinuteOfDay(timeValue) {
   if (!/^\d{2}:\d{2}$/.test(String(timeValue || ''))) return null;
   const [hours, minutes] = String(timeValue).split(':').map((part) => Number(part));
@@ -81,12 +96,14 @@ function toMinuteOfDay(timeValue) {
   return (hours * 60) + minutes;
 }
 
+// Normalise les donnees pour 'normalizeActivityDate'.
 function normalizeActivityDate(value) {
   const raw = String(value || '').trim();
   if (!raw) return '';
   return raw.includes('T') ? raw.split('T')[0] : raw;
 }
 
+// Gere la logique principale de 'readScheduleMetadata'.
 function readScheduleMetadata(description) {
   const text = String(description || '');
   const match = text.match(/\[VOYGO_SCHEDULE\]([\s\S]*?)\[\/VOYGO_SCHEDULE\]/);
@@ -100,11 +117,13 @@ function readScheduleMetadata(description) {
   }
 }
 
+// Gere la logique principale de 'stripScheduleMetadata'.
 function stripScheduleMetadata(description) {
   const text = String(description || '');
   return text.replace(/\s*\[VOYGO_SCHEDULE\][\s\S]*?\[\/VOYGO_SCHEDULE\]\s*/g, '').trim();
 }
 
+// Gere la logique principale de 'attachScheduleMetadata'.
 function attachScheduleMetadata(description, schedule) {
   const clean = String(description || '').replace(/\s*\[VOYGO_SCHEDULE\][\s\S]*?\[\/VOYGO_SCHEDULE\]\s*/g, '').trim();
   const metadata = JSON.stringify({
@@ -115,6 +134,7 @@ function attachScheduleMetadata(description, schedule) {
   return [clean, `${SCHEDULE_META_OPEN}${metadata}${SCHEDULE_META_CLOSE}`].filter(Boolean).join('\n\n');
 }
 
+// Retourne l'information calculee par 'getActivitySchedule'.
 function getActivitySchedule(item) {
   const metadata = readScheduleMetadata(item?.description);
   const date = normalizeActivityDate(metadata?.date || item?.activity_date || '');
@@ -133,6 +153,7 @@ function getActivitySchedule(item) {
   };
 }
 
+// Formate la valeur traitee par 'formatActivitySchedule'.
 function formatActivitySchedule(schedule) {
   if (!schedule) return '';
   const dateLabel = formatDate(schedule.date);
@@ -140,6 +161,7 @@ function formatActivitySchedule(schedule) {
   return `${dateLabel} a ${schedule.startTime} (${durationLabel})`;
 }
 
+// Gere la logique principale de 'findActivityConflict'.
 function findActivityConflict(schedule) {
   const start = toMinuteOfDay(schedule.startTime);
   if (start === null) return null;
@@ -160,6 +182,7 @@ function findActivityConflict(schedule) {
   return null;
 }
 
+// Initialise le bloc fonctionnel 'initActivityEditorModal'.
 function initActivityEditorModal() {
   const modal = document.getElementById('explorer-activity-modal');
   const form = document.getElementById('explorer-activity-form');
@@ -295,6 +318,7 @@ function initActivityEditorModal() {
   return openModal;
 }
 
+// Normalise les donnees pour 'normalizeActivityIdentityPart'.
 function normalizeActivityIdentityPart(value) {
   return String(value || '')
     .normalize('NFD')
@@ -304,6 +328,7 @@ function normalizeActivityIdentityPart(value) {
     .trim();
 }
 
+// Retourne l'information calculee par 'getActivityIdentity'.
 function getActivityIdentity(item) {
   const sourcePlaceId = String(item?.source_place_id || '').trim();
   if (sourcePlaceId) {
@@ -316,6 +341,7 @@ function getActivityIdentity(item) {
   return `text:${name}::${address}`;
 }
 
+// Gere la logique principale de 'filterOutAddedSuggestions'.
 function filterOutAddedSuggestions(items) {
   const existingIdentities = new Set(
     state.tripActivities
@@ -329,14 +355,17 @@ function filterOutAddedSuggestions(items) {
   });
 }
 
+// Retourne l'information calculee par 'getVisibleSuggestions'.
 function getVisibleSuggestions() {
   return filterOutAddedSuggestions(state.suggestions);
 }
 
+// Retourne l'information calculee par 'getCurrentFilter'.
 function getCurrentFilter() {
   return FILTERS.find((item) => item.key === state.filter) || FILTERS[0];
 }
 
+// Construit le rendu pour 'renderFilters'.
 function renderFilters() {
   const container = document.getElementById('activity-filter-bar');
   if (!container) return;
@@ -356,6 +385,7 @@ function renderFilters() {
   }).join('');
 }
 
+// Construit le rendu pour 'renderSuggestions'.
 function renderSuggestions() {
   const list = document.getElementById('explorer-results');
   const empty = document.getElementById('explorer-empty');
@@ -411,6 +441,7 @@ function renderSuggestions() {
   });
 }
 
+// Met a jour l'etat pilote par 'setNote'.
 function setNote(message, type = '') {
   const note = document.getElementById('explorer-note');
   if (!note) return;
@@ -419,6 +450,7 @@ function setNote(message, type = '') {
   note.textContent = message || '';
 }
 
+// Applique les mises a jour de 'updateBackLink'.
 function updateBackLink() {
   const back = document.getElementById('explorer-back');
   if (!back) return;
@@ -434,6 +466,7 @@ function updateBackLink() {
   back.href = query ? `planning.html?${query}` : 'planning.html';
 }
 
+// Charge les donnees necessaires pour 'loadTripActivities'.
 async function loadTripActivities() {
   if (!state.tripId) {
     state.tripActivities = [];
@@ -451,6 +484,7 @@ async function loadTripActivities() {
   renderSuggestions();
 }
 
+// Recupere les donnees distantes pour 'fetchSuggestions'.
 async function fetchSuggestions() {
   if (!state.destination) {
     state.suggestions = [];
@@ -480,6 +514,7 @@ async function fetchSuggestions() {
   }
 }
 
+// Gere la logique principale de 'addSuggestion'.
 async function addSuggestion(index) {
   if (isReadOnlyTrip()) {
     setNote('Mode lecture seule: ajout indisponible.', 'is-error');
@@ -533,6 +568,7 @@ async function addSuggestion(index) {
   }
 }
 
+// Gere la logique principale de 'bindEvents'.
 function bindEvents() {
   const destinationInput = document.getElementById('explorer-destination');
   const searchButton = document.getElementById('explorer-search');
@@ -631,6 +667,7 @@ function bindEvents() {
   }
 }
 
+// Initialise le bloc fonctionnel 'initStateFromQuery'.
 function initStateFromQuery() {
   const params = new URLSearchParams(window.location.search);
   const destination = String(params.get('destination') || '').trim();
@@ -646,6 +683,7 @@ function initStateFromQuery() {
   if (destinationInput) destinationInput.value = destination;
 }
 
+// Resout les informations calculees par 'resolveTripAccess'.
 async function resolveTripAccess() {
   if (!state.tripId) {
     applyReadOnlyUiState();
@@ -666,6 +704,7 @@ async function resolveTripAccess() {
   applyReadOnlyUiState();
 }
 
+// Initialise le bloc fonctionnel 'initPage'.
 async function initPage() {
   initStateFromQuery();
   await resolveTripAccess();

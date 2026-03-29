@@ -1,3 +1,10 @@
+/**
+ * @voygo-doc
+ * Module: planningController
+ * Fichier: voygo\controllers\planningController.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
 import { api } from '../assets/js/api.js';
 import { initCountryAutocomplete } from './countryController.js';
 import {
@@ -7,6 +14,7 @@ import {
   deleteAccommodation
 } from './accommodationController.js';
 
+// Formate la valeur traitee par 'formatDate'.
 function formatDate(dateValue) {
   if (!dateValue) return '';
   const dateKeyMatch = String(dateValue).match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -22,12 +30,14 @@ function formatDate(dateValue) {
   return date.toLocaleDateString('fr-FR');
 }
 
+// Gere la logique principale de 'toTimeInputValue'.
 function toTimeInputValue(value) {
   const raw = String(value || '').trim();
   const match = raw.match(/(\d{2}:\d{2})(?::\d{2})?/);
   return match ? match[1] : '';
 }
 
+// Gere la logique principale de 'toDateInputValue'.
 function toDateInputValue(value) {
   if (!value) return '';
   if (typeof value === 'string') {
@@ -38,10 +48,12 @@ function toDateInputValue(value) {
   return date.toISOString().slice(0, 10);
 }
 
+// Retourne l'information calculee par 'getTodayInputValue'.
 function getTodayInputValue() {
   return new Date().toISOString().slice(0, 10);
 }
 
+// Gere la logique principale de 'addDaysToInput'.
 function addDaysToInput(value, days) {
   if (!value) return '';
   const date = new Date(value);
@@ -50,6 +62,7 @@ function addDaysToInput(value, days) {
   return date.toISOString().slice(0, 10);
 }
 
+// Gere la logique principale de 'readFallbackTrip'.
 function readFallbackTrip() {
   const stored = localStorage.getItem('voygo_current_trip');
   if (!stored) return null;
@@ -80,6 +93,7 @@ let lastAddedActivityId = null;
 const SCHEDULE_META_OPEN = '[VOYGO_SCHEDULE]';
 const SCHEDULE_META_CLOSE = '[/VOYGO_SCHEDULE]';
 
+// Gere la logique principale de 'escapeHtml'.
 function escapeHtml(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -89,6 +103,7 @@ function escapeHtml(value) {
     .replace(/'/g, '&#039;');
 }
 
+// Formate la valeur traitee par 'formatDuration'.
 function formatDuration(value) {
   const minutes = Number(value);
   if (!Number.isFinite(minutes) || minutes <= 0) return '-';
@@ -99,12 +114,14 @@ function formatDuration(value) {
   return `${mins}min`;
 }
 
+// Formate la valeur traitee par 'formatPrice'.
 function formatPrice(value) {
   const amount = Number(value);
   if (!Number.isFinite(amount)) return '-';
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
 }
 
+// Formate la valeur traitee par 'formatActivityRating'.
 function formatActivityRating(rating, reviewsCount) {
   const safeRating = Number(rating);
   const safeReviews = Number(reviewsCount);
@@ -116,6 +133,7 @@ function formatActivityRating(rating, reviewsCount) {
   return `${note} / 5 (${safeReviews} avis)`;
 }
 
+// Gere la logique principale de 'toMinuteOfDay'.
 function toMinuteOfDay(timeValue) {
   const match = String(timeValue || '').trim().match(/^(\d{2}):(\d{2})(?::\d{2})?$/);
   if (!match) return null;
@@ -126,12 +144,14 @@ function toMinuteOfDay(timeValue) {
   return (hours * 60) + minutes;
 }
 
+// Normalise les donnees pour 'normalizeActivityDate'.
 function normalizeActivityDate(value) {
   const raw = String(value || '').trim();
   if (!raw) return '';
   return raw.includes('T') ? raw.split('T')[0] : raw;
 }
 
+// Gere la logique principale de 'readScheduleMetadata'.
 function readScheduleMetadata(description) {
   const text = String(description || '');
   const match = text.match(/\[VOYGO_SCHEDULE\]([\s\S]*?)\[\/VOYGO_SCHEDULE\]/);
@@ -145,11 +165,13 @@ function readScheduleMetadata(description) {
   }
 }
 
+// Gere la logique principale de 'stripScheduleMetadata'.
 function stripScheduleMetadata(description) {
   const text = String(description || '');
   return text.replace(/\s*\[VOYGO_SCHEDULE\][\s\S]*?\[\/VOYGO_SCHEDULE\]\s*/g, '').trim();
 }
 
+// Gere la logique principale de 'attachScheduleMetadata'.
 function attachScheduleMetadata(description, schedule) {
   const clean = stripScheduleMetadata(description);
   const metadata = JSON.stringify({
@@ -160,6 +182,7 @@ function attachScheduleMetadata(description, schedule) {
   return [clean, `${SCHEDULE_META_OPEN}${metadata}${SCHEDULE_META_CLOSE}`].filter(Boolean).join('\n\n');
 }
 
+// Retourne l'information calculee par 'getActivitySchedule'.
 function getActivitySchedule(item) {
   const metadata = readScheduleMetadata(item?.description);
   const date = normalizeActivityDate(metadata?.date || item?.activity_date || '');
@@ -178,11 +201,13 @@ function getActivitySchedule(item) {
   };
 }
 
+// Retourne l'information calculee par 'getActivityDateKey'.
 function getActivityDateKey(item) {
   const metadata = readScheduleMetadata(item?.description);
   return normalizeActivityDate(metadata?.date || item?.activity_date || '');
 }
 
+// Retourne l'information calculee par 'getActivitiesOutsideTripDates'.
 function getActivitiesOutsideTripDates(nextStartDate, nextEndDate) {
   if (!nextStartDate || !nextEndDate) return [];
 
@@ -193,10 +218,12 @@ function getActivitiesOutsideTripDates(nextStartDate, nextEndDate) {
   });
 }
 
+// Retourne l'information calculee par 'getAccommodationDateKey'.
 function getAccommodationDateKey(value) {
   return normalizeActivityDate(value || '');
 }
 
+// Retourne l'information calculee par 'getAccommodationsOutsideTripDates'.
 function getAccommodationsOutsideTripDates(nextStartDate, nextEndDate) {
   if (!nextStartDate || !nextEndDate) return [];
 
@@ -208,10 +235,12 @@ function getAccommodationsOutsideTripDates(nextStartDate, nextEndDate) {
   });
 }
 
+// Retourne l'information calculee par 'getTransportDateKey'.
 function getTransportDateKey(item) {
   return normalizeActivityDate(item?.travel_date || '');
 }
 
+// Retourne l'information calculee par 'getTransportsOutsideTripDates'.
 function getTransportsOutsideTripDates(nextStartDate, nextEndDate) {
   if (!nextStartDate || !nextEndDate) return [];
 
@@ -222,6 +251,7 @@ function getTransportsOutsideTripDates(nextStartDate, nextEndDate) {
   });
 }
 
+// Formate la valeur traitee par 'formatActivitySchedule'.
 function formatActivitySchedule(schedule) {
   if (!schedule) return '';
   const dateLabel = formatDate(schedule.date);
@@ -229,6 +259,7 @@ function formatActivitySchedule(schedule) {
   return `${dateLabel} a ${schedule.startTime} (${durationLabel})`;
 }
 
+// Retourne l'information calculee par 'getTransportSchedule'.
 function getTransportSchedule(item) {
   const date = normalizeActivityDate(item?.travel_date || '');
   const startTime = toTimeInputValue(item?.travel_time || '');
@@ -246,6 +277,7 @@ function getTransportSchedule(item) {
   };
 }
 
+// Gere la logique principale de 'findTransportConflict'.
 function findTransportConflict(schedule, excludedTransportId = null) {
   const start = toMinuteOfDay(schedule.startTime);
   if (start === null) return null;
@@ -270,10 +302,12 @@ function findTransportConflict(schedule, excludedTransportId = null) {
   return null;
 }
 
+// Formate la valeur traitee par 'formatTransportLabel'.
 function formatTransportLabel(item) {
   return [item?.origin || '-', item?.destination || '-'].join(' -> ');
 }
 
+// Normalise les donnees pour 'normalizeActivityIdentityPart'.
 function normalizeActivityIdentityPart(value) {
   return String(value || '')
     .normalize('NFD')
@@ -283,6 +317,7 @@ function normalizeActivityIdentityPart(value) {
     .trim();
 }
 
+// Retourne l'information calculee par 'getActivityIdentity'.
 function getActivityIdentity(item) {
   const sourcePlaceId = String(item?.source_place_id || '').trim();
   if (sourcePlaceId) {
@@ -295,18 +330,22 @@ function getActivityIdentity(item) {
   return `text:${name}::${address}`;
 }
 
+// Normalise les donnees pour 'normalizeDestination'.
 function normalizeDestination(value) {
   return String(value || '').trim().toLowerCase();
 }
 
+// Verifie la condition exposee par 'isReadOnlyTrip'.
 function isReadOnlyTrip() {
   return !tripState.canEdit;
 }
 
+// Gere la logique principale de 'applyReadOnlyUiState'.
 function applyReadOnlyUiState() {
   document.body.classList.toggle('is-read-only-trip', isReadOnlyTrip());
 }
 
+// Gere la logique principale de 'syncPlanningUrl'.
 function syncPlanningUrl() {
   const params = new URLSearchParams(window.location.search);
   if (tripState.id) {
@@ -345,6 +384,7 @@ function syncPlanningUrl() {
   updatePlanningNavigationLinks();
 }
 
+// Applique les mises a jour de 'updatePlanningNavigationLinks'.
 function updatePlanningNavigationLinks() {
   const nav = document.querySelector('.planning-nav');
   if (!nav) return;
@@ -365,6 +405,7 @@ function updatePlanningNavigationLinks() {
   });
 }
 
+// Gere la logique principale de 'filterOutAddedSuggestions'.
 function filterOutAddedSuggestions(items) {
   const existingIdentities = new Set(
     tripActivities
@@ -378,10 +419,12 @@ function filterOutAddedSuggestions(items) {
   });
 }
 
+// Retourne l'information calculee par 'getVisibleActivitySuggestions'.
 function getVisibleActivitySuggestions() {
   return filterOutAddedSuggestions(activitySuggestions);
 }
 
+// Gere la logique principale de 'findActivityConflict'.
 function findActivityConflict(schedule) {
   const start = toMinuteOfDay(schedule.startTime);
   if (start === null) return null;
@@ -404,6 +447,7 @@ function findActivityConflict(schedule) {
   return null;
 }
 
+// Initialise le bloc fonctionnel 'initActivityScheduleModal'.
 function initActivityScheduleModal() {
   const modal = document.getElementById('activity-schedule-modal');
   const form = document.getElementById('activity-schedule-form');
@@ -523,6 +567,7 @@ function initActivityScheduleModal() {
   return openModal;
 }
 
+// Gere la logique principale de 'computeNights'.
 function computeNights(startDate, endDate) {
   if (!startDate || !endDate) return 0;
   const start = new Date(`${startDate}T00:00:00`);
@@ -531,6 +576,7 @@ function computeNights(startDate, endDate) {
   return Number.isFinite(diff) && diff > 0 ? diff : 0;
 }
 
+// Met a jour l'etat pilote par 'setAccommodationDateBounds'.
 function setAccommodationDateBounds(startDate, endDate) {
   const startInput = document.getElementById('accommodation-start');
   const endInput = document.getElementById('accommodation-end');
@@ -549,6 +595,7 @@ function setAccommodationDateBounds(startDate, endDate) {
   }
 }
 
+// Met a jour l'etat pilote par 'setTransportDateBounds'.
 function setTransportDateBounds(startDate, endDate) {
   const dateInput = document.getElementById('transport-date');
   if (!dateInput) return;
@@ -565,6 +612,7 @@ function setTransportDateBounds(startDate, endDate) {
   }
 }
 
+// Applique les mises a jour de 'updateTripMeta'.
 function updateTripMeta({ destination, startDate, endDate }) {
   const destinationNode = document.querySelector('#planning-destination');
   const datesNode = document.querySelector('#planning-dates');
@@ -577,6 +625,7 @@ function updateTripMeta({ destination, startDate, endDate }) {
   datesNode.textContent = formattedStart && formattedEnd ? `${formattedStart} - ${formattedEnd}` : '-';
 }
 
+// Gere la logique principale de 'syncTripInputs'.
 function syncTripInputs() {
   const nameInput = document.getElementById('trip-name');
   const destinationInput = document.getElementById('pays');
@@ -601,6 +650,7 @@ function syncTripInputs() {
   setTransportDateBounds(toDateInputValue(tripState.startDate), toDateInputValue(tripState.endDate));
 }
 
+// Charge les donnees necessaires pour 'loadTransports'.
 async function loadTransports() {
   if (!tripState.id) return;
   try {
@@ -613,6 +663,7 @@ async function loadTransports() {
   renderTransports();
 }
 
+// Construit le rendu pour 'renderTransports'.
 function renderTransports() {
   const list = document.getElementById('transport-list');
   const empty = document.getElementById('transport-empty');
@@ -665,6 +716,7 @@ function renderTransports() {
   });
 }
 
+// Charge les donnees necessaires pour 'loadAccommodations'.
 async function loadAccommodations() {
   if (!tripState.id) {
     accommodations = [];
@@ -680,6 +732,7 @@ async function loadAccommodations() {
   renderAccommodations();
 }
 
+// Charge les donnees necessaires pour 'loadActivitySuggestions'.
 async function loadActivitySuggestions() {
   const destinationInput = document.getElementById('pays');
   const destination = (destinationInput?.value || tripState.destination || '').trim();
@@ -712,6 +765,7 @@ async function loadActivitySuggestions() {
   renderActivitySuggestions();
 }
 
+// Construit le rendu pour 'renderActivitySuggestions'.
 function renderActivitySuggestions() {
   const list = document.getElementById('activity-suggestions');
   const empty = document.getElementById('activity-suggestions-empty');
@@ -771,6 +825,7 @@ function renderActivitySuggestions() {
   loadMoreButton.hidden = false;
 }
 
+// Charge les donnees necessaires pour 'loadTripActivities'.
 async function loadTripActivities() {
   if (!tripState.id) {
     tripActivities = [];
@@ -789,6 +844,7 @@ async function loadTripActivities() {
   renderActivitySuggestions();
 }
 
+// Construit le rendu pour 'renderTripActivities'.
 function renderTripActivities() {
   const list = document.getElementById('trip-activities-list');
   const empty = document.getElementById('trip-activities-empty');
@@ -852,6 +908,7 @@ function renderTripActivities() {
   }
 }
 
+// Initialise le bloc fonctionnel 'initActivitiesPanel'.
 function initActivitiesPanel() {
   const suggestionsList = document.getElementById('activity-suggestions');
   const tripList = document.getElementById('trip-activities-list');
@@ -973,6 +1030,7 @@ function initActivitiesPanel() {
   }
 }
 
+// Construit le rendu pour 'renderAccommodations'.
 function renderAccommodations() {
   const list = document.getElementById('accommodation-list');
   const empty = document.getElementById('accommodation-empty');
@@ -1032,6 +1090,7 @@ function renderAccommodations() {
   }
 }
 
+// Initialise le bloc fonctionnel 'initPlanningPage'.
 async function initPlanningPage() {
   const returnTo = `planning.html${window.location.search || ''}`;
   try {
@@ -1098,6 +1157,7 @@ async function initPlanningPage() {
   await loadActivitySuggestions();
 }
 
+// Initialise le bloc fonctionnel 'initTripEditor'.
 function initTripEditor() {
   const nameInput = document.getElementById('trip-name');
   const destinationInput = document.getElementById('pays');
@@ -1120,7 +1180,7 @@ function initTripEditor() {
 
   if (!tripState.id) {
     saveButton.disabled = true;
-    saveNote.textContent = "Ce voyage n'est pas encore enregistrÃ©.";
+    saveNote.textContent = "Ce voyage n'est pas encore enregistre.";
     return;
   }
 
@@ -1166,13 +1226,13 @@ function initTripEditor() {
     const today = getTodayInputValue();
     if (payload.start_date && payload.start_date < today) {
       saveNote.classList.add('is-error');
-      saveNote.textContent = 'La date de dÃ©part ne peut pas Ãªtre dans le passÃ©.';
+      saveNote.textContent = 'La date de depart ne peut pas etre dans le passe.';
       return;
     }
 
     if (payload.end_date && payload.end_date < today) {
       saveNote.classList.add('is-error');
-      saveNote.textContent = 'La date de retour ne peut pas Ãªtre dans le passÃ©.';
+      saveNote.textContent = 'La date de retour ne peut pas etre dans le passe.';
       return;
     }
 
@@ -1315,13 +1375,14 @@ function initTripEditor() {
         ? 'Destination modifiee. Un nouveau voyage a ete cree et toutes les donnees liees a l ancien voyage ont ete supprimees.'
         : 'Voyage mis a jour.';
     } catch (err) {
-      console.warn('Impossible de mettre Ã  jour le voyage.', err);
+      console.warn('Impossible de mettre a jour le voyage.', err);
       saveNote.classList.add('is-error');
       saveNote.textContent = err?.message || "Erreur lors de l'enregistrement.";
     }
   });
 }
 
+// Initialise le bloc fonctionnel 'initTransportModal'.
 function initTransportModal() {
   const modal = document.getElementById('transport-modal');
   const openButton = document.querySelector('[data-open-transport]');
@@ -1435,13 +1496,13 @@ function initTransportModal() {
 
     if (currentStart && travelDate && travelDate < currentStart) {
       saveNote.classList.add('is-error');
-      saveNote.textContent = 'La date doit Ãªtre dans les dates du voyage.';
+      saveNote.textContent = 'La date doit etre dans les dates du voyage.';
       return;
     }
 
     if (currentEnd && travelDate && travelDate > currentEnd) {
       saveNote.classList.add('is-error');
-      saveNote.textContent = 'La date doit Ãªtre dans les dates du voyage.';
+      saveNote.textContent = 'La date doit etre dans les dates du voyage.';
       return;
     }
 
@@ -1560,6 +1621,7 @@ function initTransportModal() {
   }
 }
 
+// Initialise le bloc fonctionnel 'initAccommodationModal'.
 function initAccommodationModal() {
   const modal = document.getElementById('accommodation-modal');
   const openButton = document.querySelector('[data-open-accommodation]');
@@ -1763,6 +1825,7 @@ function initAccommodationModal() {
   });
 }
 
+// Gere la logique principale de 'bootstrapPlanningPage'.
 async function bootstrapPlanningPage() {
   await initPlanningPage();
   initTripEditor();

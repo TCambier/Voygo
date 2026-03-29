@@ -1,3 +1,10 @@
+/**
+ * @voygo-doc
+ * Module: indexController
+ * Fichier: voygo\controllers\indexController.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
 // app.js - main entry point for the application
 // This file can import controllers and initialize the UI. It is loaded
 // from your HTML with `type="module"`.

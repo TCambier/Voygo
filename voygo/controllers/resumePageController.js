@@ -1,3 +1,10 @@
+/**
+ * @voygo-doc
+ * Module: resumePageController
+ * Fichier: voygo\controllers\resumePageController.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
 import { api } from '../assets/js/api.js';
 import { listAccommodationsByTrip } from './accommodationController.js';
 
@@ -19,6 +26,7 @@ let map = null;
 let markerLayer = null;
 let traceLayer = null;
 
+// Gere la logique principale de 'escapeHtml'.
 function escapeHtml(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -28,6 +36,7 @@ function escapeHtml(value) {
     .replace(/'/g, '&#039;');
 }
 
+// Met a jour l'etat pilote par 'setNote'.
 function setNote(message, kind = 'info') {
   const note = document.getElementById('resume-note');
   if (!note) return;
@@ -38,6 +47,7 @@ function setNote(message, kind = 'info') {
   note.textContent = message || '';
 }
 
+// Formate la valeur traitee par 'formatDate'.
 function formatDate(dateValue) {
   if (!dateValue) return '';
   const date = new Date(`${dateValue}T00:00:00`);
@@ -45,6 +55,7 @@ function formatDate(dateValue) {
   return date.toLocaleDateString('fr-FR');
 }
 
+// Formate la valeur traitee par 'formatDateLong'.
 function formatDateLong(dateValue) {
   if (!dateValue) return '';
   const date = new Date(`${dateValue}T00:00:00`);
@@ -57,12 +68,14 @@ function formatDateLong(dateValue) {
   }).format(date);
 }
 
+// Formate la valeur traitee par 'formatPrice'.
 function formatPrice(value) {
   const amount = Number(value);
   if (!Number.isFinite(amount)) return '-';
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
 }
 
+// Formate la valeur traitee par 'formatDuration'.
 function formatDuration(value) {
   const minutes = Number(value);
   if (!Number.isFinite(minutes) || minutes <= 0) return '-';
@@ -73,12 +86,14 @@ function formatDuration(value) {
   return `${mins}min`;
 }
 
+// Formate la valeur traitee par 'formatPercent'.
 function formatPercent(value) {
   const amount = Number(value);
   if (!Number.isFinite(amount) || amount <= 0) return '0%';
   return `${Math.round(amount)}%`;
 }
 
+// Gere la logique principale de 'toDateInputValue'.
 function toDateInputValue(value) {
   if (!value) return '';
   if (typeof value === 'string') {
@@ -89,18 +104,21 @@ function toDateInputValue(value) {
   return date.toISOString().slice(0, 10);
 }
 
+// Normalise les donnees pour 'normalizeDate'.
 function normalizeDate(value) {
   const raw = String(value || '').trim();
   if (!raw) return '';
   return raw.includes('T') ? raw.split('T')[0] : raw;
 }
 
+// Gere la logique principale de 'toTimeDisplayValue'.
 function toTimeDisplayValue(value) {
   const raw = String(value || '').trim();
   const match = raw.match(/(\d{2}:\d{2})(?::\d{2})?/);
   return match ? match[1] : '';
 }
 
+// Gere la logique principale de 'toMinuteOfDay'.
 function toMinuteOfDay(timeValue) {
   const match = String(timeValue || '').trim().match(/^(\d{2}):(\d{2})(?::\d{2})?$/);
   if (!match) return null;
@@ -113,6 +131,7 @@ function toMinuteOfDay(timeValue) {
   return (hours * 60) + minutes;
 }
 
+// Gere la logique principale de 'computeNights'.
 function computeNights(startDate, endDate) {
   if (!startDate || !endDate) return 0;
   const start = new Date(`${startDate}T00:00:00`);
@@ -121,6 +140,7 @@ function computeNights(startDate, endDate) {
   return Number.isFinite(diff) && diff > 0 ? diff : 0;
 }
 
+// Gere la logique principale de 'readScheduleMetadata'.
 function readScheduleMetadata(description) {
   const text = String(description || '');
   const match = text.match(/\[VOYGO_SCHEDULE\]([\s\S]*?)\[\/VOYGO_SCHEDULE\]/);
@@ -134,11 +154,13 @@ function readScheduleMetadata(description) {
   }
 }
 
+// Gere la logique principale de 'stripScheduleMetadata'.
 function stripScheduleMetadata(description) {
   const text = String(description || '');
   return text.replace(/\s*\[VOYGO_SCHEDULE\][\s\S]*?\[\/VOYGO_SCHEDULE\]\s*/g, '').trim();
 }
 
+// Retourne l'information calculee par 'getActivitySchedule'.
 function getActivitySchedule(item) {
   const metadata = readScheduleMetadata(item?.description);
   const date = normalizeDate(metadata?.date || item?.activity_date || '');
@@ -155,6 +177,7 @@ function getActivitySchedule(item) {
   };
 }
 
+// Retourne l'information calculee par 'getTransportSchedule'.
 function getTransportSchedule(item) {
   const date = normalizeDate(item?.travel_date || '');
   const startTime = toTimeDisplayValue(item?.travel_time || '');
@@ -170,6 +193,7 @@ function getTransportSchedule(item) {
   };
 }
 
+// Analyse l'entree geree par 'parseDateKey'.
 function parseDateKey(value) {
   const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!match) return null;
@@ -180,6 +204,7 @@ function parseDateKey(value) {
   };
 }
 
+// Formate la valeur traitee par 'formatDateKeyFromUtc'.
 function formatDateKeyFromUtc(date) {
   const year = date.getUTCFullYear();
   const month = String(date.getUTCMonth() + 1).padStart(2, '0');
@@ -187,6 +212,7 @@ function formatDateKeyFromUtc(date) {
   return `${year}-${month}-${day}`;
 }
 
+// Cree les donnees gerees par 'createDateRange'.
 function createDateRange(startDate, endDate) {
   const startParts = parseDateKey(startDate);
   const endParts = parseDateKey(endDate);
@@ -206,6 +232,7 @@ function createDateRange(startDate, endDate) {
   return days;
 }
 
+// Gere la logique principale de 'readFallbackTrip'.
 function readFallbackTrip() {
   const stored = localStorage.getItem('voygo_current_trip');
   if (!stored) return null;
@@ -216,6 +243,7 @@ function readFallbackTrip() {
   }
 }
 
+// Charge les donnees necessaires pour 'loadTrip'.
 async function loadTrip() {
   const params = new URLSearchParams(window.location.search);
   const fallbackTrip = readFallbackTrip();
@@ -244,6 +272,7 @@ async function loadTrip() {
   }
 }
 
+// Applique les mises a jour de 'updateMeta'.
 function updateMeta() {
   const nameNode = document.getElementById('resume-trip-name');
   const datesNode = document.getElementById('resume-dates');
@@ -259,6 +288,7 @@ function updateMeta() {
   }
 }
 
+// Applique les mises a jour de 'updateNavigationLinks'.
 function updateNavigationLinks() {
   const nav = document.querySelector('.planning-nav');
   if (!nav) return;
@@ -302,6 +332,7 @@ function updateNavigationLinks() {
   });
 }
 
+// Charge les donnees necessaires pour 'loadActivities'.
 async function loadActivities() {
   if (!tripState.id) {
     tripState.activities = [];
@@ -316,6 +347,7 @@ async function loadActivities() {
   }
 }
 
+// Charge les donnees necessaires pour 'loadTransports'.
 async function loadTransports() {
   if (!tripState.id) {
     tripState.transports = [];
@@ -330,6 +362,7 @@ async function loadTransports() {
   }
 }
 
+// Charge les donnees necessaires pour 'loadAccommodations'.
 async function loadAccommodations() {
   if (!tripState.id) {
     tripState.accommodations = [];
@@ -343,6 +376,7 @@ async function loadAccommodations() {
   }
 }
 
+// Gere la logique principale de 'makeKpiCard'.
 function makeKpiCard(label, value, icon) {
   return `
     <div class="resume-kpi-card">
@@ -355,6 +389,7 @@ function makeKpiCard(label, value, icon) {
   `;
 }
 
+// Gere la logique principale de 'collectTimelineEntries'.
 function collectTimelineEntries() {
   const entries = [];
 
@@ -431,6 +466,7 @@ function collectTimelineEntries() {
   return entries;
 }
 
+// Gere la logique principale de 'buildBudgetBreakdown'.
 function buildBudgetBreakdown() {
   const transportTotal = (tripState.transports || []).reduce((sum, item) => {
     const price = Number(item?.price);
@@ -486,6 +522,7 @@ function buildBudgetBreakdown() {
   };
 }
 
+// Construit le rendu pour 'renderOverview'.
 function renderOverview() {
   const kpiNode = document.getElementById('resume-overview-kpis');
   const highlightsNode = document.getElementById('resume-highlights');
@@ -638,6 +675,7 @@ function renderOverview() {
   `;
 }
 
+// Analyse l'entree geree par 'parseCoordsFromMapUrl'.
 function parseCoordsFromMapUrl(mapUrl) {
   const text = String(mapUrl || '').trim();
   if (!text) return null;
@@ -660,10 +698,12 @@ function parseCoordsFromMapUrl(mapUrl) {
   return null;
 }
 
+// Gere la logique principale de 'makeAddressCacheKey'.
 function makeAddressCacheKey(address) {
   return String(address || '').trim().toLowerCase();
 }
 
+// Charge les donnees necessaires pour 'loadGeocodeCache'.
 function loadGeocodeCache() {
   const raw = localStorage.getItem('voygo_geocode_cache');
   if (!raw) return {};
@@ -675,6 +715,7 @@ function loadGeocodeCache() {
   }
 }
 
+// Gere la logique principale de 'saveGeocodeCache'.
 function saveGeocodeCache(cache) {
   try {
     localStorage.setItem('voygo_geocode_cache', JSON.stringify(cache));
@@ -683,6 +724,7 @@ function saveGeocodeCache(cache) {
   }
 }
 
+// Gere la logique principale de 'geocodeAddress'.
 async function geocodeAddress(address, destination, cache) {
   const key = makeAddressCacheKey(address);
   if (!key) return null;
@@ -719,6 +761,7 @@ async function geocodeAddress(address, destination, cache) {
   }
 }
 
+// Gere la logique principale de 'localizeActivities'.
 async function localizeActivities() {
   const geocodeCache = loadGeocodeCache();
   const localized = [];
@@ -740,6 +783,7 @@ async function localizeActivities() {
   tripState.localizedActivities = localized;
 }
 
+// Gere la logique principale de 'ensureMap'.
 function ensureMap() {
   if (map) return;
   const mapNode = document.getElementById('resume-map');
@@ -755,6 +799,7 @@ function ensureMap() {
   traceLayer = window.L.layerGroup().addTo(map);
 }
 
+// Gere la logique principale de 'groupActivitiesByDay'.
 function groupActivitiesByDay(list) {
   const grouped = new Map();
 
@@ -780,6 +825,7 @@ function groupActivitiesByDay(list) {
   return grouped;
 }
 
+// Gere la logique principale de 'safePdfFilePart'.
 function safePdfFilePart(value) {
   return String(value || 'voyage')
     .trim()
@@ -789,6 +835,7 @@ function safePdfFilePart(value) {
     .replace(/^-|-$/g, '') || 'voyage';
 }
 
+// Charge les donnees necessaires pour 'loadImageAsDataUrl'.
 function loadImageAsDataUrl(src) {
   return new Promise((resolve) => {
     const image = new Image();
@@ -818,6 +865,7 @@ function loadImageAsDataUrl(src) {
   });
 }
 
+// Cree les donnees gerees par 'createPdfReportWriter'.
 function createPdfReportWriter(doc, options = {}) {
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -994,6 +1042,7 @@ function createPdfReportWriter(doc, options = {}) {
   };
 }
 
+// Gere la logique principale de 'exportResumeToPdf'.
 async function exportResumeToPdf() {
   if (!tripState.id) {
     setNote('Selectionnez un voyage avant export PDF.', 'error');
@@ -1107,6 +1156,7 @@ async function exportResumeToPdf() {
   }
 }
 
+// Gere la logique principale de 'bindExportButton'.
 function bindExportButton() {
   const button = document.getElementById('resume-export-pdf-btn');
   if (!button) return;
@@ -1126,6 +1176,7 @@ function bindExportButton() {
   });
 }
 
+// Construit le rendu pour 'renderMapSection'.
 function renderMapSection() {
   const emptyNode = document.getElementById('resume-map-empty');
   const statsNode = document.getElementById('resume-carte-stats');
@@ -1246,6 +1297,7 @@ function renderMapSection() {
   }
 }
 
+// Initialise le bloc fonctionnel 'initResumePage'.
 export async function initResumePage() {
   try {
     bindExportButton();

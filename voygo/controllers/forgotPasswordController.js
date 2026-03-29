@@ -1,3 +1,11 @@
+/**
+ * @voygo-doc
+ * Module: forgotPasswordController
+ * Fichier: voygo\controllers\forgotPasswordController.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
+// Gere l'ouverture du modal "mot de passe oublie" et l'envoi de la demande.
 import { requestPasswordReset } from './userController.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -7,6 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const sendBtn = document.getElementById('send-btn');
     const emailInput = document.getElementById('forgot-email');
     const feedback = document.getElementById('forgot-feedback');
+
+    if (!modal || !link || !span || !sendBtn || !emailInput || !feedback) return;
 
     function openModal() {
         modal.style.display = 'block';
@@ -48,10 +58,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const result = await requestPasswordReset(email);
         if (result.success) {
-            feedback.textContent = 'Email envoyé. Vérifiez votre boîte de réception.';
+            feedback.textContent = 'Email envoye. Verifiez votre boite de reception.';
             feedback.classList.add('is-success');
         } else {
-            feedback.textContent = result.error || 'Impossible d’envoyer l’email.';
+            feedback.textContent = result.error || 'Impossible d envoyer l email.';
             feedback.classList.add('is-error');
         }
 

@@ -1,6 +1,14 @@
+/**
+ * @voygo-doc
+ * Module: landingTripController
+ * Fichier: voygo\controllers\landingTripController.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
 import { createTrip } from './tripController.js';
 import { api } from '../assets/js/api.js';
 
+// Initialise le bloc fonctionnel 'initLandingTripCreation'.
 export function initLandingTripCreation() {
   const countryInput = document.querySelector('#pays');
   const startDateInput = document.querySelector('#start-date');

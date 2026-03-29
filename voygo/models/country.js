@@ -1,9 +1,17 @@
+/**
+ * @voygo-doc
+ * Module: country
+ * Fichier: voygo\models\country.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
 const GEODB_BASE_URL = 'https://geodb-free-service.wirefreethought.com/v1/geo';
 const CITY_LIMIT = 5;
 const COUNTRY_LIMIT = 5;
 const TOTAL_LIMIT = 8;
 const LANGUAGE_CODE = 'fr';
 
+// Normalise les donnees pour 'normalizeText'.
 function normalizeText(value) {
   return value
     .normalize('NFD')
@@ -12,15 +20,18 @@ function normalizeText(value) {
     .trim();
 }
 
+// Formate la valeur traitee par 'formatCity'.
 function formatCity(city) {
   const parts = [city?.name, city?.region, city?.country].filter(Boolean);
   return parts.join(', ');
 }
 
+// Formate la valeur traitee par 'formatCountry'.
 function formatCountry(country) {
   return country?.name || '';
 }
 
+// Recupere les donnees distantes pour 'fetchGeoDb'.
 async function fetchGeoDb(path, signal) {
   try {
     const response = await fetch(`${GEODB_BASE_URL}${path}`, { signal });
@@ -32,6 +43,7 @@ async function fetchGeoDb(path, signal) {
   }
 }
 
+// Gere la logique principale de 'searchCountries'.
 export async function searchCountries(query, signal) {
   const trimmedQuery = query.trim();
   if (trimmedQuery.length < 2) return [];

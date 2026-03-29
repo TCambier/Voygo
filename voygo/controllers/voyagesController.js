@@ -1,3 +1,10 @@
+/**
+ * @voygo-doc
+ * Module: voyagesController
+ * Fichier: voygo\controllers\voyagesController.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
 import { api } from '../assets/js/api.js';
 
 const grid = document.getElementById('voyages-grid');
@@ -28,6 +35,7 @@ let allTrips = [];
 let selectedTripToShare = null;
 let currentTripShares = [];
 
+// Formate la valeur traitee par 'formatDate'.
 function formatDate(dateValue) {
     if (!dateValue) return '';
     const date = new Date(dateValue);
@@ -35,6 +43,7 @@ function formatDate(dateValue) {
     return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+// Formate la valeur traitee par 'formatCurrency'.
 function formatCurrency(value) {
     if (value === null || value === undefined || value === '') return '';
     const num = Number(value);
@@ -46,24 +55,29 @@ function formatCurrency(value) {
     }).format(num);
 }
 
+// Resout les informations calculees par 'resolveTravelers'.
 function resolveTravelers(trip) {
     const raw = trip.people ?? trip.travelers ?? trip.nb_people ?? trip.passengers;
     const count = parseInt(raw, 10);
     return Number.isFinite(count) && count > 0 ? count : null;
 }
 
+// Resout les informations calculees par 'resolveBudget'.
 function resolveBudget(trip) {
     return trip.budget ?? trip.budget_total ?? trip.total_budget ?? trip.estimated_budget ?? null;
 }
 
+// Resout les informations calculees par 'resolveSummary'.
 function resolveSummary(trip) {
     return trip.summary || trip.description || trip.notes || 'Aucune note pour ce voyage.';
 }
 
+// Resout les informations calculees par 'resolveTitle'.
 function resolveTitle(trip) {
     return trip.name || trip.destination || 'Voyage';
 }
 
+// Normalise les donnees pour 'normalizeDate'.
 function normalizeDate(dateValue) {
     if (!dateValue) return null;
     if (dateValue instanceof Date) {
@@ -86,6 +100,7 @@ function normalizeDate(dateValue) {
     return parsed;
 }
 
+// Gere la logique principale de 'computeStatus'.
 function computeStatus(trip) {
     const start = normalizeDate(trip.start_date);
     const end = normalizeDate(trip.end_date);
@@ -97,6 +112,7 @@ function computeStatus(trip) {
     return { label: 'En cours', className: 'in-progress' };
 }
 
+// Gere la logique principale de 'buildTripCard'.
 function buildTripCard(trip, index) {
     const card = document.createElement('article');
     card.className = `voyage-card${index === 0 ? ' featured' : ''}`;
@@ -161,6 +177,7 @@ function buildTripCard(trip, index) {
     return card;
 }
 
+// Construit le rendu pour 'renderTrips'.
 function renderTrips(trips) {
     if (!grid || !emptyState) return;
     grid.innerHTML = '';
@@ -177,6 +194,7 @@ function renderTrips(trips) {
     });
 }
 
+// Applique les mises a jour de 'updateStats'.
 function updateStats(trips) {
     if (!statTotal || !statLastCreated || !statUpcoming || !statUpcomingNotes || !statBudget || !statBudgetNote) {
         return;
@@ -214,6 +232,7 @@ function updateStats(trips) {
     }
 }
 
+// Gere la logique principale de 'applyFilters'.
 function applyFilters() {
     let filtered = [...allTrips];
 
@@ -242,19 +261,23 @@ function applyFilters() {
     renderTrips(filtered);
 }
 
+// Gere la logique principale de 'redirectToIndex'.
 function redirectToIndex() {
     window.location.href = '/index.html';
 }
 
+// Recupere les donnees distantes pour 'fetchTrips'.
 async function fetchTrips() {
     const result = await api.get('/api/trips');
     return result?.data || [];
 }
 
+// Supprime les donnees ciblees par 'deleteTrip'.
 async function deleteTrip(tripId) {
     await api.delete(`/api/trips/${encodeURIComponent(tripId)}`);
 }
 
+// Met a jour l'etat pilote par 'setShareFeedback'.
 function setShareFeedback(message, type = 'info') {
     if (!shareTripFeedback) return;
     shareTripFeedback.textContent = message || '';
@@ -262,6 +285,7 @@ function setShareFeedback(message, type = 'info') {
     shareTripFeedback.hidden = !message;
 }
 
+// Construit le rendu pour 'renderTripShares'.
 function renderTripShares() {
     if (!shareTripExistingEmpty || !shareTripSharesList) return;
 
@@ -290,6 +314,7 @@ function renderTripShares() {
     `).join('');
 }
 
+// Charge les donnees necessaires pour 'loadTripShares'.
 async function loadTripShares() {
     if (!selectedTripToShare?.id) return;
 
@@ -304,6 +329,7 @@ async function loadTripShares() {
     renderTripShares();
 }
 
+// Applique les mises a jour de 'updateSharePermission'.
 async function updateSharePermission(sharedWithUserId, permission) {
     if (!selectedTripToShare?.id || !sharedWithUserId) return;
     await api.patch(`/api/trips/${encodeURIComponent(selectedTripToShare.id)}/share/${encodeURIComponent(sharedWithUserId)}`, {
@@ -311,11 +337,13 @@ async function updateSharePermission(sharedWithUserId, permission) {
     });
 }
 
+// Gere la logique principale de 'revokeShare'.
 async function revokeShare(sharedWithUserId) {
     if (!selectedTripToShare?.id || !sharedWithUserId) return;
     await api.delete(`/api/trips/${encodeURIComponent(selectedTripToShare.id)}/share/${encodeURIComponent(sharedWithUserId)}`);
 }
 
+// Gere la logique principale de 'openShareModal'.
 function openShareModal(trip) {
     if (!shareModalBackdrop || !shareTripForm || !trip) return;
     selectedTripToShare = trip;
@@ -338,6 +366,7 @@ function openShareModal(trip) {
     loadTripShares();
 }
 
+// Gere la logique principale de 'closeShareModal'.
 function closeShareModal() {
     if (!shareModalBackdrop) return;
     shareModalBackdrop.hidden = true;
@@ -348,11 +377,13 @@ function closeShareModal() {
     setShareFeedback('', 'info');
 }
 
+// Gere la logique principale de 'verifyEmailExists'.
 async function verifyEmailExists(email) {
     const result = await api.get(`/api/auth/email-exists?email=${encodeURIComponent(email)}`);
     return Boolean(result?.exists);
 }
 
+// Gere la logique principale de 'submitTripShare'.
 async function submitTripShare(event) {
     event.preventDefault();
     if (!selectedTripToShare?.id) return;
@@ -406,6 +437,7 @@ async function submitTripShare(event) {
     }
 }
 
+// Initialise le bloc fonctionnel 'initVoyagesPage'.
 async function initVoyagesPage() {
     if (!grid || !emptyState) return;
     grid.innerHTML = '<div class="voyages-loading">Chargement des voyages...</div>';

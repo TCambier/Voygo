@@ -1,6 +1,14 @@
+/**
+ * @voygo-doc
+ * Module: resourceController
+ * Fichier: server\controllers\resourceController.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
 import { getSupabaseForUser } from '../services/supabase.js';
 import { getAccessDbClient, getTripAccess } from '../utils/tripAccess.js';
 
+// Liste les elements retournes par 'listResource'.
 export async function listResource(req, res) {
   const client = getSupabaseForUser(req.accessToken);
   const db = getAccessDbClient(client);
@@ -34,6 +42,7 @@ export async function listResource(req, res) {
   return res.json({ data: data || [] });
 }
 
+// Cree les donnees gerees par 'createResource'.
 export async function createResource(req, res) {
   const client = getSupabaseForUser(req.accessToken);
   const db = getAccessDbClient(client);
@@ -73,6 +82,7 @@ export async function createResource(req, res) {
   return res.status(201).json({ data });
 }
 
+// Applique les mises a jour de 'updateResource'.
 export async function updateResource(req, res) {
   const client = getSupabaseForUser(req.accessToken);
   const db = getAccessDbClient(client);
@@ -121,6 +131,7 @@ export async function updateResource(req, res) {
   return res.json({ data });
 }
 
+// Supprime les donnees ciblees par 'deleteResource'.
 export async function deleteResource(req, res) {
   const client = getSupabaseForUser(req.accessToken);
   const db = getAccessDbClient(client);

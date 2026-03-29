@@ -1,7 +1,15 @@
+/**
+ * @voygo-doc
+ * Module: authController
+ * Fichier: server\controllers\authController.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
 import { supabaseAuth, supabaseAdmin, getSupabaseForUser } from '../services/supabase.js';
 import { setAuthCookies, clearAuthCookies } from '../utils/cookies.js';
 import { config } from '../config.js';
 
+// Verifie la condition exposee par 'isMissingTableError'.
 function isMissingTableError(error) {
   if (!error) return false;
   const code = String(error.code || '').toUpperCase();
@@ -15,6 +23,7 @@ function isMissingTableError(error) {
   );
 }
 
+// Supprime les donnees ciblees par 'deleteAllUserData'.
 async function deleteAllUserData(client, userId) {
   const tables = [
     'transports',
@@ -41,6 +50,7 @@ async function deleteAllUserData(client, userId) {
   }
 }
 
+// Gere la logique principale de 'buildUserPayload'.
 function buildUserPayload(user) {
   if (!user) return null;
   return {
@@ -51,11 +61,13 @@ function buildUserPayload(user) {
   };
 }
 
+// Verifie la condition exposee par 'isUserAlreadyDeleted'.
 function isUserAlreadyDeleted(errorMessage = '') {
   const message = String(errorMessage || '').toLowerCase();
   return message.includes('user not found') || message.includes('not found');
 }
 
+// Verifie la condition exposee par 'isStrongPassword'.
 function isStrongPassword(password = '') {
   const pwd = String(password);
   const hasUpperCase = /[A-Z]/.test(pwd);
@@ -66,6 +78,7 @@ function isStrongPassword(password = '') {
   return hasUpperCase && hasLowerCase && hasNumbers && hasSymbols;
 }
 
+// Supprime les donnees ciblees par 'deleteAuthUserViaAdminRest'.
 async function deleteAuthUserViaAdminRest(userId) {
   const response = await fetch(`${config.supabaseUrl}/auth/v1/admin/users/${userId}`, {
     method: 'DELETE',
@@ -87,6 +100,7 @@ async function deleteAuthUserViaAdminRest(userId) {
   };
 }
 
+// Gere la logique principale de 'signup'.
 export async function signup(req, res) {
   const { first_name, last_name, email, password } = req.body || {};
   if (!first_name || !last_name || !email || !password) {
@@ -115,6 +129,7 @@ export async function signup(req, res) {
   });
 }
 
+// Gere la logique principale de 'login'.
 export async function login(req, res) {
   const { email, password } = req.body || {};
   if (!email || !password) {
@@ -130,6 +145,7 @@ export async function login(req, res) {
   return res.json({ user: buildUserPayload(data.user) });
 }
 
+// Gere la logique principale de 'me'.
 export async function me(req, res) {
   if (!req.user) {
     return res.status(401).json({ error: 'Non authentifie.' });
@@ -137,11 +153,13 @@ export async function me(req, res) {
   return res.json({ user: buildUserPayload(req.user) });
 }
 
+// Gere la logique principale de 'logout'.
 export async function logout(req, res) {
   clearAuthCookies(res);
   return res.json({ success: true });
 }
 
+// Gere la logique principale de 'emailExists'.
 export async function emailExists(req, res) {
   const email = req.query.email || req.body?.email;
   if (!email) {
@@ -160,6 +178,7 @@ export async function emailExists(req, res) {
   return res.json({ exists: false });
 }
 
+// Gere la logique principale de 'forgotPassword'.
 export async function forgotPassword(req, res) {
   const { email } = req.body || {};
   if (!email) {
@@ -177,6 +196,7 @@ export async function forgotPassword(req, res) {
   return res.json({ success: true });
 }
 
+// Gere la logique principale de 'resetPassword'.
 export async function resetPassword(req, res) {
   const { accessToken, password } = req.body || {};
   if (!accessToken || !password) {
@@ -240,6 +260,7 @@ export async function resetPassword(req, res) {
   return res.json({ success: true });
 }
 
+// Applique les mises a jour de 'updateProfile'.
 export async function updateProfile(req, res) {
   const { first_name, last_name } = req.body || {};
   if (!first_name || !last_name) {
@@ -258,6 +279,7 @@ export async function updateProfile(req, res) {
   return res.json({ user: buildUserPayload(data?.user) });
 }
 
+// Applique les mises a jour de 'updateEmail'.
 export async function updateEmail(req, res) {
   const { email } = req.body || {};
   if (!email) {
@@ -274,6 +296,7 @@ export async function updateEmail(req, res) {
   return res.json({ success: true });
 }
 
+// Applique les mises a jour de 'updatePassword'.
 export async function updatePassword(req, res) {
   const { password } = req.body || {};
   if (!password) {
@@ -296,6 +319,7 @@ export async function updatePassword(req, res) {
   return res.json({ success: true });
 }
 
+// Supprime les donnees ciblees par 'deleteAccount'.
 export async function deleteAccount(req, res) {
   const client = getSupabaseForUser(req.accessToken);
   const userId = req.user.id;

@@ -1,3 +1,10 @@
+/**
+ * @voygo-doc
+ * Module: supabase
+ * Fichier: server\services\supabase.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
 import { createClient } from '@supabase/supabase-js';
 import { config } from '../config.js';
 
@@ -31,6 +38,7 @@ export const supabaseAdmin = config.supabaseServiceRoleKey
 
 console.log(`Supabase admin mode: ${supabaseAdmin ? 'enabled' : 'disabled'}`);
 
+// Retourne l'information calculee par 'getSupabaseForUser'.
 export function getSupabaseForUser(accessToken) {
   return createClient(config.supabaseUrl, config.supabaseAnonKey, {
     auth: {

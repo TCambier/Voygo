@@ -1,3 +1,10 @@
+/**
+ * @voygo-doc
+ * Module: user
+ * Fichier: voygo\models\user.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
 // Deprecated client-side model. Authentication now happens via /api/auth/* endpoints.
 // This file remains to avoid breaking old imports but should not be used.
 export class User {

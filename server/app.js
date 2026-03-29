@@ -1,3 +1,10 @@
+/**
+ * @voygo-doc
+ * Module: app
+ * Fichier: server\app.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
 import express from 'express';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';

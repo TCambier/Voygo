@@ -1,4 +1,11 @@
-﻿// signup.js - Gestion de l'inscription
+/**
+ * @voygo-doc
+ * Module: signupController
+ * Fichier: voygo\controllers\signupController.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
+// Gestion du formulaire d'inscription (validation front + appel API).
 import { signup, checkEmailExists } from './userController.js';
 
 window.addEventListener('load', () => {
@@ -9,8 +16,12 @@ window.addEventListener('load', () => {
     const signupBtn = document.getElementById('signup-btn');
     const signupForm = document.getElementById('signup-form');
 
+    if (!emailInput || !emailErrorMessage || !passwordInput || !passwordErrorMessage || !signupBtn || !signupForm) {
+        return;
+    }
+
     let passwordCheckTimeout;
-    let isSubmitting = false; // Flag pour éviter les soumissions multiples
+    let isSubmitting = false;
 
     function setEmailError(message) {
         emailInput.classList.add('error');
@@ -27,7 +38,6 @@ window.addEventListener('load', () => {
         const lower = message.toLowerCase();
         return (
             lower.includes('deja') ||
-            lower.includes('déjà') ||
             lower.includes('already') ||
             lower.includes('registered') ||
             lower.includes('duplicate') ||
@@ -36,7 +46,7 @@ window.addEventListener('load', () => {
         );
     }
 
-    // Fonction pour valider le mot de passe
+    // Validation locale du mot de passe: majuscule, minuscule, chiffre, symbole.
     function validatePassword(password = null) {
         const passwordToCheck = password !== null ? password : passwordInput.value;
 
@@ -46,7 +56,6 @@ window.addEventListener('load', () => {
             return true;
         }
 
-        // Vérifications des critères
         const hasUpperCase = /[A-Z]/.test(passwordToCheck);
         const hasLowerCase = /[a-z]/.test(passwordToCheck);
         const hasNumbers = /\d/.test(passwordToCheck);
@@ -59,21 +68,21 @@ window.addEventListener('load', () => {
             passwordErrorMessage.classList.add('show');
             signupBtn.disabled = true;
             return false;
-        } else {
-            passwordInput.classList.remove('error');
-            passwordErrorMessage.classList.remove('show');
-            return true;
         }
+
+        passwordInput.classList.remove('error');
+        passwordErrorMessage.classList.remove('show');
+        return true;
     }
 
-    // Fonction pour vérifier si le formulaire peut être soumis
+    // Active/desactive le bouton selon l'etat des champs.
     function updateSubmitButton() {
         const emailValid = emailInput.value.trim();
         const passwordValid = !passwordInput.classList.contains('error') && passwordInput.value;
         signupBtn.disabled = !(emailValid && passwordValid);
     }
 
-    // Vérification en temps réel du mot de passe
+    // Validation debounce pour eviter des calculs a chaque frappe.
     passwordInput.addEventListener('input', () => {
         clearTimeout(passwordCheckTimeout);
         passwordCheckTimeout = setTimeout(() => {
@@ -87,18 +96,17 @@ window.addEventListener('load', () => {
         updateSubmitButton();
     });
 
-    // Vérification au départ du champ mot de passe
     passwordInput.addEventListener('blur', () => {
         clearTimeout(passwordCheckTimeout);
         validatePassword();
         updateSubmitButton();
     });
 
-    // Vérification avant soumission
+    // Soumission finale du formulaire d'inscription.
     signupForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        if (isSubmitting) return; // Éviter les soumissions multiples
+        if (isSubmitting) return;
 
         const first_name = document.getElementById('first_name').value.trim();
         const last_name = document.getElementById('last_name').value.trim();
@@ -110,7 +118,6 @@ window.addEventListener('load', () => {
             return;
         }
 
-        // Vérifications finales
         const passwordValid = validatePassword(password);
 
         if (!passwordValid) {
@@ -118,24 +125,22 @@ window.addEventListener('load', () => {
             return;
         }
 
-        // Désactiver le bouton et marquer comme en cours
         isSubmitting = true;
         signupBtn.disabled = true;
-        signupBtn.textContent = 'Création en cours...';
+        signupBtn.textContent = 'Creation en cours...';
 
-        // Vérifier si l'email existe déjà (côté serveur si configuré)
         const emailCheck = await checkEmailExists(email);
         if (emailCheck?.exists) {
-            setEmailError('Cette adresse email existe déjà');
+            setEmailError('Cette adresse email existe deja');
             isSubmitting = false;
             signupBtn.disabled = false;
-            signupBtn.textContent = 'Créer un compte';
+            signupBtn.textContent = 'Creer un compte';
             return;
         }
 
         const result = await signup(first_name, last_name, email, password);
         if (result.success) {
-            // Afficher le modal de succes (pas de redirection automatique)
+            // Affiche le modal de succes (pas de redirection forcee).
             const successModal = document.getElementById('success-modal');
             successModal.style.display = 'block';
 
@@ -147,14 +152,19 @@ window.addEventListener('load', () => {
             }
         } else {
             if (isEmailConflictMessage(result.error || '')) {
-                setEmailError('Cette adresse email existe déjà');
+                setEmailError('Cette adresse email existe deja');
             } else {
                 alert('Erreur: ' + result.error);
             }
             isSubmitting = false;
             signupBtn.disabled = false;
-            signupBtn.textContent = 'Créer un compte';
+            signupBtn.textContent = 'Creer un compte';
+            return;
         }
+
+        isSubmitting = false;
+        signupBtn.disabled = false;
+        signupBtn.textContent = 'Creer un compte';
     });
 });
 

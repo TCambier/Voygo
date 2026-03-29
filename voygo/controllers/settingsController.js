@@ -1,3 +1,10 @@
+/**
+ * @voygo-doc
+ * Module: settingsController
+ * Fichier: voygo\controllers\settingsController.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
 import { api } from '../assets/js/api.js';
 
 const profileForm = document.getElementById('profile-form');
@@ -16,6 +23,7 @@ const emailInput = document.getElementById('email');
 const newPasswordInput = document.getElementById('new-password');
 const confirmPasswordInput = document.getElementById('confirm-password');
 
+// Met a jour l'etat pilote par 'setFeedback'.
 function setFeedback(node, message, type = 'info') {
   if (!node) return;
   node.textContent = message;
@@ -24,6 +32,7 @@ function setFeedback(node, message, type = 'info') {
   if (type === 'error') node.classList.add('is-error');
 }
 
+// Charge les donnees necessaires pour 'loadUserProfile'.
 async function loadUserProfile() {
   try {
     const result = await api.get('/api/auth/me');

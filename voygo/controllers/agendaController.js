@@ -1,4 +1,11 @@
-﻿import { api } from '../assets/js/api.js';
+/**
+ * @voygo-doc
+ * Module: agendaController
+ * Fichier: voygo\controllers\agendaController.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
+import { api } from '../assets/js/api.js';
 import {
   listAccommodationsByTrip
 } from './accommodationController.js';
@@ -21,6 +28,7 @@ let openTransportModal = null;
 let openAccommodationModal = null;
 let accommodations = [];
 
+// Gere la logique principale de 'escapeHtml'.
 function escapeHtml(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -30,6 +38,7 @@ function escapeHtml(value) {
     .replace(/'/g, '&#039;');
 }
 
+// Formate la valeur traitee par 'formatDate'.
 function formatDate(dateValue) {
   if (!dateValue) return '';
   const date = new Date(`${dateValue}T00:00:00`);
@@ -37,6 +46,7 @@ function formatDate(dateValue) {
   return date.toLocaleDateString('fr-FR');
 }
 
+// Formate la valeur traitee par 'formatDayLabel'.
 function formatDayLabel(dateValue) {
   if (!dateValue) return '';
   const date = new Date(`${dateValue}T00:00:00`);
@@ -49,6 +59,7 @@ function formatDayLabel(dateValue) {
   }).format(date);
 }
 
+// Gere la logique principale de 'toDateInputValue'.
 function toDateInputValue(value) {
   if (!value) return '';
   if (typeof value === 'string') {
@@ -59,6 +70,7 @@ function toDateInputValue(value) {
   return date.toISOString().slice(0, 10);
 }
 
+// Analyse l'entree geree par 'parseDateKey'.
 function parseDateKey(value) {
   const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!match) return null;
@@ -71,6 +83,7 @@ function parseDateKey(value) {
   return { year, month, day };
 }
 
+// Formate la valeur traitee par 'formatDateKeyFromUtc'.
 function formatDateKeyFromUtc(date) {
   const year = date.getUTCFullYear();
   const month = String(date.getUTCMonth() + 1).padStart(2, '0');
@@ -78,12 +91,14 @@ function formatDateKeyFromUtc(date) {
   return `${year}-${month}-${day}`;
 }
 
+// Normalise les donnees pour 'normalizeActivityDate'.
 function normalizeActivityDate(value) {
   const raw = String(value || '').trim();
   if (!raw) return '';
   return raw.includes('T') ? raw.split('T')[0] : raw;
 }
 
+// Gere la logique principale de 'toMinuteOfDay'.
 function toMinuteOfDay(timeValue) {
   const match = String(timeValue || '').trim().match(/^(\d{2}):(\d{2})(?::\d{2})?$/);
   if (!match) return null;
@@ -94,12 +109,14 @@ function toMinuteOfDay(timeValue) {
   return (hours * 60) + minutes;
 }
 
+// Gere la logique principale de 'toTimeDisplayValue'.
 function toTimeDisplayValue(value) {
   const raw = String(value || '').trim();
   const match = raw.match(/(\d{2}:\d{2})(?::\d{2})?/);
   return match ? match[1] : '';
 }
 
+// Formate la valeur traitee par 'formatDuration'.
 function formatDuration(value) {
   const minutes = Number(value);
   if (!Number.isFinite(minutes) || minutes <= 0) return '-';
@@ -110,11 +127,13 @@ function formatDuration(value) {
   return `${mins}min`;
 }
 
+// Gere la logique principale de 'stripScheduleMetadata'.
 function stripScheduleMetadata(description) {
   const text = String(description || '');
   return text.replace(/\s*\[VOYGO_SCHEDULE\][\s\S]*?\[\/VOYGO_SCHEDULE\]\s*/g, '').trim();
 }
 
+// Gere la logique principale de 'readScheduleMetadata'.
 function readScheduleMetadata(description) {
   const text = String(description || '');
   const match = text.match(/\[VOYGO_SCHEDULE\]([\s\S]*?)\[\/VOYGO_SCHEDULE\]/);
@@ -128,6 +147,7 @@ function readScheduleMetadata(description) {
   }
 }
 
+// Retourne l'information calculee par 'getActivitySchedule'.
 function getActivitySchedule(item) {
   const metadata = readScheduleMetadata(item?.description);
   const date = normalizeActivityDate(metadata?.date || item?.activity_date || '');
@@ -146,6 +166,7 @@ function getActivitySchedule(item) {
   };
 }
 
+// Retourne l'information calculee par 'getTransportSchedule'.
 function getTransportSchedule(item) {
   const date = normalizeActivityDate(item?.travel_date || '');
   const startTime = String(item?.travel_time || '').trim();
@@ -163,6 +184,7 @@ function getTransportSchedule(item) {
   };
 }
 
+// Gere la logique principale de 'readFallbackTrip'.
 function readFallbackTrip() {
   const stored = localStorage.getItem('voygo_current_trip');
   if (!stored) return null;
@@ -173,6 +195,7 @@ function readFallbackTrip() {
   }
 }
 
+// Cree les donnees gerees par 'createDateRange'.
 function createDateRange(startDate, endDate) {
   const startParts = parseDateKey(startDate);
   const endParts = parseDateKey(endDate);
@@ -193,6 +216,7 @@ function createDateRange(startDate, endDate) {
   return days;
 }
 
+// Applique les mises a jour de 'updateMeta'.
 function updateMeta() {
   const tripNameNode = document.getElementById('agenda-trip-name');
   const datesNode = document.getElementById('agenda-dates');
@@ -207,6 +231,7 @@ function updateMeta() {
   }
 }
 
+// Applique les mises a jour de 'updateNavigationLinks'.
 function updateNavigationLinks() {
   const nav = document.querySelector('.planning-nav');
   if (!nav) return;
@@ -227,14 +252,17 @@ function updateNavigationLinks() {
   });
 }
 
+// Verifie la condition exposee par 'isReadOnlyTrip'.
 function isReadOnlyTrip() {
   return !tripState.canEdit;
 }
 
+// Gere la logique principale de 'applyReadOnlyUiState'.
 function applyReadOnlyUiState() {
   document.body.classList.toggle('is-read-only-trip', isReadOnlyTrip());
 }
 
+// Gere la logique principale de 'computeEndTime'.
 function computeEndTime(schedule) {
   const startMin = toMinuteOfDay(schedule.startTime);
   if (startMin === null) return '09:00';
@@ -244,6 +272,7 @@ function computeEndTime(schedule) {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
+// Construit le rendu pour 'renderSeparator'.
 function renderSeparator(day, prefillTime) {
   return `
     <div class="agenda-separator" data-day="${escapeHtml(day)}" data-prefill-time="${escapeHtml(prefillTime || '09:00')}">
@@ -267,6 +296,7 @@ function renderSeparator(day, prefillTime) {
   `;
 }
 
+// Construit le rendu pour 'renderAgenda'.
 function renderAgenda() {
   const daysNode = document.getElementById('agenda-days');
   const emptyNode = document.getElementById('agenda-empty');
@@ -395,7 +425,7 @@ function renderAgenda() {
         } else if (type === 'accommodation') {
           const safeName = escapeHtml(item?.name || item?.address || 'Logement');
           const safeAddress = escapeHtml(item?.address || 'Adresse indisponible');
-          const safeLabel = accommodationType === 'check-in' ? 'Arrivée' : 'Départ';
+          const safeLabel = accommodationType === 'check-in' ? 'Arrivee' : 'Depart';
           const badgeClass = accommodationType === 'check-in' ? 'is-checkin' : 'is-checkout';
           const deleteOnly = `
             <div class="agenda-edit-actions">
@@ -452,6 +482,7 @@ function renderAgenda() {
   }).join('');
 }
 
+// Initialise le bloc fonctionnel 'initEditMode'.
 function initEditMode() {
   const toggleBtn = document.getElementById('agenda-edit-toggle');
   if (!toggleBtn) return;
@@ -474,6 +505,7 @@ function initEditMode() {
   });
 }
 
+// Initialise le bloc fonctionnel 'initAgendaInteractions'.
 function initAgendaInteractions() {
   const daysNode = document.getElementById('agenda-days');
   if (!daysNode) return;
@@ -539,6 +571,7 @@ function initAgendaInteractions() {
   });
 }
 
+// Gere la logique principale de 'openInsertForm'.
 function openInsertForm(type, day, prefillTime) {
   if (type === 'activity' && openActivityModal) {
     openActivityModal({ date: day, time: prefillTime });
@@ -549,6 +582,7 @@ function openInsertForm(type, day, prefillTime) {
   }
 }
 
+// Gere la logique principale de 'openEditForm'.
 function openEditForm(type, id) {
   if (type === 'activity') {
     const item = (tripState.activities || []).find((a) => String(a.id) === String(id));
@@ -579,6 +613,7 @@ function openEditForm(type, id) {
   }
 }
 
+// Gere la logique principale de 'handleDeleteItem'.
 async function handleDeleteItem(type, id) {
   const label = type === 'transport' ? 'ce transport' : type === 'accommodation' ? 'ce logement' : 'cette activite';
   if (!window.confirm(`Supprimer ${label} de l'agenda ?`)) return;
@@ -601,6 +636,7 @@ async function handleDeleteItem(type, id) {
   }
 }
 
+// Gere la logique principale de 'findActivityConflict'.
 function findActivityConflict(schedule, excludedActivityId = null) {
   const start = toMinuteOfDay(schedule.startTime);
   if (start === null) return null;
@@ -625,6 +661,7 @@ function findActivityConflict(schedule, excludedActivityId = null) {
   return null;
 }
 
+// Gere la logique principale de 'findTransportConflict'.
 function findTransportConflict(schedule, excludedTransportId = null) {
   const start = toMinuteOfDay(schedule.startTime);
   if (start === null) return null;
@@ -649,6 +686,7 @@ function findTransportConflict(schedule, excludedTransportId = null) {
   return null;
 }
 
+// Initialise le bloc fonctionnel 'initActivityModal'.
 function initActivityModal() {
   const modal = document.getElementById('agenda-activity-modal');
   const form = document.getElementById('agenda-activity-form');
@@ -764,6 +802,7 @@ function initActivityModal() {
   };
 }
 
+// Initialise le bloc fonctionnel 'initTransportModal'.
 function initTransportModal() {
   const modal = document.getElementById('agenda-transport-modal');
   const form = document.getElementById('agenda-transport-form');
@@ -882,6 +921,7 @@ function initTransportModal() {
   };
 }
 
+// Initialise le bloc fonctionnel 'initAccommodationModal'.
 function initAccommodationModal() {
   const modal = document.getElementById('agenda-accommodation-modal');
   const form = document.getElementById('agenda-accommodation-form');
@@ -967,6 +1007,7 @@ function initAccommodationModal() {
   };
 }
 
+// Charge les donnees necessaires pour 'loadTrip'.
 async function loadTrip() {
   const params = new URLSearchParams(window.location.search);
   const tripIdParam = params.get('tripId');
@@ -1012,6 +1053,7 @@ async function loadTrip() {
   tripState.endDate = endDate;
 }
 
+// Charge les donnees necessaires pour 'loadActivities'.
 async function loadActivities() {
   if (!tripState.id) {
     tripState.activities = [];
@@ -1031,6 +1073,7 @@ async function loadActivities() {
   }
 }
 
+// Charge les donnees necessaires pour 'loadTransports'.
 async function loadTransports() {
   if (!tripState.id) {
     tripState.transports = [];
@@ -1050,6 +1093,7 @@ async function loadTransports() {
   }
 }
 
+// Charge les donnees necessaires pour 'loadAccommodations'.
 async function loadAccommodations() {
   if (!tripState.id) {
     accommodations = [];
@@ -1068,6 +1112,7 @@ async function loadAccommodations() {
   }
 }
 
+// Initialise le bloc fonctionnel 'initAgendaPage'.
 async function initAgendaPage() {
   const returnTo = `agenda.html${window.location.search || ''}`;
   try {

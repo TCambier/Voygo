@@ -1,3 +1,10 @@
+/**
+ * @voygo-doc
+ * Module: calendarController
+ * Fichier: voygo\controllers\calendarController.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
 // calendarController.js
 // This controller handles calendar UI logic. The calendar data can be
 // fetched or stored in Supabase using the shared client located in

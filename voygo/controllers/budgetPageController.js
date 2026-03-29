@@ -1,3 +1,10 @@
+/**
+ * @voygo-doc
+ * Module: budgetPageController
+ * Fichier: voygo\controllers\budgetPageController.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
 import { api } from '../assets/js/api.js';
 import { listBudgets, createBudget, updateBudget, deleteBudget } from './budgetController.js';
 import { listTransports, createTransport } from './transportController.js';
@@ -73,16 +80,19 @@ const refs = {
   accommodationNights: document.getElementById('accommodation-nights')
 };
 
+// Retourne l'information calculee par 'getLocalStorageKey'.
 function getLocalStorageKey() {
   return `${LOCAL_STORAGE_PREFIX}:${state.userId || 'anon'}`;
 }
 
+// Gere la logique principale de 'toSafeNumber'.
 function toSafeNumber(value) {
   const num = Number(value);
   if (!Number.isFinite(num)) return 0;
   return Math.max(0, Math.round(num * 100) / 100);
 }
 
+// Formate la valeur traitee par 'formatCurrency'.
 function formatCurrency(value) {
   return new Intl.NumberFormat('fr-FR', {
     style: 'currency',
@@ -91,6 +101,7 @@ function formatCurrency(value) {
   }).format(toSafeNumber(value));
 }
 
+// Formate la valeur traitee par 'formatDate'.
 function formatDate(value) {
   const raw = String(value || '').trim();
   if (!raw) return '-';
@@ -99,6 +110,7 @@ function formatDate(value) {
   return date.toLocaleDateString('fr-FR');
 }
 
+// Formate la valeur traitee par 'formatTripDateRange'.
 function formatTripDateRange(startDate, endDate) {
   if (!startDate && !endDate) return '-';
   const start = startDate ? formatDate(startDate) : '-';
@@ -106,10 +118,12 @@ function formatTripDateRange(startDate, endDate) {
   return `${start} -> ${end}`;
 }
 
+// Retourne l'information calculee par 'getCategoryLabel'.
 function getCategoryLabel(value) {
   return CATEGORY_LABELS[value] || CATEGORY_LABELS.autre;
 }
 
+// Normalise les donnees pour 'normalizeCategory'.
 function normalizeCategory(value) {
   const key = String(value || '').trim().toLowerCase();
   if (Object.prototype.hasOwnProperty.call(CATEGORY_LABELS, key)) {
@@ -118,6 +132,7 @@ function normalizeCategory(value) {
   return 'autre';
 }
 
+// Gere la logique principale de 'computeNights'.
 function computeNights(startDate, endDate) {
   if (!startDate || !endDate) return 0;
   const start = new Date(startDate);
@@ -128,10 +143,12 @@ function computeNights(startDate, endDate) {
   return Math.round(diff / 86400000);
 }
 
+// Retourne l'information calculee par 'getTripById'.
 function getTripById(tripId) {
   return state.trips.find((trip) => String(trip.id) === String(tripId));
 }
 
+// Retourne l'information calculee par 'getActiveTripId'.
 function getActiveTripId() {
   const selectedFilterTrip = refs.filterTrip?.value;
   if (selectedFilterTrip && selectedFilterTrip !== 'all') return selectedFilterTrip;
@@ -144,6 +161,7 @@ function getActiveTripId() {
   return '';
 }
 
+// Gere la logique principale de 'requireActiveTripId'.
 function requireActiveTripId() {
   const tripId = getActiveTripId();
   if (tripId) return tripId;
@@ -151,6 +169,7 @@ function requireActiveTripId() {
   return null;
 }
 
+// Normalise les donnees pour 'normalizeBudgetItem'.
 function normalizeBudgetItem(raw, index = 0) {
   const plannedCandidates = [
     raw?.planned_amount,
@@ -186,6 +205,7 @@ function normalizeBudgetItem(raw, index = 0) {
   };
 }
 
+// Normalise les donnees pour 'normalizeTransportAsBudget'.
 function normalizeTransportAsBudget(raw) {
   const price = toSafeNumber(raw?.price);
   const origin = String(raw?.origin || '').trim();
@@ -208,6 +228,7 @@ function normalizeTransportAsBudget(raw) {
   };
 }
 
+// Normalise les donnees pour 'normalizeAccommodationAsBudget'.
 function normalizeAccommodationAsBudget(raw) {
   const nights = toSafeNumber(raw?.nights || computeNights(raw?.start_date, raw?.end_date));
   const nightlyPrice = toSafeNumber(raw?.price_per_night ?? raw?.price ?? 0);
@@ -229,6 +250,7 @@ function normalizeAccommodationAsBudget(raw) {
   };
 }
 
+// Gere la logique principale de 'rebuildEntries'.
 function rebuildEntries() {
   const manualEntries = state.budgetRows;
   const transportEntries = state.transports.map(normalizeTransportAsBudget);
@@ -238,6 +260,7 @@ function rebuildEntries() {
     .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
 }
 
+// Gere la logique principale de 'mapToPayload'.
 function mapToPayload(item) {
   return {
     label: item.label,
@@ -249,6 +272,7 @@ function mapToPayload(item) {
   };
 }
 
+// Gere la logique principale de 'readLocalBudgets'.
 function readLocalBudgets() {
   try {
     const saved = localStorage.getItem(getLocalStorageKey());
@@ -261,6 +285,7 @@ function readLocalBudgets() {
   }
 }
 
+// Gere la logique principale de 'saveLocalBudgets'.
 function saveLocalBudgets() {
   const payload = state.budgetRows.map((item) => ({
     id: item.id,
@@ -275,6 +300,7 @@ function saveLocalBudgets() {
   localStorage.setItem(getLocalStorageKey(), JSON.stringify(payload));
 }
 
+// Met a jour l'etat pilote par 'setLocalMode'.
 function setLocalMode(message) {
   if (state.isLocalMode) return;
   state.isLocalMode = true;
@@ -285,12 +311,14 @@ function setLocalMode(message) {
   saveLocalBudgets();
 }
 
+// Resout les informations calculees par 'resolveTripLabel'.
 function resolveTripLabel(tripId) {
   if (!tripId) return 'General';
   const trip = state.trips.find((item) => String(item.id) === String(tripId));
   return trip?.name || trip?.destination || 'Voyage';
 }
 
+// Gere la logique principale de 'buildTripOptions'.
 function buildTripOptions(select) {
   if (!select) return;
 
@@ -332,6 +360,7 @@ function buildTripOptions(select) {
   select.value = values.includes(existingValue) ? existingValue : (isFilter ? 'all' : '');
 }
 
+// Retourne l'information calculee par 'getFilteredEntries'.
 function getFilteredEntries() {
   const selectedTrip = refs.filterTrip?.value || 'all';
   const selectedCategory = refs.filterCategory?.value || 'all';
@@ -343,12 +372,14 @@ function getFilteredEntries() {
   });
 }
 
+// Cree les donnees gerees par 'createCell'.
 function createCell(content) {
   const cell = document.createElement('td');
   cell.textContent = content;
   return cell;
 }
 
+// Construit le rendu pour 'renderTable'.
 function renderTable(items) {
   if (!refs.tableBody) return;
 
@@ -412,6 +443,7 @@ function renderTable(items) {
   }
 }
 
+// Construit le rendu pour 'renderSummary'.
 function renderSummary(items) {
   const planned = items.reduce((sum, item) => sum + toSafeNumber(item.planned), 0);
   const actual = items.reduce((sum, item) => sum + toSafeNumber(item.actual), 0);
@@ -424,6 +456,7 @@ function renderSummary(items) {
   refs.sumRate.textContent = `${rate.toFixed(1).replace('.', ',')}%`;
 }
 
+// Gere la logique principale de 'drawPieChart'.
 function drawPieChart(items) {
   if (!refs.canvas || !refs.legend) return;
 
@@ -521,6 +554,7 @@ function drawPieChart(items) {
   });
 }
 
+// Applique les mises a jour de 'updateHeroMeta'.
 function updateHeroMeta() {
   if (!refs.tripName || !refs.tripDates) return;
 
@@ -542,6 +576,7 @@ function updateHeroMeta() {
   refs.tripDates.textContent = formatTripDateRange(trip.start_date, trip.end_date);
 }
 
+// Construit le rendu pour 'renderAll'.
 function renderAll() {
   buildTripOptions(refs.inputTrip);
   buildTripOptions(refs.filterTrip);
@@ -562,6 +597,7 @@ function renderAll() {
   updateHeroMeta();
 }
 
+// Gere la logique principale de 'resetForm'.
 function resetForm() {
   state.editingId = null;
   refs.inputLabel.value = '';
@@ -573,6 +609,7 @@ function resetForm() {
   refs.addButton.textContent = 'Ajouter';
 }
 
+// Charge les donnees necessaires pour 'loadFormForEdit'.
 function loadFormForEdit(item) {
   state.editingId = item.id;
   refs.inputLabel.value = item.label;
@@ -584,6 +621,7 @@ function loadFormForEdit(item) {
   refs.addButton.textContent = 'Mettre a jour';
 }
 
+// Gere la logique principale de 'validateForm'.
 function validateForm() {
   const label = String(refs.inputLabel.value || '').trim();
   const category = normalizeCategory(refs.inputCategory.value);
@@ -610,6 +648,7 @@ function validateForm() {
   };
 }
 
+// Gere la logique principale de 'upsertBudgetRow'.
 function upsertBudgetRow(item) {
   const index = state.budgetRows.findIndex((entry) => String(entry.id) === String(item.id));
   if (index === -1) {
@@ -621,12 +660,14 @@ function upsertBudgetRow(item) {
   rebuildEntries();
 }
 
+// Gere la logique principale de 'removeBudgetRow'.
 function removeBudgetRow(itemId) {
   state.budgetRows = state.budgetRows.filter((item) => String(item.id) !== String(itemId));
   saveLocalBudgets();
   rebuildEntries();
 }
 
+// Gere la logique principale de 'handleSave'.
 async function handleSave() {
   let formData;
   try {
@@ -680,6 +721,7 @@ async function handleSave() {
   }
 }
 
+// Gere la logique principale de 'handleDelete'.
 async function handleDelete(itemId) {
   const confirmed = window.confirm('Supprimer cette depense ?');
   if (!confirmed) return;
@@ -701,6 +743,7 @@ async function handleDelete(itemId) {
   }
 }
 
+// Charge les donnees necessaires pour 'loadTrips'.
 async function loadTrips() {
   try {
     const result = await api.get('/api/trips');
@@ -710,6 +753,7 @@ async function loadTrips() {
   }
 }
 
+// Charge les donnees necessaires pour 'loadBudgets'.
 async function loadBudgets() {
   try {
     const rows = await listBudgets();
@@ -725,6 +769,7 @@ async function loadBudgets() {
   }
 }
 
+// Charge les donnees necessaires pour 'loadRelatedEntries'.
 async function loadRelatedEntries() {
   const tripIds = state.trips.map((trip) => String(trip.id)).filter(Boolean);
   if (!tripIds.length) {
@@ -761,6 +806,7 @@ async function loadRelatedEntries() {
   rebuildEntries();
 }
 
+// Met a jour l'etat pilote par 'setTransportDateBounds'.
 function setTransportDateBounds(tripId) {
   const dateInput = document.getElementById('transport-date');
   if (!dateInput) return;
@@ -769,6 +815,7 @@ function setTransportDateBounds(tripId) {
   dateInput.max = trip?.end_date ? String(trip.end_date).split('T')[0] : '';
 }
 
+// Met a jour l'etat pilote par 'setAccommodationDateBounds'.
 function setAccommodationDateBounds(tripId) {
   const startInput = document.getElementById('accommodation-start');
   const endInput = document.getElementById('accommodation-end');
@@ -784,6 +831,7 @@ function setAccommodationDateBounds(tripId) {
   }
 }
 
+// Initialise le bloc fonctionnel 'initTransportModal'.
 function initTransportModal() {
   if (!refs.transportModal || !refs.transportForm || !refs.addTransportButton || !refs.transportSaveNote) return;
 
@@ -878,6 +926,7 @@ function initTransportModal() {
   });
 }
 
+// Initialise le bloc fonctionnel 'initAccommodationModal'.
 function initAccommodationModal() {
   if (!refs.accommodationModal || !refs.accommodationForm || !refs.addAccommodationButton || !refs.accommodationSaveNote) return;
 
@@ -982,6 +1031,7 @@ function initAccommodationModal() {
   });
 }
 
+// Gere la logique principale de 'bindEvents'.
 function bindEvents() {
   refs.addButton?.addEventListener('click', handleSave);
   refs.filterTrip?.addEventListener('change', () => {
@@ -1017,6 +1067,7 @@ function bindEvents() {
   });
 }
 
+// Initialise le bloc fonctionnel 'initBudgetPage'.
 async function initBudgetPage() {
   if (!refs.addButton || !refs.tableBody || !refs.canvas) return;
 

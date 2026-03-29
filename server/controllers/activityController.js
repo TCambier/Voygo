@@ -1,7 +1,15 @@
+/**
+ * @voygo-doc
+ * Module: activityController
+ * Fichier: server\controllers\activityController.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
 import { config } from '../config.js';
 import { getSupabaseForUser } from '../services/supabase.js';
 import { getAccessDbClient, getTripAccess } from '../utils/tripAccess.js';
 
+// Gere la logique principale de 'readScheduleMetadataFromDescription'.
 function readScheduleMetadataFromDescription(description) {
   const text = String(description || '');
   const match = text.match(/\[VOYGO_SCHEDULE\]([\s\S]*?)\[\/VOYGO_SCHEDULE\]/);
@@ -15,6 +23,7 @@ function readScheduleMetadataFromDescription(description) {
   }
 }
 
+// Gere la logique principale de 'toMinuteOfDay'.
 function toMinuteOfDay(timeValue) {
   const raw = String(timeValue || '');
   const match = raw.trim().match(/(\d{2}):(\d{2})(?::\d{2})?/);
@@ -26,12 +35,14 @@ function toMinuteOfDay(timeValue) {
   return (hours * 60) + minutes;
 }
 
+// Normalise les donnees pour 'normalizeActivityDate'.
 function normalizeActivityDate(value) {
   const raw = String(value || '').trim();
   if (!raw) return '';
   return raw.includes('T') ? raw.split('T')[0] : raw;
 }
 
+// Gere la logique principale de 'extractScheduleFromActivity'.
 function extractScheduleFromActivity(activity) {
   const metadata = readScheduleMetadataFromDescription(activity?.description);
   const date = normalizeActivityDate(metadata?.date || activity?.activity_date || '');
@@ -50,6 +61,7 @@ function extractScheduleFromActivity(activity) {
   };
 }
 
+// Gere la logique principale de 'extractScheduleFromTransport'.
 function extractScheduleFromTransport(transport) {
   const date = normalizeActivityDate(transport?.travel_date || '');
   const startTime = String(transport?.travel_time || '').trim();
@@ -67,6 +79,7 @@ function extractScheduleFromTransport(transport) {
   };
 }
 
+// Verifie la presence attendue par 'hasScheduleConflict'.
 function hasScheduleConflict(existingActivities, newSchedule) {
   const newStart = toMinuteOfDay(newSchedule.startTime);
   if (newStart === null) return false;
@@ -83,6 +96,7 @@ function hasScheduleConflict(existingActivities, newSchedule) {
   });
 }
 
+// Verifie la presence attendue par 'hasTransportConflict'.
 function hasTransportConflict(existingTransports, newSchedule) {
   const newStart = toMinuteOfDay(newSchedule.startTime);
   if (newStart === null) return false;
@@ -99,6 +113,7 @@ function hasTransportConflict(existingTransports, newSchedule) {
   });
 }
 
+// Gere la logique principale de 'toTopRatedPlaces'.
 function toTopRatedPlaces(places, limit) {
   return (places || [])
     .map((place) => ({
@@ -120,17 +135,20 @@ function toTopRatedPlaces(places, limit) {
     .map((item, index) => ({ ...item, rank: index + 1 }));
 }
 
+// Gere la logique principale de 'sanitizeLang'.
 function sanitizeLang(langRaw) {
   const lang = String(langRaw || 'en').trim().toLowerCase();
   if (!/^[a-z]{2}$/.test(lang)) return 'en';
   return lang;
 }
 
+// Retourne l'information calculee par 'getLangCandidates'.
 function getLangCandidates(preferredLang) {
   const preferred = sanitizeLang(preferredLang);
   return Array.from(new Set([preferred, 'en', 'ru']));
 }
 
+// Gere la logique principale de 'sanitizeKinds'.
 function sanitizeKinds(kindsRaw) {
   const raw = String(kindsRaw || '').trim().toLowerCase();
   if (!raw) return '';
@@ -144,6 +162,7 @@ function sanitizeKinds(kindsRaw) {
   return Array.from(new Set(cleaned)).join(',');
 }
 
+// Normalise les donnees pour 'normalizeForMatch'.
 function normalizeForMatch(value) {
   return String(value || '')
     .toLowerCase()
@@ -155,6 +174,7 @@ function normalizeForMatch(value) {
     .trim();
 }
 
+// Gere la logique principale de 'tokenizeDestination'.
 function tokenizeDestination(value) {
   const stopwords = new Set(['de', 'du', 'la', 'le', 'les', 'des', 'd', 'l', 'arrondissement']);
   return normalizeForMatch(value)
@@ -162,6 +182,7 @@ function tokenizeDestination(value) {
     .filter((token) => token && token.length >= 2 && !stopwords.has(token));
 }
 
+// Gere la logique principale de 'scoreGeocodeCandidate'.
 function scoreGeocodeCandidate(candidate, tokens) {
   const haystack = normalizeForMatch([
     candidate?.display_name,
@@ -184,6 +205,7 @@ function scoreGeocodeCandidate(candidate, tokens) {
   return ratio + Math.min(importance, 1) * 0.2;
 }
 
+// Resout les informations calculees par 'resolveDestinationCoordsWithNominatim'.
 async function resolveDestinationCoordsWithNominatim(destination) {
   const query = String(destination || '').trim();
   const tokens = tokenizeDestination(query);
@@ -233,6 +255,7 @@ async function resolveDestinationCoordsWithNominatim(destination) {
   return { lat, lon };
 }
 
+// Resout les informations calculees par 'resolveDestinationCoords'.
 async function resolveDestinationCoords(destination, apiKey, preferredLang) {
   let lastMessage = 'Destination introuvable pour OpenTripMap.';
 
@@ -249,6 +272,7 @@ async function resolveDestinationCoords(destination, apiKey, preferredLang) {
   throw new Error(lastMessage);
 }
 
+// Gere la logique principale de 'toAddressLabel'.
 function toAddressLabel(details, fallback) {
   const address = details?.address;
   if (!address || typeof address !== 'object') return fallback || null;
@@ -257,6 +281,7 @@ function toAddressLabel(details, fallback) {
   return parts.length ? parts.join(', ') : (fallback || null);
 }
 
+// Gere la logique principale de 'toFrenchDescription'.
 function toFrenchDescription(details) {
   const wiki = details?.wikipedia_extracts?.text;
   if (typeof wiki === 'string' && wiki.trim()) {
@@ -269,6 +294,7 @@ function toFrenchDescription(details) {
   return null;
 }
 
+// Gere la logique principale de 'enrichPlacesWithDetails'.
 async function enrichPlacesWithDetails(places, apiKey, preferredLang) {
   const langs = getLangCandidates(preferredLang);
   const tasks = places.map(async (place) => {
@@ -297,6 +323,7 @@ async function enrichPlacesWithDetails(places, apiKey, preferredLang) {
   return Promise.all(tasks);
 }
 
+// Recupere les donnees distantes pour 'fetchOpenTripMapPlaces'.
 async function fetchOpenTripMapPlaces(lat, lon, apiKey, limit, options = {}) {
   const lang = sanitizeLang(options.lang);
   const kinds = sanitizeKinds(options.kinds);
@@ -358,6 +385,7 @@ async function fetchOpenTripMapPlaces(lat, lon, apiKey, limit, options = {}) {
   return enrichPlacesWithDetails(ranked, apiKey, usedLang);
 }
 
+// Gere la logique principale de 'suggestActivities'.
 export async function suggestActivities(req, res) {
   const destination = String(req.query.destination || '').trim();
   const lang = sanitizeLang(req.query.lang);
@@ -391,6 +419,7 @@ export async function suggestActivities(req, res) {
   }
 }
 
+// Liste les elements retournes par 'listActivitiesByTrip'.
 export async function listActivitiesByTrip(req, res) {
   const { tripId } = req.params;
   const client = getSupabaseForUser(req.accessToken);
@@ -420,6 +449,7 @@ export async function listActivitiesByTrip(req, res) {
   return res.json({ data: data || [] });
 }
 
+// Cree les donnees gerees par 'createActivity'.
 export async function createActivity(req, res) {
   const { tripId } = req.params;
   const payload = req.body || {};
@@ -495,6 +525,7 @@ export async function createActivity(req, res) {
   return res.status(201).json({ data });
 }
 
+// Applique les mises a jour de 'updateActivity'.
 export async function updateActivity(req, res) {
   const { id } = req.params;
   const payload = req.body || {};
@@ -540,6 +571,7 @@ export async function updateActivity(req, res) {
   return res.json({ data });
 }
 
+// Supprime les donnees ciblees par 'deleteActivity'.
 export async function deleteActivity(req, res) {
   const { id } = req.params;
   const client = getSupabaseForUser(req.accessToken);

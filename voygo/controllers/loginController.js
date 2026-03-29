@@ -1,3 +1,10 @@
+/**
+ * @voygo-doc
+ * Module: loginController
+ * Fichier: voygo\controllers\loginController.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
 // login.js - Gestion de la connexion
 import { login } from './userController.js';
 
@@ -6,6 +13,9 @@ window.addEventListener('load', () => {
     const loginErrorMessage = document.getElementById('login-error-message');
     const params = new URLSearchParams(window.location.search);
     const requestedReturnTo = params.get('returnTo') || 'index.html';
+    if (!loginForm || !loginErrorMessage) return;
+
+    // Sanitize returnTo to avoid open redirects to arbitrary paths.
     const returnTo = /^([a-zA-Z0-9_-]+)\.html(\?.*)?$/.test(requestedReturnTo)
         ? requestedReturnTo
         : 'index.html';

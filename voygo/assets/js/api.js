@@ -1,7 +1,15 @@
+/**
+ * @voygo-doc
+ * Module: api
+ * Fichier: voygo\assets\js\api.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
 const defaultHeaders = {
   'Content-Type': 'application/json'
 };
 
+// Gere la logique principale de 'apiFetch'.
 async function apiFetch(path, options = {}) {
   const { method = 'GET', body, headers } = options;
   const response = await fetch(path, {
@@ -32,6 +40,7 @@ export const api = {
   delete: (path) => apiFetch(path, { method: 'DELETE' })
 };
 
+// Recupere les donnees distantes pour 'fetchCurrentUser'.
 export async function fetchCurrentUser() {
   try {
     const result = await api.get('/api/auth/me');

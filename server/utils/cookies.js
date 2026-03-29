@@ -1,3 +1,10 @@
+/**
+ * @voygo-doc
+ * Module: cookies
+ * Fichier: server\utils\cookies.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
 import { config } from '../config.js';
 
 const baseOptions = {
@@ -7,6 +14,7 @@ const baseOptions = {
   path: '/'
 };
 
+// Met a jour l'etat pilote par 'setAuthCookies'.
 export function setAuthCookies(res, session) {
   if (!session) return;
   const maxAge = session.expires_in ? session.expires_in * 1000 : undefined;
@@ -16,6 +24,7 @@ export function setAuthCookies(res, session) {
   }
 }
 
+// Gere la logique principale de 'clearAuthCookies'.
 export function clearAuthCookies(res) {
   res.clearCookie('voygo_access_token', { path: '/' });
   res.clearCookie('voygo_refresh_token', { path: '/' });

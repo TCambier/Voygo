@@ -1,3 +1,10 @@
+/**
+ * @voygo-doc
+ * Module: tripFormController
+ * Fichier: voygo\controllers\tripFormController.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
 export function initTravelerStepper() {
   const input = document.querySelector('#voyageurs');
   const minusBtn = document.querySelector('#voyageurs-minus');

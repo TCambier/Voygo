@@ -1,12 +1,21 @@
+/**
+ * @voygo-doc
+ * Module: transportController
+ * Fichier: server\controllers\transportController.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
 import { getSupabaseForUser } from '../services/supabase.js';
 import { getAccessDbClient, getTripAccess } from '../utils/tripAccess.js';
 
+// Normalise les donnees pour 'normalizeDate'.
 function normalizeDate(value) {
   const raw = String(value || '').trim();
   if (!raw) return '';
   return raw.includes('T') ? raw.split('T')[0] : raw;
 }
 
+// Gere la logique principale de 'toMinuteOfDay'.
 function toMinuteOfDay(timeValue) {
   const raw = String(timeValue || '').trim();
   const match = raw.match(/(\d{2}):(\d{2})(?::\d{2})?/);
@@ -18,6 +27,7 @@ function toMinuteOfDay(timeValue) {
   return (hours * 60) + minutes;
 }
 
+// Normalise les donnees pour 'normalizeTransportTime'.
 function normalizeTransportTime(value) {
   const raw = String(value || '').trim();
   if (!raw) return null;
@@ -26,6 +36,7 @@ function normalizeTransportTime(value) {
   return raw;
 }
 
+// Gere la logique principale de 'readScheduleMetadata'.
 function readScheduleMetadata(description) {
   const text = String(description || '');
   const match = text.match(/\[VOYGO_SCHEDULE\]([\s\S]*?)\[\/VOYGO_SCHEDULE\]/);
@@ -39,6 +50,7 @@ function readScheduleMetadata(description) {
   }
 }
 
+// Gere la logique principale de 'extractActivitySchedule'.
 function extractActivitySchedule(activity) {
   const metadata = readScheduleMetadata(activity?.description);
   const date = normalizeDate(metadata?.date || activity?.activity_date || '');
@@ -53,6 +65,7 @@ function extractActivitySchedule(activity) {
   return { date, startTime, durationMinutes };
 }
 
+// Gere la logique principale de 'extractTransportSchedule'.
 function extractTransportSchedule(transport) {
   const date = normalizeDate(transport?.travel_date || '');
   const startTime = String(transport?.travel_time || '').trim();
@@ -66,6 +79,7 @@ function extractTransportSchedule(transport) {
   return { date, startTime, durationMinutes };
 }
 
+// Gere la logique principale de 'schedulesOverlap'.
 function schedulesOverlap(leftSchedule, rightSchedule) {
   if (!leftSchedule || !rightSchedule || leftSchedule.date !== rightSchedule.date) return false;
   const leftStart = toMinuteOfDay(leftSchedule.startTime);
@@ -76,10 +90,12 @@ function schedulesOverlap(leftSchedule, rightSchedule) {
   return leftStart < rightEnd && rightStart < leftEnd;
 }
 
+// Gere la logique principale de 'findConflictingActivity'.
 function findConflictingActivity(activities, transportSchedule) {
   return (activities || []).find((activity) => schedulesOverlap(extractActivitySchedule(activity), transportSchedule)) || null;
 }
 
+// Gere la logique principale de 'findConflictingTransport'.
 function findConflictingTransport(transports, transportSchedule, excludedTransportId = null) {
   return (transports || []).find((transport) => {
     if (excludedTransportId && String(transport.id) === String(excludedTransportId)) return false;
@@ -87,6 +103,7 @@ function findConflictingTransport(transports, transportSchedule, excludedTranspo
   }) || null;
 }
 
+// Liste les elements retournes par 'listTransports'.
 export async function listTransports(req, res) {
   const { tripId } = req.params;
   const client = getSupabaseForUser(req.accessToken);
@@ -117,6 +134,7 @@ export async function listTransports(req, res) {
   return res.json({ data: data || [] });
 }
 
+// Cree les donnees gerees par 'createTransport'.
 export async function createTransport(req, res) {
   const { tripId } = req.params;
   const payload = req.body || {};
@@ -189,6 +207,7 @@ export async function createTransport(req, res) {
   return res.status(201).json({ data });
 }
 
+// Applique les mises a jour de 'updateTransport'.
 export async function updateTransport(req, res) {
   const { id } = req.params;
   const payload = req.body || {};
@@ -271,6 +290,7 @@ export async function updateTransport(req, res) {
   return res.json({ data });
 }
 
+// Supprime les donnees ciblees par 'deleteTransport'.
 export async function deleteTransport(req, res) {
   const { id } = req.params;
   const client = getSupabaseForUser(req.accessToken);

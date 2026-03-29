@@ -1,15 +1,25 @@
+/**
+ * @voygo-doc
+ * Module: tripController
+ * Fichier: server\controllers\tripController.js
+ * Role: Module JavaScript du projet Voygo.
+ * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
+ */
 import { getSupabaseForUser, supabaseAdmin } from '../services/supabase.js';
 import { getAccessDbClient, getTripAccess, isMissingTableError } from '../utils/tripAccess.js';
 
+// Normalise les donnees pour 'normalizeEmail'.
 function normalizeEmail(value) {
   return String(value || '').trim().toLowerCase();
 }
 
+// Normalise les donnees pour 'normalizePermission'.
 function normalizePermission(value) {
   const raw = String(value || '').trim().toLowerCase();
   return raw === 'edit' ? 'edit' : 'read';
 }
 
+// Gere la logique principale de 'requireOwnedTrip'.
 async function requireOwnedTrip(db, tripId, ownerUserId) {
   const { data: trip, error } = await db
     .from('trips')
@@ -28,6 +38,7 @@ async function requireOwnedTrip(db, tripId, ownerUserId) {
   return { trip };
 }
 
+// Gere la logique principale de 'findUserByEmail'.
 async function findUserByEmail(email) {
   if (!supabaseAdmin) {
     return null;
@@ -58,6 +69,7 @@ async function findUserByEmail(email) {
   return null;
 }
 
+// Liste les elements retournes par 'listTrips'.
 export async function listTrips(req, res) {
   const client = getSupabaseForUser(req.accessToken);
   const db = getAccessDbClient(client);
@@ -117,6 +129,7 @@ export async function listTrips(req, res) {
   return res.json({ data: [...ownTrips, ...sharedTrips] });
 }
 
+// Retourne l'information calculee par 'getTrip'.
 export async function getTrip(req, res) {
   const { id } = req.params;
   const client = getSupabaseForUser(req.accessToken);
@@ -143,6 +156,7 @@ export async function getTrip(req, res) {
   });
 }
 
+// Cree les donnees gerees par 'createTrip'.
 export async function createTrip(req, res) {
   const payload = req.body || {};
   const client = getSupabaseForUser(req.accessToken);
@@ -160,6 +174,7 @@ export async function createTrip(req, res) {
   return res.status(201).json({ data });
 }
 
+// Supprime les donnees ciblees par 'deleteTripPlanningData'.
 async function deleteTripPlanningData(client, tripId, userId) {
   const relatedTables = [
     { table: 'transports', column: 'trip_id' },
@@ -201,10 +216,12 @@ async function deleteTripPlanningData(client, tripId, userId) {
   }
 }
 
+// Normalise les donnees pour 'normalizeDestination'.
 function normalizeDestination(value) {
   return String(value || '').trim().toLowerCase();
 }
 
+// Applique les mises a jour de 'updateTrip'.
 export async function updateTrip(req, res) {
   const { id } = req.params;
   const payload = req.body || {};
@@ -261,6 +278,7 @@ export async function updateTrip(req, res) {
   return res.json({ data, clearedPlannedItems: destinationChanged && access.isOwner });
 }
 
+// Supprime les donnees ciblees par 'deleteTrip'.
 export async function deleteTrip(req, res) {
   const { id } = req.params;
   const client = getSupabaseForUser(req.accessToken);
@@ -318,6 +336,7 @@ export async function deleteTrip(req, res) {
   return res.json({ success: true });
 }
 
+// Gere la logique principale de 'shareTrip'.
 export async function shareTrip(req, res) {
   const { id } = req.params;
   const email = normalizeEmail(req.body?.email);
@@ -381,6 +400,7 @@ export async function shareTrip(req, res) {
   return res.json({ data });
 }
 
+// Liste les elements retournes par 'listTripShares'.
 export async function listTripShares(req, res) {
   const { id } = req.params;
   const client = getSupabaseForUser(req.accessToken);
@@ -409,6 +429,7 @@ export async function listTripShares(req, res) {
   return res.json({ data: data || [] });
 }
 
+// Applique les mises a jour de 'updateTripShare'.
 export async function updateTripShare(req, res) {
   const { id, sharedWithUserId } = req.params;
   const permission = normalizePermission(req.body?.permission);
@@ -435,6 +456,7 @@ export async function updateTripShare(req, res) {
   return res.json({ data });
 }
 
+// Supprime les donnees ciblees par 'deleteTripShare'.
 export async function deleteTripShare(req, res) {
   const { id, sharedWithUserId } = req.params;
   const client = getSupabaseForUser(req.accessToken);
