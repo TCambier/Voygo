@@ -1,0 +1,138 @@
+.activity-explorer-page {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 34px 20px 60px;
+    display: grid;
+    gap: 18px;
+}
+
+.activity-explorer-hero {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 24px;
+    border-radius: 18px;
+    background:
+        radial-gradient(circle at 88% 18%, rgba(255, 209, 102, 0.22), transparent 44%),
+        radial-gradient(circle at 12% 18%, rgba(46, 196, 182, 0.2), transparent 40%),
+        linear-gradient(135deg, var(--bg-secondary), color-mix(in srgb, var(--bg-tertiary) 70%, #ffffff));
+    border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border-color));
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+}
+
+.activity-explorer-hero h1 {
+    font-size: clamp(28px, 4vw, 42px);
+    line-height: 1.1;
+    margin-top: 4px;
+}
+
+.activity-explorer-hero p {
+    margin-top: 10px;
+    max-width: 720px;
+    color: var(--text-secondary);
+}
+
+.activity-explorer-controls {
+    padding: 18px;
+    border-radius: 18px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 12px;
+    align-items: end;
+}
+
+.activity-explorer-controls .settings-feedback {
+    grid-column: 1 / -1;
+}
+
+.activity-explorer-controls .field-group {
+    display: grid;
+    gap: 8px;
+}
+
+.activity-explorer-controls .field-group label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.activity-explorer-controls .form-input {
+    min-height: 44px;
+    border-radius: 11px;
+}
+
+.activity-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.activity-filter-chip {
+    border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border-color));
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--accent-cool) 12%, var(--bg-secondary));
+    color: var(--text-primary);
+    padding: 8px 14px;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.activity-filter-chip:hover {
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--accent) 48%, var(--border-color));
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.activity-filter-chip.is-active {
+    border-color: transparent;
+    color: #ffffff;
+    background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+    box-shadow: 0 8px 20px rgba(255, 61, 113, 0.28);
+}
+
+.activity-explorer-results {
+    padding: 18px;
+    border-radius: 18px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
+    min-height: 320px;
+}
+
+.activity-explorer-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+}
+
+.activity-empty {
+    margin-top: 8px;
+    padding: 14px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--bg-tertiary) 70%, #ffffff);
+    border: 1px dashed color-mix(in srgb, var(--border-color) 80%, #ffffff);
+}
+
+@media (max-width: 900px) {
+    .activity-explorer-controls {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 760px) {
+    .activity-explorer-page {
+        padding: 24px 16px 52px;
+    }
+
+    .activity-explorer-hero {
+        flex-direction: column;
+        padding: 20px;
+    }
+}

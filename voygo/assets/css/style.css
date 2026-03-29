@@ -354,7 +354,7 @@ body.dark-theme .theme-icon {
 .trip-form {
     position: absolute;
     left: 5%;
-    top: 50%;
+    top: 42%;
     transform: translateY(-50%);
     width: 60%;
     display: flex;
@@ -552,6 +552,58 @@ body.dark-theme .hero-plane img {
     object-fit: contain;
 }
 
+.hero-why-voygo {
+    position: absolute;
+    left: 5%;
+    top: calc(41% + 118px);
+    width: min(58%, 780px);
+    z-index: 1;
+}
+
+.hero-why-voygo h3 {
+    margin: 0 0 18px;
+    text-align: center;
+    font-size: clamp(24px, 2vw, 34px);
+    color: var(--text-primary);
+}
+
+.hero-why-cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.hero-why-card {
+    background: color-mix(in srgb, var(--bg-secondary) 92%, #ffffff);
+    border: 1px solid color-mix(in srgb, var(--accent) 14%, var(--border-color));
+    border-radius: 16px;
+    padding: 18px 14px;
+    text-align: center;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+    min-height: 154px;
+}
+
+.hero-why-card i {
+    font-size: 34px;
+    color: var(--accent-strong);
+    margin-bottom: 6px;
+    display: inline-block;
+}
+
+.hero-why-card h4 {
+    margin: 0 0 6px;
+    font-size: 20px;
+    line-height: 1.2;
+    color: var(--text-primary);
+}
+
+.hero-why-card p {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.35;
+    color: var(--text-secondary);
+}
+
 /* Welcome Section */
 .welcome-section {
     display: flex;
@@ -658,6 +710,16 @@ body.dark-theme .hero-plane img {
         height: auto;
     }
 
+    .hero-why-voygo {
+        position: static;
+        width: 100%;
+        margin-top: 18px;
+    }
+
+    .hero-why-cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .hero-plane {
         display: none;
     }
@@ -693,6 +755,16 @@ body.dark-theme .hero-plane img {
     
     .trip-form {
         flex-direction: column;
+    }
+
+    .hero-why-cards {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .hero-why-card {
+        min-height: 0;
+        padding: 14px 12px;
     }
     
     .welcome-section {
@@ -2128,8 +2200,9 @@ body.dark-theme .hero-plane img {
 
 .activity-explorer-page {
     padding: 34px 42px 70px;
-    max-width: 1180px;
-    margin: 0 auto;
+    width: 100%;
+    max-width: none;
+    margin: 0;
     display: flex;
     flex-direction: column;
     gap: 18px;
