@@ -12,6 +12,8 @@ const emptyState = document.getElementById('voyages-empty');
 const searchInput = document.querySelector('.voyages-search input');
 const statusFilter = document.getElementById('status-filter');
 const sortFilter = document.getElementById('sort-filter');
+const quickFilterTags = Array.from(document.querySelectorAll('.filter-tags .tag'));
+const resetFiltersButton = document.getElementById('reset-filters-btn');
 const statTotal = document.getElementById('stat-total');
 const statLastCreated = document.getElementById('stat-last-created');
 const statUpcoming = document.getElementById('stat-upcoming');
@@ -30,10 +32,200 @@ const shareTripFeedback = document.getElementById('share-trip-feedback');
 const shareTripSubmitButton = document.getElementById('share-trip-submit');
 const shareTripExistingEmpty = document.getElementById('share-trip-existing-empty');
 const shareTripSharesList = document.getElementById('share-trip-shares-list');
+const FAVORITES_STORAGE_KEY = 'voygo.favoriteTrips';
 
 let allTrips = [];
 let selectedTripToShare = null;
 let currentTripShares = [];
+let activeQuickTag = quickFilterTags.find((tag) => tag.classList.contains('active'))?.textContent?.trim() || '';
+const localFavoriteTripIds = new Set(loadLocalFavoriteTripIds());
+
+// Charge les donnees necessaires pour 'loadLocalFavoriteTripIds'.
+function loadLocalFavoriteTripIds() {
+    try {
+        const raw = window.localStorage.getItem(FAVORITES_STORAGE_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return [];
+        return parsed.map((value) => String(value)).filter(Boolean);
+    } catch {
+        return [];
+    }
+}
+
+// Persiste les donnees de 'persistLocalFavoriteTripIds'.
+function persistLocalFavoriteTripIds() {
+    try {
+        window.localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify([...localFavoriteTripIds]));
+    } catch {
+        // Ignore storage quota and private mode errors.
+    }
+}
+
+// Resout les informations calculees par 'resolveTripId'.
+function resolveTripId(trip) {
+    if (!trip || trip.id === null || trip.id === undefined) return '';
+    return String(trip.id);
+}
+
+// Met a jour l'etat pilote par 'setLocalFavorite'.
+function setLocalFavorite(tripId, isFavorite) {
+    if (!tripId) return;
+    if (isFavorite) {
+        localFavoriteTripIds.add(tripId);
+    } else {
+        localFavoriteTripIds.delete(tripId);
+    }
+    persistLocalFavoriteTripIds();
+}
+
+// Normalise les donnees pour 'normalizeText'.
+function normalizeText(value) {
+    return String(value || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+}
+
+// Normalise les donnees pour 'toTagTokens'.
+function toTagTokens(value) {
+    if (!value) return [];
+    if (Array.isArray(value)) {
+        return value
+            .flatMap((item) => toTagTokens(item))
+            .filter(Boolean);
+    }
+
+    const normalized = normalizeText(value);
+    if (!normalized) return [];
+
+    return normalized
+        .split(/[;,|/]+/)
+        .map((token) => token.trim())
+        .filter(Boolean);
+}
+
+// Resout les informations calculees par 'resolveTripTags'.
+function resolveTripTags(trip) {
+    const rawValues = [
+        trip.tags,
+        trip.tag,
+        trip.trip_tags,
+        trip.categories,
+        trip.category,
+        trip.type,
+        trip.trip_type,
+        trip.theme,
+        trip.labels
+    ];
+
+    return rawValues.flatMap((value) => toTagTokens(value));
+}
+
+// Determine la valeur booleenne pour 'isTruthyFavorite'.
+function isTruthyFavorite(value) {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'number') return value > 0;
+    if (typeof value === 'string') {
+        const normalized = normalizeText(value).trim();
+        return ['true', '1', 'yes', 'oui', 'favori', 'favorite'].includes(normalized);
+    }
+    return false;
+}
+
+// Resout les informations calculees par 'isFavoriteTrip'.
+function isFavoriteTrip(trip) {
+    const tripId = resolveTripId(trip);
+    if (tripId && localFavoriteTripIds.has(tripId)) {
+        return true;
+    }
+
+    const favoriteFields = [
+        trip.is_favorite,
+        trip.favorite,
+        trip.favori,
+        trip.is_starred,
+        trip.starred,
+        trip.pinned
+    ];
+
+    if (favoriteFields.some((value) => isTruthyFavorite(value))) {
+        return true;
+    }
+
+    const tags = resolveTripTags(trip);
+    return tags.some((token) => token.includes('favori') || token.includes('favorite'));
+}
+
+// Met a jour les donnees de 'syncFavoriteToApi'.
+async function syncFavoriteToApi(trip, isFavorite) {
+    const tripId = resolveTripId(trip);
+    if (!tripId) return;
+
+    try {
+        await api.patch(`/api/trips/${encodeURIComponent(tripId)}`, { is_favorite: isFavorite });
+    } catch {
+        // Keep local fallback when backend schema does not expose a favorite field.
+    }
+}
+
+// Applique les mises a jour de 'toggleTripFavorite'.
+async function toggleTripFavorite(tripId) {
+    if (!tripId) return;
+    const trip = allTrips.find((item) => String(item.id) === String(tripId));
+    if (!trip) return;
+
+    const nextValue = !isFavoriteTrip(trip);
+
+    setLocalFavorite(String(tripId), nextValue);
+    trip.is_favorite = nextValue;
+    applyFilters();
+
+    await syncFavoriteToApi(trip, nextValue);
+}
+
+// Calcule les nuits pour 'resolveTripDurationNights'.
+function resolveTripDurationNights(trip) {
+    const start = normalizeDate(trip.start_date);
+    const end = normalizeDate(trip.end_date);
+    if (!start || !end) return null;
+
+    const deltaMs = end.getTime() - start.getTime();
+    if (deltaMs <= 0) return null;
+    return Math.round(deltaMs / 86400000);
+}
+
+// Determine le matching principal de 'matchesQuickFilter'.
+function matchesQuickFilter(trip, quickTagLabel) {
+    const normalizedLabel = normalizeText(quickTagLabel);
+    if (!normalizedLabel) return true;
+
+    const tags = resolveTripTags(trip);
+    const searchableText = normalizeText(`${resolveTitle(trip)} ${trip.destination || ''} ${resolveSummary(trip)}`);
+    const nights = resolveTripDurationNights(trip);
+
+    if (normalizedLabel === 'favoris') {
+        return isFavoriteTrip(trip);
+    }
+
+    if (normalizedLabel === 'workation') {
+        return tags.some((token) => token.includes('workation')) || searchableText.includes('workation');
+    }
+
+    if (normalizedLabel === 'week-end' || normalizedLabel === 'week end') {
+        const byTags = tags.some((token) => token.includes('week-end') || token.includes('weekend') || token.includes('week end'));
+        const byDuration = Number.isFinite(nights) && nights >= 1 && nights <= 3;
+        return byTags || byDuration;
+    }
+
+    if (normalizedLabel === 'long sejour') {
+        const byTags = tags.some((token) => token.includes('long sejour') || token.includes('long-sejour') || token.includes('longstay'));
+        const byDuration = Number.isFinite(nights) && nights >= 7;
+        return byTags || byDuration;
+    }
+
+    return true;
+}
 
 // Formate la valeur traitee par 'formatDate'.
 function formatDate(dateValue) {
@@ -134,6 +326,7 @@ function buildTripCard(trip, index) {
 
     const accessMode = trip.access_mode || 'owner';
     const isOwner = accessMode === 'owner';
+    const favorite = isFavoriteTrip(trip);
     if (!isOwner) {
         const permissionLabel = trip.can_edit ? 'Partage : lecture + modification' : 'Partage : lecture seule';
         metaItems.push(`<span><i class='bx bx-link-alt'></i> ${permissionLabel}</span>`);
@@ -155,7 +348,18 @@ function buildTripCard(trip, index) {
                 <h3>${title}</h3>
                 <p class="voyage-dates">${datesLabel}</p>
             </div>
-            <span class="status ${status.className}">${status.label}</span>
+            <div class="voyage-card-header-actions">
+                <button
+                    type="button"
+                    class="favorite-trip-btn${favorite ? ' active' : ''}"
+                    data-favorite="${trip.id || ''}"
+                    aria-label="${favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}"
+                    aria-pressed="${favorite ? 'true' : 'false'}"
+                >
+                    <i class='bx ${favorite ? 'bxs-heart' : 'bx-heart'}'></i>
+                </button>
+                <span class="status ${status.className}">${status.label}</span>
+            </div>
         </div>
         <p class="voyage-summary">${summary}</p>
         <div class="voyage-meta">
@@ -249,6 +453,10 @@ function applyFilters() {
         filtered = filtered.filter((trip) => computeStatus(trip).label === statusValue);
     }
 
+    if (activeQuickTag) {
+        filtered = filtered.filter((trip) => matchesQuickFilter(trip, activeQuickTag));
+    }
+
     const sortValue = sortFilter?.value || 'Dernière mise à jour';
     if (sortValue === 'Date de départ') {
         filtered.sort((a, b) => new Date(a.start_date || 0) - new Date(b.start_date || 0));
@@ -259,6 +467,26 @@ function applyFilters() {
     }
 
     renderTrips(filtered);
+}
+
+// Reinitialise l'etat gere par 'resetFilters'.
+function resetFilters() {
+    if (searchInput) {
+        searchInput.value = '';
+    }
+
+    if (statusFilter) {
+        statusFilter.value = 'Tous';
+    }
+
+    if (sortFilter) {
+        sortFilter.value = 'Dernière mise à jour';
+    }
+
+    quickFilterTags.forEach((tag) => tag.classList.remove('active'));
+    activeQuickTag = '';
+
+    applyFilters();
 }
 
 // Gere la logique principale de 'redirectToIndex'.
@@ -462,6 +690,22 @@ document.addEventListener('click', async (event) => {
     const target = event.target;
     if (!(target instanceof HTMLElement)) return;
 
+    const quickTag = target.closest('.filter-tags .tag');
+    if (quickTag) {
+        quickFilterTags.forEach((tag) => tag.classList.remove('active'));
+        quickTag.classList.add('active');
+        activeQuickTag = quickTag.textContent?.trim() || '';
+        applyFilters();
+        return;
+    }
+
+    const favoriteButton = target.closest('button[data-favorite]');
+    if (favoriteButton) {
+        const tripId = favoriteButton.getAttribute('data-favorite');
+        await toggleTripFavorite(tripId);
+        return;
+    }
+
     const openButton = target.closest('button[data-open]');
     if (openButton) {
         const query = openButton.getAttribute('data-open');
@@ -569,6 +813,7 @@ shareTripForm?.addEventListener('submit', submitTripShare);
 searchInput?.addEventListener('input', applyFilters);
 statusFilter?.addEventListener('change', applyFilters);
 sortFilter?.addEventListener('change', applyFilters);
+resetFiltersButton?.addEventListener('click', resetFilters);
 
 createTripButton?.addEventListener('click', redirectToIndex);
 createTripEmptyButton?.addEventListener('click', redirectToIndex);

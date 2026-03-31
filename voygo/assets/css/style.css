@@ -2773,6 +2773,27 @@ body.dark-theme .hero-plane img {
     flex-wrap: wrap;
 }
 
+.filter-reset-btn {
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 18px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.filter-reset-btn:hover {
+    background: color-mix(in srgb, var(--accent) 12%, var(--bg-secondary));
+    border-color: color-mix(in srgb, var(--accent) 34%, var(--border-color));
+    color: var(--text-primary);
+}
+
 .tag {
     padding: 8px 14px;
     border-radius: 999px;
@@ -2816,6 +2837,47 @@ body.dark-theme .hero-plane img {
     justify-content: space-between;
     gap: 16px;
     align-items: flex-start;
+}
+
+.voyage-card-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.favorite-trip-btn {
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    background: var(--bg-secondary);
+    color: #e11d48;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.16s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.favorite-trip-btn i {
+    font-size: 18px;
+}
+
+.favorite-trip-btn:hover {
+    transform: scale(1.06);
+    border-color: color-mix(in srgb, #e11d48 30%, var(--border-color));
+}
+
+.favorite-trip-btn.active {
+    background: color-mix(in srgb, #e11d48 18%, var(--bg-secondary));
+    border-color: color-mix(in srgb, #e11d48 42%, var(--border-color));
+}
+
+body.dark-theme .favorite-trip-btn {
+    background: var(--bg-tertiary);
+    border-color: var(--border-color);
 }
 
 .voyage-card h3 {
