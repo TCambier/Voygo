@@ -254,7 +254,7 @@ function updateMeta() {
   const datesNode = document.getElementById('carte-dates');
 
   if (nameNode) {
-    nameNode.textContent = tripState.name || tripState.destination || '-';
+    nameNode.textContent = tripState.destination || '-';
   }
 
   if (datesNode) {

@@ -221,8 +221,7 @@ function updateMeta() {
   const tripNameNode = document.getElementById('agenda-trip-name');
   const datesNode = document.getElementById('agenda-dates');
   if (tripNameNode) {
-    const title = tripState.name || tripState.destination || '-';
-    tripNameNode.textContent = title;
+    tripNameNode.textContent = tripState.destination || '-';
   }
   if (datesNode) {
     const from = formatDate(tripState.startDate);

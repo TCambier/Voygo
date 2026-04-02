@@ -15,7 +15,6 @@ const sortFilter = document.getElementById('sort-filter');
 const quickFilterTags = Array.from(document.querySelectorAll('.filter-tags .tag'));
 const resetFiltersButton = document.getElementById('reset-filters-btn');
 const statTotal = document.getElementById('stat-total');
-const statLastCreated = document.getElementById('stat-last-created');
 const statUpcoming = document.getElementById('stat-upcoming');
 const statUpcomingNotes = document.getElementById('stat-upcoming-notes');
 const statBudget = document.getElementById('stat-budget');
@@ -35,6 +34,10 @@ const shareTripSharesList = document.getElementById('share-trip-shares-list');
 const FAVORITES_STORAGE_KEY = 'voygo.favoriteTrips';
 
 let allTrips = [];
+let allBudgetRows = [];
+let allTransportRows = [];
+let allAccommodationRows = [];
+let allActivityRows = [];
 let selectedTripToShare = null;
 let currentTripShares = [];
 let activeQuickTag = quickFilterTags.find((tag) => tag.classList.contains('active'))?.textContent?.trim() || '';
@@ -280,6 +283,141 @@ function resolveTravelers(trip) {
 // Resout les informations calculees par 'resolveBudget'.
 function resolveBudget(trip) {
     return trip.budget ?? trip.budget_total ?? trip.total_budget ?? trip.estimated_budget ?? null;
+}
+
+// Resout les informations calculees par 'resolveBudgetAmountFromRow'.
+function resolveBudgetAmountFromRow(row) {
+    const candidates = [
+        row?.actual_amount,
+        row?.actual,
+        row?.spent_amount,
+        row?.amount_spent,
+        row?.paid_amount
+    ];
+
+    for (const candidate of candidates) {
+        const value = Number(candidate);
+        if (Number.isFinite(value) && value > 0) {
+            return value;
+        }
+    }
+
+    return 0;
+}
+
+// Resout les informations calculees par 'resolveTransportAmountFromRow'.
+function resolveTransportAmountFromRow(row) {
+    const candidates = [row?.actual_amount, row?.actual, row?.spent_amount, row?.price, row?.amount, row?.cost];
+    for (const candidate of candidates) {
+        const value = Number(candidate);
+        if (Number.isFinite(value) && value > 0) {
+            return value;
+        }
+    }
+    return 0;
+}
+
+// Resout les informations calculees par 'resolveActivityAmountFromRow'.
+function resolveActivityAmountFromRow(row) {
+    const candidates = [
+        row?.actual_amount,
+        row?.actual,
+        row?.spent_amount,
+        row?.price,
+        row?.amount,
+        row?.cost,
+        row?.ticket_price,
+        row?.entry_price
+    ];
+    for (const candidate of candidates) {
+        const value = Number(candidate);
+        if (Number.isFinite(value) && value > 0) {
+            return value;
+        }
+    }
+    return 0;
+}
+
+// Calcule les nuits pour 'computeAccommodationNights'.
+function computeAccommodationNights(row) {
+    const explicit = Number(row?.nights);
+    if (Number.isFinite(explicit) && explicit > 0) return explicit;
+
+    const startRaw = String(row?.start_date || '').trim();
+    const endRaw = String(row?.end_date || '').trim();
+    if (!startRaw || !endRaw) return 1;
+
+    const start = normalizeDate(startRaw);
+    const end = normalizeDate(endRaw);
+    if (!start || !end) return 1;
+
+    const deltaMs = end.getTime() - start.getTime();
+    if (deltaMs <= 0) return 1;
+    return Math.round(deltaMs / 86400000);
+}
+
+// Resout les informations calculees par 'resolveAccommodationAmountFromRow'.
+function resolveAccommodationAmountFromRow(row) {
+    const nightlyCandidates = [row?.price_per_night, row?.price, row?.nightly_price, row?.amount_per_night];
+    let nightly = 0;
+    for (const candidate of nightlyCandidates) {
+        const value = Number(candidate);
+        if (Number.isFinite(value) && value > 0) {
+            nightly = value;
+            break;
+        }
+    }
+    if (nightly <= 0) return 0;
+
+    const nights = computeAccommodationNights(row);
+    return nightly * nights;
+}
+
+// Construit le rendu pour 'buildBudgetTotalsByTrip'.
+function buildBudgetTotalsByTrip(budgetRows, transportRows, accommodationRows, activityRows) {
+    const totalsByTrip = new Map();
+
+    (Array.isArray(budgetRows) ? budgetRows : []).forEach((row) => {
+        const tripId = String(row?.trip_id || row?.tripId || '').trim();
+        if (!tripId) return;
+
+        const amount = resolveBudgetAmountFromRow(row);
+        if (amount <= 0) return;
+
+        totalsByTrip.set(tripId, (totalsByTrip.get(tripId) || 0) + amount);
+    });
+
+    (Array.isArray(transportRows) ? transportRows : []).forEach((row) => {
+        const tripId = String(row?.trip_id || row?.tripId || '').trim();
+        if (!tripId) return;
+
+        const amount = resolveTransportAmountFromRow(row);
+        if (amount <= 0) return;
+
+        totalsByTrip.set(tripId, (totalsByTrip.get(tripId) || 0) + amount);
+    });
+
+    (Array.isArray(accommodationRows) ? accommodationRows : []).forEach((row) => {
+        const tripId = String(row?.trip_id || row?.tripId || '').trim();
+        if (!tripId) return;
+
+        const amount = resolveAccommodationAmountFromRow(row);
+        if (amount <= 0) return;
+
+        totalsByTrip.set(tripId, (totalsByTrip.get(tripId) || 0) + amount);
+    });
+
+    (Array.isArray(activityRows) ? activityRows : []).forEach((row) => {
+        const tripId = String(row?.trip_id || row?.tripId || '').trim();
+        if (!tripId) return;
+
+        const amount = resolveActivityAmountFromRow(row);
+        if (amount <= 0) return;
+
+        totalsByTrip.set(tripId, (totalsByTrip.get(tripId) || 0) + amount);
+    });
+
+    return totalsByTrip;
 }
 
 // Resout les informations calculees par 'resolveSummary'.
@@ -553,39 +691,42 @@ function renderTrips(trips) {
 
 // Applique les mises a jour de 'updateStats'.
 function updateStats(trips) {
-    if (!statTotal || !statLastCreated || !statUpcoming || !statUpcomingNotes || !statBudget || !statBudgetNote) {
+    if (!statTotal || !statUpcoming || !statUpcomingNotes || !statBudget || !statBudgetNote) {
         return;
     }
 
     statTotal.textContent = String(trips.length);
-
-    const sortedByCreated = [...trips].sort((a, b) => {
-        const aDate = new Date(a.created_at || a.updated_at || a.start_date || 0);
-        const bDate = new Date(b.created_at || b.updated_at || b.start_date || 0);
-        return bDate - aDate;
-    });
-
-    const lastCreated = sortedByCreated[0];
-    const lastCreatedDate = lastCreated ? formatDate(lastCreated.created_at || lastCreated.updated_at || lastCreated.start_date) : '-';
-    statLastCreated.textContent = `Dernière création : ${lastCreatedDate || '-'}`;
 
     const upcomingTrips = trips.filter((trip) => computeStatus(trip).label === 'À venir');
     statUpcoming.textContent = String(upcomingTrips.length);
     const upcomingNames = upcomingTrips.slice(0, 2).map(resolveTitle);
     statUpcomingNotes.textContent = upcomingNames.length ? upcomingNames.join(' et ') : '-';
 
-    const budgets = trips
-        .map((trip) => resolveBudget(trip))
-        .map((value) => (value === null || value === undefined ? null : Number(value)))
+    const totalsByTrip = buildBudgetTotalsByTrip(
+        allBudgetRows,
+        allTransportRows,
+        allAccommodationRows,
+        allActivityRows
+    );
+    let budgets = trips
+        .map((trip) => totalsByTrip.get(String(trip?.id || '').trim()) || 0)
         .filter((value) => Number.isFinite(value) && value > 0);
+
+    // Fallback on trip-level budget fields when no detailed budget rows are available.
+    if (!budgets.length) {
+        budgets = trips
+            .map((trip) => resolveBudget(trip))
+            .map((value) => (value === null || value === undefined ? null : Number(value)))
+            .filter((value) => Number.isFinite(value) && value > 0);
+    }
 
     if (budgets.length) {
         const avg = budgets.reduce((sum, value) => sum + value, 0) / budgets.length;
         statBudget.textContent = formatCurrency(avg);
-        statBudgetNote.textContent = `Basé sur ${budgets.length} voyage${budgets.length > 1 ? 's' : ''}`;
+        statBudgetNote.textContent = `Basé sur ${budgets.length} voyage${budgets.length > 1 ? 's' : ''} (budgets, transports, logements, activités)`;
     } else {
         statBudget.textContent = '-';
-        statBudgetNote.textContent = 'Aucun budget renseigné';
+        statBudgetNote.textContent = 'Aucune dépense renseignée';
     }
 }
 
@@ -650,6 +791,46 @@ function redirectToIndex() {
 async function fetchTrips() {
     const result = await api.get('/api/trips');
     return result?.data || [];
+}
+
+// Recupere les donnees distantes pour 'fetchBudgets'.
+async function fetchBudgets() {
+    const result = await api.get('/api/budgets');
+    return result?.data || [];
+}
+
+// Recupere les donnees distantes pour 'fetchActivities'.
+async function fetchActivities() {
+    const result = await api.get('/api/activities');
+    return result?.data || [];
+}
+
+// Recupere les donnees distantes pour 'fetchAccommodations'.
+async function fetchAccommodations() {
+    const result = await api.get('/api/accommodations');
+    return result?.data || [];
+}
+
+// Recupere les donnees distantes pour 'fetchTransportsByTrips'.
+async function fetchTransportsByTrips(trips) {
+    const tripIds = (Array.isArray(trips) ? trips : [])
+        .map((trip) => String(trip?.id || '').trim())
+        .filter(Boolean);
+
+    if (!tripIds.length) return [];
+
+    const results = await Promise.all(
+        tripIds.map(async (tripId) => {
+            try {
+                const result = await api.get(`/api/transports/trip/${encodeURIComponent(tripId)}`);
+                return Array.isArray(result?.data) ? result.data : [];
+            } catch {
+                return [];
+            }
+        })
+    );
+
+    return results.flat();
 }
 
 // Supprime les donnees ciblees par 'deleteTrip'.
@@ -829,7 +1010,18 @@ async function initVoyagesPage() {
             return;
         }
 
-        allTrips = await fetchTrips();
+        const trips = await fetchTrips();
+        const [budgets, activities, accommodations, transports] = await Promise.all([
+            fetchBudgets(),
+            fetchActivities(),
+            fetchAccommodations(),
+            fetchTransportsByTrips(trips)
+        ]);
+        allTrips = Array.isArray(trips) ? trips : [];
+        allBudgetRows = Array.isArray(budgets) ? budgets : [];
+        allActivityRows = Array.isArray(activities) ? activities : [];
+        allAccommodationRows = Array.isArray(accommodations) ? accommodations : [];
+        allTransportRows = Array.isArray(transports) ? transports : [];
         activateAllTripsQuickTag();
         updateStats(allTrips);
         applyFilters();
@@ -882,6 +1074,10 @@ document.addEventListener('click', async (event) => {
         try {
             await deleteTrip(tripId);
             allTrips = allTrips.filter((item) => String(item.id) !== String(tripId));
+            allBudgetRows = allBudgetRows.filter((row) => String(row?.trip_id || row?.tripId || '') !== String(tripId));
+            allActivityRows = allActivityRows.filter((row) => String(row?.trip_id || row?.tripId || '') !== String(tripId));
+            allAccommodationRows = allAccommodationRows.filter((row) => String(row?.trip_id || row?.tripId || '') !== String(tripId));
+            allTransportRows = allTransportRows.filter((row) => String(row?.trip_id || row?.tripId || '') !== String(tripId));
             updateStats(allTrips);
             applyFilters();
         } catch (err) {

@@ -739,19 +739,19 @@ function updateHeroMeta() {
 
   const selectedTripId = getSelectedTripId();
   if (!selectedTripId) {
-    refs.tripName.textContent = 'Tous les voyages';
+    refs.tripName.textContent = '-';
     refs.tripDates.textContent = '-';
     return;
   }
 
   const trip = getTripById(selectedTripId);
   if (!trip) {
-    refs.tripName.textContent = `Voyage ${selectedTripId}`;
+    refs.tripName.textContent = '-';
     refs.tripDates.textContent = '-';
     return;
   }
 
-  refs.tripName.textContent = trip.name || trip.destination || `Voyage ${trip.id}`;
+  refs.tripName.textContent = trip.destination || '-';
   refs.tripDates.textContent = formatTripDateRange(trip.start_date, trip.end_date);
 }
 
