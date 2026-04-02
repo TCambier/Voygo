@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mes voyages</title>
-    <link rel="stylesheet" href="../assets/css/style.css?v=20260327a">
+    <link rel="stylesheet" href="../assets/css/style.css?v=20260402d">
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 </head>
 <body>
@@ -67,20 +67,11 @@
                 </select>
             </div>
             <div class="filter-tags">
-                <span class="tag active">Favoris</span>
-                <span class="tag">Workation</span>
+                <span class="tag active">Tous</span>
+                <span class="tag">Favoris</span>
                 <span class="tag">Week-end</span>
                 <span class="tag">Long séjour</span>
             </div>
-            <button
-                class="filter-reset-btn"
-                id="reset-filters-btn"
-                type="button"
-                aria-label="Sortir des filtres"
-                title="Sortir des filtres"
-            >
-                <i class='bx bx-filter-alt'></i>
-            </button>
         </section>
 
         <section class="voyages-grid" id="voyages-grid"></section>
@@ -152,7 +143,7 @@
         import { requireAuth } from '../controllers/authGuardController.js';
         await requireAuth();
     </script>
-    <script type="module" src="../controllers/voyagesController.js?v=20260327a"></script>
+    <script type="module" src="../controllers/voyagesController.js?v=20260402d"></script>
 </body>
 </html>
 
