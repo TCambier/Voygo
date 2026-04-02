@@ -7,8 +7,8 @@
  */
 import { api } from '../assets/js/api.js';
 import { listBudgets, createBudget, updateBudget, deleteBudget } from './budgetController.js';
-import { listTransports, createTransport } from './transportController.js';
-import { listAccommodationsByTrip, createAccommodation } from './accommodationController.js';
+import { listTransports, createTransport, updateTransport, deleteTransport } from './transportController.js';
+import { listAccommodationsByTrip, createAccommodation, updateAccommodation, deleteAccommodation } from './accommodationController.js';
 
 const CATEGORY_LABELS = {
   transport: 'Transport',
@@ -41,6 +41,7 @@ const state = {
   transports: [],
   accommodations: [],
   editingId: null,
+  forcedFormMode: null,
   isLocalMode: false,
   userId: null,
   initialTripId: ''
@@ -51,13 +52,28 @@ const LOCAL_STORAGE_PREFIX = 'voygo_budget_local';
 const refs = {
   mode: document.getElementById('budget-mode'),
   addButton: document.getElementById('budget-add'),
+  formNote: document.getElementById('budget-form-note'),
   inputLabel: document.getElementById('budget-label'),
   inputCategory: document.getElementById('budget-category'),
   inputPlanned: document.getElementById('budget-planned'),
   inputActual: document.getElementById('budget-actual'),
   inputDate: document.getElementById('budget-date'),
-  inputTrip: document.getElementById('budget-trip'),
-  filterTrip: document.getElementById('budget-filter-trip'),
+  budgetMode: document.getElementById('budget-form-budget'),
+  transportMode: document.getElementById('budget-form-transport'),
+  transportFrom: document.getElementById('budget-transport-from'),
+  transportTo: document.getElementById('budget-transport-to'),
+  transportDate: document.getElementById('budget-transport-date'),
+  transportTime: document.getElementById('budget-transport-time'),
+  transportDuration: document.getElementById('budget-transport-duration'),
+  transportPrice: document.getElementById('budget-transport-price'),
+  transportModeSelect: document.getElementById('budget-transport-mode'),
+  accommodationMode: document.getElementById('budget-form-accommodation'),
+  accommodationName: document.getElementById('budget-accommodation-name'),
+  accommodationAddress: document.getElementById('budget-accommodation-address'),
+  accommodationPrice: document.getElementById('budget-accommodation-price'),
+  accommodationStart: document.getElementById('budget-accommodation-start'),
+  accommodationEnd: document.getElementById('budget-accommodation-end'),
+  accommodationNights: document.getElementById('budget-accommodation-nights'),
   filterCategory: document.getElementById('budget-filter-category'),
   tableBody: document.getElementById('budget-table-body'),
   rowCount: document.getElementById('budget-count'),
@@ -68,16 +84,7 @@ const refs = {
   canvas: document.getElementById('budget-pie-chart'),
   legend: document.getElementById('budget-chart-legend'),
   tripName: document.getElementById('budget-trip-name'),
-  tripDates: document.getElementById('budget-dates'),
-  addTransportButton: document.getElementById('budget-add-transport'),
-  addAccommodationButton: document.getElementById('budget-add-accommodation'),
-  transportModal: document.getElementById('transport-modal'),
-  transportForm: document.getElementById('transport-form'),
-  transportSaveNote: document.getElementById('transport-save-note'),
-  accommodationModal: document.getElementById('accommodation-modal'),
-  accommodationForm: document.getElementById('accommodation-form'),
-  accommodationSaveNote: document.getElementById('accommodation-save-note'),
-  accommodationNights: document.getElementById('accommodation-nights')
+  tripDates: document.getElementById('budget-dates')
 };
 
 // Retourne l'information calculee par 'getLocalStorageKey'.
@@ -132,30 +139,163 @@ function normalizeCategory(value) {
   return 'autre';
 }
 
-// Gere la logique principale de 'computeNights'.
-function computeNights(startDate, endDate) {
-  if (!startDate || !endDate) return 0;
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 0;
-  const diff = end.getTime() - start.getTime();
-  if (diff <= 0) return 0;
-  return Math.round(diff / 86400000);
+// Retourne l'information calculee par 'getBudgetFormMode'.
+function getBudgetFormMode() {
+  if (state.forcedFormMode) {
+    return state.forcedFormMode;
+  }
+
+  const category = normalizeCategory(refs.inputCategory?.value);
+  if (category === 'transport' || category === 'logement') {
+    return category;
+  }
+  return 'budget';
 }
 
-// Retourne l'information calculee par 'getTripById'.
+// Retourne l'information calculee par 'getSelectedTripId'.
+function getSelectedTripId() {
+  return String(state.initialTripId || '').trim();
+}
+
+// Gere la logique principale de 'setSectionDisabled'.
+function setSectionDisabled(section, disabled) {
+  if (!section) return;
+  section.hidden = disabled;
+  section.querySelectorAll('input, select, textarea').forEach((input) => {
+    input.disabled = disabled;
+  });
+}
+
+// Gere la logique principale de 'setFormNote'.
+function setFormNote(message, isError = false) {
+  if (!refs.formNote) return;
+  refs.formNote.classList.remove('is-error', 'is-success');
+  if (message) {
+    refs.formNote.classList.add(isError ? 'is-error' : 'is-success');
+  }
+  refs.formNote.textContent = message || '';
+}
+
+// Gere la logique principale de 'getTripById'.
 function getTripById(tripId) {
   return state.trips.find((trip) => String(trip.id) === String(tripId));
 }
 
-// Retourne l'information calculee par 'getActiveTripId'.
+// Met a jour les bornes de date du formulaire budget.
+function updateBudgetDateBounds() {
+  if (!refs.inputDate) return;
+
+  const trip = getTripById(getSelectedTripId());
+  const min = trip?.start_date ? String(trip.start_date).split('T')[0] : '';
+  const max = trip?.end_date ? String(trip.end_date).split('T')[0] : '';
+
+  refs.inputDate.min = min;
+  refs.inputDate.max = max;
+
+  if (refs.inputDate.value) {
+    if (min && refs.inputDate.value < min) {
+      refs.inputDate.value = min;
+    }
+    if (max && refs.inputDate.value > max) {
+      refs.inputDate.value = max;
+    }
+  }
+}
+
+// Gere la logique principale de 'updateTransportDateBounds'.
+function updateTransportDateBounds() {
+  if (!refs.transportDate) return;
+  const trip = getTripById(getSelectedTripId());
+  refs.transportDate.min = trip?.start_date ? String(trip.start_date).split('T')[0] : '';
+  refs.transportDate.max = trip?.end_date ? String(trip.end_date).split('T')[0] : '';
+}
+
+// Gere la logique principale de 'updateAccommodationDateBounds'.
+function updateAccommodationDateBounds() {
+  const trip = getTripById(getSelectedTripId());
+  const min = trip?.start_date ? String(trip.start_date).split('T')[0] : '';
+  const max = trip?.end_date ? String(trip.end_date).split('T')[0] : '';
+
+  if (refs.accommodationStart) {
+    refs.accommodationStart.min = min;
+    refs.accommodationStart.max = max;
+  }
+
+  if (refs.accommodationEnd) {
+    refs.accommodationEnd.min = min;
+    refs.accommodationEnd.max = max;
+  }
+}
+
+// Gere la logique principale de 'updateAccommodationNights'.
+function updateAccommodationNights() {
+  if (!refs.accommodationNights) return;
+  const nights = computeNights(refs.accommodationStart?.value, refs.accommodationEnd?.value);
+  refs.accommodationNights.value = nights > 0 ? String(nights) : '';
+}
+
+// Gere la logique principale de 'clearFormValues'.
+function clearFormValues() {
+  if (refs.inputLabel) refs.inputLabel.value = '';
+  if (refs.inputPlanned) refs.inputPlanned.value = '';
+  if (refs.inputActual) refs.inputActual.value = '';
+  if (refs.inputDate) refs.inputDate.value = '';
+
+  if (refs.transportFrom) refs.transportFrom.value = '';
+  if (refs.transportTo) refs.transportTo.value = '';
+  if (refs.transportDate) refs.transportDate.value = '';
+  if (refs.transportTime) refs.transportTime.value = '';
+  if (refs.transportDuration) refs.transportDuration.value = '';
+  if (refs.transportPrice) refs.transportPrice.value = '';
+  if (refs.transportModeSelect) refs.transportModeSelect.value = '';
+
+  if (refs.accommodationName) refs.accommodationName.value = '';
+  if (refs.accommodationAddress) refs.accommodationAddress.value = '';
+  if (refs.accommodationPrice) refs.accommodationPrice.value = '';
+  if (refs.accommodationStart) refs.accommodationStart.value = '';
+  if (refs.accommodationEnd) refs.accommodationEnd.value = '';
+  if (refs.accommodationNights) refs.accommodationNights.value = '';
+}
+
+// Gere la logique principale de 'applyBudgetFormMode'.
+function applyBudgetFormMode(mode = getBudgetFormMode()) {
+  const normalizedMode = mode === 'transport' || mode === 'logement' ? mode : 'budget';
+  const isBudget = normalizedMode === 'budget';
+  const isTransport = normalizedMode === 'transport';
+  const isAccommodation = normalizedMode === 'logement';
+
+  setSectionDisabled(refs.budgetMode, !isBudget);
+  setSectionDisabled(refs.transportMode, !isTransport);
+  setSectionDisabled(refs.accommodationMode, !isAccommodation);
+
+  if (refs.addButton) {
+    refs.addButton.textContent = isTransport
+      ? 'Ajouter le transport'
+      : isAccommodation
+        ? 'Ajouter le logement'
+        : state.editingId
+          ? 'Mettre a jour'
+          : 'Ajouter';
+  }
+
+
+
+  if (isTransport) {
+    updateTransportDateBounds();
+  }
+
+  if (isAccommodation) {
+    updateAccommodationDateBounds();
+    updateAccommodationNights();
+  }
+
+  if (isBudget) {
+    updateBudgetDateBounds();
+  }
+}
+
+// Gere la logique principale de 'getActiveTripId'.
 function getActiveTripId() {
-  const selectedFilterTrip = refs.filterTrip?.value;
-  if (selectedFilterTrip && selectedFilterTrip !== 'all') return selectedFilterTrip;
-
-  const selectedInputTrip = refs.inputTrip?.value;
-  if (selectedInputTrip) return selectedInputTrip;
-
   if (state.initialTripId) return state.initialTripId;
 
   return '';
@@ -165,8 +305,19 @@ function getActiveTripId() {
 function requireActiveTripId() {
   const tripId = getActiveTripId();
   if (tripId) return tripId;
-  window.alert('Selectionnez un voyage avant d\'ajouter un transport ou un logement.');
+  window.alert('Aucun voyage actif. Ouvrez la page budget depuis un voyage pour ajouter un transport ou un logement.');
   return null;
+}
+
+// Gere la logique principale de 'computeNights'.
+function computeNights(startDate, endDate) {
+  if (!startDate || !endDate) return 0;
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 0;
+  const diff = end.getTime() - start.getTime();
+  if (diff <= 0) return 0;
+  return Math.round(diff / 86400000);
 }
 
 // Normalise les donnees pour 'normalizeBudgetItem'.
@@ -304,10 +455,6 @@ function saveLocalBudgets() {
 function setLocalMode(message) {
   if (state.isLocalMode) return;
   state.isLocalMode = true;
-  if (refs.mode) {
-    refs.mode.hidden = false;
-    refs.mode.textContent = message || 'Mode local active';
-  }
   saveLocalBudgets();
 }
 
@@ -318,57 +465,13 @@ function resolveTripLabel(tripId) {
   return trip?.name || trip?.destination || 'Voyage';
 }
 
-// Gere la logique principale de 'buildTripOptions'.
-function buildTripOptions(select) {
-  if (!select) return;
-
-  const existingValue = select.value;
-  const isFilter = select === refs.filterTrip;
-
-  select.innerHTML = '';
-  if (isFilter) {
-    const option = document.createElement('option');
-    option.value = 'all';
-    option.textContent = 'Tous les voyages';
-    select.appendChild(option);
-  } else {
-    const option = document.createElement('option');
-    option.value = '';
-    option.textContent = 'General';
-    select.appendChild(option);
-  }
-
-  state.trips.forEach((trip) => {
-    const option = document.createElement('option');
-    option.value = String(trip.id);
-    option.textContent = trip.name || trip.destination || `Voyage ${trip.id}`;
-    select.appendChild(option);
-  });
-
-  const knownTripIds = new Set(state.trips.map((trip) => String(trip.id)));
-  state.entries
-    .map((item) => item.tripId)
-    .filter((tripId) => tripId && !knownTripIds.has(String(tripId)))
-    .forEach((tripId) => {
-      const option = document.createElement('option');
-      option.value = String(tripId);
-      option.textContent = `Voyage ${tripId}`;
-      select.appendChild(option);
-    });
-
-  const values = Array.from(select.options).map((option) => option.value);
-  select.value = values.includes(existingValue) ? existingValue : (isFilter ? 'all' : '');
-}
-
 // Retourne l'information calculee par 'getFilteredEntries'.
 function getFilteredEntries() {
-  const selectedTrip = refs.filterTrip?.value || 'all';
   const selectedCategory = refs.filterCategory?.value || 'all';
 
   return state.entries.filter((item) => {
-    const tripOk = selectedTrip === 'all' || String(item.tripId || '') === String(selectedTrip);
     const categoryOk = selectedCategory === 'all' || item.category === selectedCategory;
-    return tripOk && categoryOk;
+    return categoryOk;
   });
 }
 
@@ -377,6 +480,49 @@ function createCell(content) {
   const cell = document.createElement('td');
   cell.textContent = content;
   return cell;
+}
+
+// Retourne l'information calculee par 'parseActualInlineValue'.
+function parseActualInlineValue(value) {
+  const normalized = String(value || '').trim().replace(',', '.');
+  if (!normalized) return 0;
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw new Error('Depense invalide.');
+  }
+  return Math.round(parsed * 100) / 100;
+}
+
+// Gere la logique principale de 'updateActualInline'.
+async function updateActualInline(itemId, rawValue) {
+  const current = state.budgetRows.find((entry) => String(entry.id) === String(itemId));
+  if (!current) return;
+
+  let nextActual;
+  try {
+    nextActual = parseActualInlineValue(rawValue);
+  } catch (error) {
+    window.alert(error.message || 'Depense invalide.');
+    renderAll();
+    return;
+  }
+
+  if (Math.abs(toSafeNumber(current.actual) - nextActual) < 0.0001) return;
+
+  try {
+    if (state.isLocalMode) {
+      upsertBudgetRow({ ...current, actual: nextActual });
+    } else {
+      const updated = await updateBudget(itemId, { actual_amount: nextActual });
+      upsertBudgetRow(normalizeBudgetItem(updated));
+    }
+    renderAll();
+  } catch (error) {
+    setLocalMode('Mode local active (API budget indisponible)');
+    upsertBudgetRow({ ...current, actual: nextActual });
+    renderAll();
+    console.error('Mise a jour depense en local suite a erreur API:', error);
+  }
 }
 
 // Construit le rendu pour 'renderTable'.
@@ -389,7 +535,7 @@ function renderTable(items) {
     const row = document.createElement('tr');
     const cell = document.createElement('td');
     cell.className = 'budget-empty';
-    cell.colSpan = 7;
+    cell.colSpan = 6;
     cell.textContent = 'Aucune depense pour le filtre selectionne.';
     row.appendChild(cell);
     refs.tableBody.appendChild(row);
@@ -400,13 +546,33 @@ function renderTable(items) {
       row.appendChild(createCell(item.label));
       row.appendChild(createCell(getCategoryLabel(item.category)));
       row.appendChild(createCell(formatCurrency(item.planned)));
-      row.appendChild(createCell(formatCurrency(item.actual)));
+
+      const actualCell = document.createElement('td');
+      if (item.source === 'budget' || item.source === 'transport') {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'budget-actual-wrapper';
+
+        const actualInput = document.createElement('input');
+        actualInput.type = 'number';
+        actualInput.min = '0';
+        actualInput.step = '0.01';
+        actualInput.className = 'field-input budget-actual-inline';
+        actualInput.placeholder = '0.00';
+        actualInput.value = item.actual > 0 ? String(item.actual) : '';
+        actualInput.setAttribute('data-action', 'actual-inline');
+        actualInput.setAttribute('data-id', String(item.id));
+        wrapper.appendChild(actualInput);
+        actualCell.appendChild(wrapper);
+      } else {
+        actualCell.textContent = formatCurrency(item.actual);
+      }
+      row.appendChild(actualCell);
+
       row.appendChild(createCell(formatDate(item.date)));
-      row.appendChild(createCell(resolveTripLabel(item.tripId)));
 
       const actionCell = document.createElement('td');
 
-      if (item.source === 'budget') {
+      if (item.source === 'budget' || item.source === 'transport' || item.source === 'accommodation') {
         const group = document.createElement('div');
         group.className = 'budget-action-group';
 
@@ -421,8 +587,13 @@ function renderTable(items) {
         const deleteBtn = document.createElement('button');
         deleteBtn.type = 'button';
         deleteBtn.className = 'btn-icon btn-icon-danger';
-        deleteBtn.setAttribute('data-action', 'delete');
-        deleteBtn.setAttribute('data-id', String(item.id));
+        const deleteAction = item.source === 'budget'
+          ? 'delete'
+          : item.source === 'transport'
+            ? 'delete-transport'
+            : 'delete-accommodation';
+        deleteBtn.setAttribute('data-action', deleteAction);
+        deleteBtn.setAttribute('data-id', String(item.source === 'budget' ? item.id : item.sourceId));
         deleteBtn.title = 'Supprimer';
         deleteBtn.innerHTML = "<i class='bx bx-trash'></i>";
 
@@ -430,7 +601,15 @@ function renderTable(items) {
         group.appendChild(deleteBtn);
         actionCell.appendChild(group);
       } else {
-        actionCell.textContent = SOURCE_LABELS[item.source] || 'Auto';
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'btn-icon btn-icon-danger';
+        const actionType = item.source === 'transport' ? 'delete-transport' : 'delete-accommodation';
+        deleteBtn.setAttribute('data-action', actionType);
+        deleteBtn.setAttribute('data-id', String(item.sourceId));
+        deleteBtn.title = 'Supprimer';
+        deleteBtn.innerHTML = "<i class='bx bx-trash'></i>";
+        actionCell.appendChild(deleteBtn);
       }
 
       row.appendChild(actionCell);
@@ -558,8 +737,8 @@ function drawPieChart(items) {
 function updateHeroMeta() {
   if (!refs.tripName || !refs.tripDates) return;
 
-  const selectedTripId = refs.filterTrip?.value || 'all';
-  if (selectedTripId === 'all') {
+  const selectedTripId = getSelectedTripId();
+  if (!selectedTripId) {
     refs.tripName.textContent = 'Tous les voyages';
     refs.tripDates.textContent = '-';
     return;
@@ -578,73 +757,167 @@ function updateHeroMeta() {
 
 // Construit le rendu pour 'renderAll'.
 function renderAll() {
-  buildTripOptions(refs.inputTrip);
-  buildTripOptions(refs.filterTrip);
-
-  if (state.initialTripId && refs.filterTrip && refs.filterTrip.value === 'all') {
-    const values = Array.from(refs.filterTrip.options).map((option) => option.value);
-    if (values.includes(state.initialTripId)) {
-      refs.filterTrip.value = state.initialTripId;
-      refs.inputTrip.value = state.initialTripId;
-    }
-    state.initialTripId = '';
-  }
-
   const filtered = getFilteredEntries();
   renderTable(filtered);
   renderSummary(filtered);
   drawPieChart(filtered);
   updateHeroMeta();
+  updateBudgetDateBounds();
+  applyBudgetFormMode(getBudgetFormMode());
 }
 
 // Gere la logique principale de 'resetForm'.
 function resetForm() {
   state.editingId = null;
-  refs.inputLabel.value = '';
-  refs.inputCategory.value = 'transport';
-  refs.inputPlanned.value = '';
-  refs.inputActual.value = '';
-  refs.inputDate.value = '';
-  refs.inputTrip.value = getActiveTripId() || '';
-  refs.addButton.textContent = 'Ajouter';
+  state.forcedFormMode = null;
+  if (refs.inputCategory) refs.inputCategory.value = 'activites';
+  clearFormValues();
+  applyBudgetFormMode('budget');
 }
 
 // Charge les donnees necessaires pour 'loadFormForEdit'.
 function loadFormForEdit(item) {
-  state.editingId = item.id;
-  refs.inputLabel.value = item.label;
-  refs.inputCategory.value = item.category;
-  refs.inputPlanned.value = item.planned > 0 ? String(item.planned) : '';
-  refs.inputActual.value = item.actual > 0 ? String(item.actual) : '';
-  refs.inputDate.value = item.date || '';
-  refs.inputTrip.value = item.tripId || '';
-  refs.addButton.textContent = 'Mettre a jour';
+  state.editingId = item.source === 'budget' ? item.id : item.sourceId;
+  clearFormValues();
+  setFormNote('');
+  if (item.source === 'transport') {
+    state.forcedFormMode = 'transport';
+    if (refs.transportFrom) refs.transportFrom.value = item.raw?.origin || '';
+    if (refs.transportTo) refs.transportTo.value = item.raw?.destination || '';
+    if (refs.transportDate) refs.transportDate.value = item.date || '';
+    if (refs.transportTime) refs.transportTime.value = item.raw?.travel_time || '';
+    if (refs.transportDuration) refs.transportDuration.value = item.raw?.duration_minutes > 0 ? String(item.raw.duration_minutes) : '';
+    if (refs.transportPrice) refs.transportPrice.value = item.planned > 0 ? String(item.planned) : '';
+    if (refs.transportModeSelect) refs.transportModeSelect.value = item.raw?.mode || '';
+  } else if (item.source === 'accommodation') {
+    state.forcedFormMode = 'logement';
+    if (refs.accommodationName) refs.accommodationName.value = item.raw?.name || '';
+    if (refs.accommodationAddress) refs.accommodationAddress.value = item.raw?.address || '';
+    if (refs.accommodationPrice) refs.accommodationPrice.value = item.raw?.price_per_night > 0 ? String(item.raw.price_per_night) : '';
+    if (refs.accommodationStart) refs.accommodationStart.value = item.raw?.start_date || item.date || '';
+    if (refs.accommodationEnd) refs.accommodationEnd.value = item.raw?.end_date || '';
+    updateAccommodationNights();
+  } else {
+    state.forcedFormMode = 'budget';
+    if (refs.inputCategory) refs.inputCategory.value = item.category;
+    if (refs.inputLabel) refs.inputLabel.value = item.label;
+    if (refs.inputPlanned) refs.inputPlanned.value = item.planned > 0 ? String(item.planned) : '';
+    if (refs.inputDate) refs.inputDate.value = item.date || '';
+  }
+  applyBudgetFormMode(state.forcedFormMode);
 }
 
 // Gere la logique principale de 'validateForm'.
 function validateForm() {
-  const label = String(refs.inputLabel.value || '').trim();
-  const category = normalizeCategory(refs.inputCategory.value);
-  const planned = toSafeNumber(refs.inputPlanned.value);
-  const actual = toSafeNumber(refs.inputActual.value);
-  const date = String(refs.inputDate.value || '').trim();
-  const tripId = String(refs.inputTrip.value || '').trim();
+  const mode = getBudgetFormMode();
+
+  if (mode === 'transport') {
+    const tripId = String(getSelectedTripId() || '').trim();
+    const origin = String(refs.transportFrom?.value || '').trim();
+    const destination = String(refs.transportTo?.value || '').trim();
+    const travelDate = String(refs.transportDate?.value || '').trim();
+    const travelTime = String(refs.transportTime?.value || '').trim();
+    const transportMode = String(refs.transportModeSelect?.value || '').trim();
+    const priceRaw = refs.transportPrice?.value;
+    const durationRaw = refs.transportDuration?.value;
+    const price = priceRaw ? Number(String(priceRaw).replace(',', '.')) : null;
+    const durationMinutes = durationRaw ? Number(durationRaw) : null;
+
+    if (!tripId) throw new Error('Selectionnez un voyage avant d\'ajouter un transport.');
+    if (!origin || !destination || !travelDate || !travelTime || !transportMode) {
+      throw new Error('Merci de remplir les champs obligatoires du transport.');
+    }
+    if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
+      throw new Error('Temps de trajet invalide.');
+    }
+    if (price !== null && !Number.isFinite(price)) {
+      throw new Error('Prix invalide.');
+    }
+
+    return {
+      mode,
+      tripId,
+      payload: {
+        origin,
+        destination,
+        travel_date: travelDate,
+        travel_time: travelTime,
+        mode: transportMode,
+        price,
+        duration_minutes: durationMinutes
+      }
+    };
+  }
+
+  if (mode === 'logement') {
+    const tripId = String(getSelectedTripId() || '').trim();
+    const name = String(refs.accommodationName?.value || '').trim();
+    const address = String(refs.accommodationAddress?.value || '').trim();
+    const startDate = String(refs.accommodationStart?.value || '').trim();
+    const endDate = String(refs.accommodationEnd?.value || '').trim();
+    const priceRaw = refs.accommodationPrice?.value;
+    const priceValue = priceRaw ? Number(String(priceRaw).replace(',', '.')) : null;
+    const nights = computeNights(startDate, endDate);
+
+    if (!tripId) throw new Error('Selectionnez un voyage avant d\'ajouter un logement.');
+    if (!address || !startDate || !endDate) {
+      throw new Error('Merci de remplir les champs obligatoires du logement.');
+    }
+    if (nights <= 0) {
+      throw new Error('Les dates doivent couvrir au moins 1 nuit.');
+    }
+    if (priceValue !== null && !Number.isFinite(priceValue)) {
+      throw new Error('Prix invalide.');
+    }
+
+    return {
+      mode,
+      tripId,
+      payload: {
+        trip_id: tripId,
+        name: name || null,
+        address,
+        price_per_night: priceValue,
+        start_date: startDate,
+        end_date: endDate,
+        nights
+      }
+    };
+  }
+
+  const label = String(refs.inputLabel?.value || '').trim();
+  const category = normalizeCategory(refs.inputCategory?.value);
+  const planned = toSafeNumber(refs.inputPlanned?.value);
+  const actual = state.editingId ? toSafeNumber(refs.inputActual?.value) : 0;
+  const date = String(refs.inputDate?.value || '').trim();
+  const tripId = String(getSelectedTripId() || '').trim();
+  const trip = getTripById(tripId);
+  const minDate = trip?.start_date ? String(trip.start_date).split('T')[0] : '';
+  const maxDate = trip?.end_date ? String(trip.end_date).split('T')[0] : '';
 
   if (!label) {
     throw new Error('Merci de renseigner un nom de depense.');
   }
 
-  if (planned <= 0 && actual <= 0) {
-    throw new Error('Renseignez au moins un montant prevu ou depense superieur a 0.');
+  if (planned <= 0) {
+    throw new Error('Renseignez un montant prevu superieur a 0.');
+  }
+
+  if (trip && (!date || (minDate && date < minDate) || (maxDate && date > maxDate))) {
+    throw new Error('La date doit etre comprise dans les dates du voyage.');
   }
 
   return {
-    label,
-    category,
-    planned,
-    actual,
-    date,
-    tripId
+    mode,
+    tripId,
+    payload: {
+      label,
+      category,
+      planned,
+      actual,
+      date,
+      tripId
+    }
   };
 }
 
@@ -673,51 +946,90 @@ async function handleSave() {
   try {
     formData = validateForm();
   } catch (error) {
-    window.alert(error.message || 'Formulaire invalide.');
+    setFormNote(error.message || 'Formulaire invalide.', true);
     return;
   }
 
   refs.addButton.disabled = true;
-  refs.addButton.textContent = state.editingId ? 'Mise a jour...' : 'Ajout...';
+  refs.addButton.textContent = state.editingId
+    ? 'Mise a jour...'
+    : formData.mode === 'transport'
+      ? 'Ajout du transport...'
+      : formData.mode === 'logement'
+        ? 'Ajout du logement...'
+        : 'Ajout...';
+  setFormNote('Enregistrement...');
 
   try {
-    if (state.isLocalMode) {
+    if (formData.mode === 'transport') {
+      if (state.editingId) {
+        await updateTransport(state.editingId, { ...formData.payload, trip_id: formData.tripId });
+        setFormNote('Transport mis a jour.');
+      } else {
+        await createTransport(formData.tripId, formData.payload);
+        setFormNote('Transport ajoute.');
+      }
+      await loadRelatedEntries();
+    } else if (formData.mode === 'logement') {
+      if (state.editingId) {
+        await updateAccommodation(state.editingId, formData.payload);
+        setFormNote('Logement mis a jour.');
+      } else {
+        await createAccommodation(formData.payload);
+        setFormNote('Logement ajoute.');
+      }
+      await loadRelatedEntries();
+    } else if (state.isLocalMode) {
       const localItem = {
         id: state.editingId || `local-${Date.now()}`,
         source: 'budget',
         sourceId: state.editingId || `local-${Date.now()}`,
-        ...formData,
+        ...formData.payload,
         raw: {}
       };
       upsertBudgetRow(localItem);
+      setFormNote(state.editingId ? 'Depense mise a jour.' : 'Depense ajoutee.');
     } else if (state.editingId) {
-      const updated = await updateBudget(state.editingId, mapToPayload(formData));
+      const updated = await updateBudget(state.editingId, mapToPayload(formData.payload));
       const normalized = normalizeBudgetItem(updated);
       upsertBudgetRow(normalized);
+      setFormNote('Depense mise a jour.');
     } else {
-      const created = await createBudget(mapToPayload(formData));
+      const created = await createBudget(mapToPayload(formData.payload));
       upsertBudgetRow(normalizeBudgetItem(created));
+      setFormNote('Depense ajoutee.');
     }
 
     resetForm();
     renderAll();
   } catch (error) {
-    setLocalMode('Mode local active (API budget indisponible)');
-    const id = state.editingId || `local-${Date.now()}`;
-    const localItem = {
-      id,
-      source: 'budget',
-      sourceId: id,
-      ...formData,
-      raw: {}
-    };
-    upsertBudgetRow(localItem);
-    resetForm();
-    renderAll();
-    console.error('Erreur budget API, fallback local:', error);
+    if (formData.mode === 'budget') {
+      setLocalMode('Mode local active (API budget indisponible)');
+      const id = state.editingId || `local-${Date.now()}`;
+      const localItem = {
+        id,
+        source: 'budget',
+        sourceId: id,
+        ...formData.payload,
+        raw: {}
+      };
+      upsertBudgetRow(localItem);
+      resetForm();
+      renderAll();
+      console.error('Erreur budget API, fallback local:', error);
+    } else {
+      setFormNote(error?.message || 'Erreur lors de l\'enregistrement.', true);
+      console.error('Erreur enregistrement form budget:', error);
+    }
   } finally {
     refs.addButton.disabled = false;
-    refs.addButton.textContent = state.editingId ? 'Mettre a jour' : 'Ajouter';
+    refs.addButton.textContent = getBudgetFormMode() === 'transport'
+      ? 'Ajouter le transport'
+      : getBudgetFormMode() === 'logement'
+        ? 'Ajouter le logement'
+        : state.editingId
+          ? 'Mettre a jour'
+          : 'Ajouter';
   }
 }
 
@@ -808,237 +1120,63 @@ async function loadRelatedEntries() {
 
 // Met a jour l'etat pilote par 'setTransportDateBounds'.
 function setTransportDateBounds(tripId) {
-  const dateInput = document.getElementById('transport-date');
-  if (!dateInput) return;
-  const trip = getTripById(tripId);
-  dateInput.min = trip?.start_date ? String(trip.start_date).split('T')[0] : '';
-  dateInput.max = trip?.end_date ? String(trip.end_date).split('T')[0] : '';
+  void tripId;
+  updateTransportDateBounds();
 }
 
 // Met a jour l'etat pilote par 'setAccommodationDateBounds'.
 function setAccommodationDateBounds(tripId) {
-  const startInput = document.getElementById('accommodation-start');
-  const endInput = document.getElementById('accommodation-end');
-  const trip = getTripById(tripId);
-
-  if (startInput) {
-    startInput.min = trip?.start_date ? String(trip.start_date).split('T')[0] : '';
-    startInput.max = trip?.end_date ? String(trip.end_date).split('T')[0] : '';
-  }
-  if (endInput) {
-    endInput.min = trip?.start_date ? String(trip.start_date).split('T')[0] : '';
-    endInput.max = trip?.end_date ? String(trip.end_date).split('T')[0] : '';
-  }
+  void tripId;
+  updateAccommodationDateBounds();
 }
 
 // Initialise le bloc fonctionnel 'initTransportModal'.
 function initTransportModal() {
-  if (!refs.transportModal || !refs.transportForm || !refs.addTransportButton || !refs.transportSaveNote) return;
+  if (!refs.transportPrice || !refs.transportDuration || !refs.transportTime) return;
 
-  const closeModal = () => {
-    refs.transportModal.hidden = true;
-    document.body.style.overflow = '';
-  };
-
-  const resetTransportForm = () => {
-    refs.transportForm.reset();
-    const idInput = refs.transportForm.elements.namedItem('transport_id');
-    if (idInput) idInput.value = '';
-    refs.transportSaveNote.classList.remove('is-error', 'is-success');
-    refs.transportSaveNote.textContent = '';
-  };
-
-  refs.addTransportButton.addEventListener('click', () => {
-    const tripId = requireActiveTripId();
-    if (!tripId) return;
-    setTransportDateBounds(tripId);
-    resetTransportForm();
-    refs.transportModal.hidden = false;
-    document.body.style.overflow = 'hidden';
+  refs.transportPrice.addEventListener('input', () => {
+    refs.transportPrice.value = refs.transportPrice.value
+      .replace(/[^\d.,]/g, '')
+      .replace(/,(?=.*[,])/g, '')
+      .replace(/\.(?=.*\.)/g, '')
+      .replace(',', '.');
   });
 
-  refs.transportModal.querySelectorAll('[data-close]').forEach((button) => {
-    button.addEventListener('click', closeModal);
+  refs.transportDuration.addEventListener('input', () => {
+    refs.transportDuration.value = refs.transportDuration.value.replace(/[^\d]/g, '');
   });
 
-  refs.transportModal.addEventListener('click', (event) => {
-    if (event.target === refs.transportModal) {
-      closeModal();
-    }
-  });
-
-  refs.transportForm.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const tripId = requireActiveTripId();
-    if (!tripId) return;
-
-    const origin = refs.transportForm.elements.namedItem('from')?.value?.trim();
-    const destination = refs.transportForm.elements.namedItem('to')?.value?.trim();
-    const travelDate = refs.transportForm.elements.namedItem('date')?.value;
-    const travelTime = refs.transportForm.elements.namedItem('time')?.value;
-    const mode = refs.transportForm.elements.namedItem('mode')?.value;
-    const priceRaw = refs.transportForm.elements.namedItem('price')?.value;
-    const durationRaw = refs.transportForm.elements.namedItem('duration')?.value;
-    const price = priceRaw ? Number(String(priceRaw).replace(',', '.')) : null;
-    const durationMinutes = durationRaw ? Number(durationRaw) : null;
-
-    refs.transportSaveNote.classList.remove('is-error', 'is-success');
-    refs.transportSaveNote.textContent = 'Enregistrement...';
-
-    if (!origin || !destination || !travelDate || !travelTime || !mode) {
-      refs.transportSaveNote.classList.add('is-error');
-      refs.transportSaveNote.textContent = 'Merci de remplir les champs obligatoires.';
-      return;
-    }
-
-    if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
-      refs.transportSaveNote.classList.add('is-error');
-      refs.transportSaveNote.textContent = 'Temps de trajet invalide.';
-      return;
-    }
-
-    if (price !== null && !Number.isFinite(price)) {
-      refs.transportSaveNote.classList.add('is-error');
-      refs.transportSaveNote.textContent = 'Prix invalide.';
-      return;
-    }
-
-    try {
-      await createTransport(tripId, {
-        origin,
-        destination,
-        travel_date: travelDate,
-        travel_time: travelTime,
-        mode,
-        price,
-        duration_minutes: durationMinutes
-      });
-
-      refs.transportSaveNote.classList.add('is-success');
-      refs.transportSaveNote.textContent = 'Transport ajoute.';
-      await loadRelatedEntries();
-      renderAll();
-      closeModal();
-    } catch (error) {
-      refs.transportSaveNote.classList.add('is-error');
-      refs.transportSaveNote.textContent = error?.message || 'Erreur lors de l\'ajout du transport.';
-    }
+  refs.transportTime.addEventListener('input', () => {
+    refs.transportTime.value = refs.transportTime.value.trim();
   });
 }
 
 // Initialise le bloc fonctionnel 'initAccommodationModal'.
 function initAccommodationModal() {
-  if (!refs.accommodationModal || !refs.accommodationForm || !refs.addAccommodationButton || !refs.accommodationSaveNote) return;
+  if (!refs.accommodationStart || !refs.accommodationEnd || !refs.accommodationPrice || !refs.accommodationNights) return;
 
-  const closeModal = () => {
-    refs.accommodationModal.hidden = true;
-    document.body.style.overflow = '';
-  };
+  refs.accommodationStart.addEventListener('change', updateAccommodationNights);
+  refs.accommodationEnd.addEventListener('change', updateAccommodationNights);
 
-  const updateNights = () => {
-    if (!refs.accommodationNights) return;
-    const startDate = refs.accommodationForm.elements.namedItem('start')?.value;
-    const endDate = refs.accommodationForm.elements.namedItem('end')?.value;
-    const nights = computeNights(startDate, endDate);
-    refs.accommodationNights.value = nights > 0 ? String(nights) : '';
-  };
-
-  const resetAccommodationForm = () => {
-    refs.accommodationForm.reset();
-    const idInput = refs.accommodationForm.elements.namedItem('accommodation_id');
-    if (idInput) idInput.value = '';
-    if (refs.accommodationNights) refs.accommodationNights.value = '';
-    refs.accommodationSaveNote.classList.remove('is-error', 'is-success');
-    refs.accommodationSaveNote.textContent = '';
-  };
-
-  refs.accommodationForm.elements.namedItem('start')?.addEventListener('change', updateNights);
-  refs.accommodationForm.elements.namedItem('end')?.addEventListener('change', updateNights);
-
-  refs.addAccommodationButton.addEventListener('click', () => {
-    const tripId = requireActiveTripId();
-    if (!tripId) return;
-    setAccommodationDateBounds(tripId);
-    resetAccommodationForm();
-    refs.accommodationModal.hidden = false;
-    document.body.style.overflow = 'hidden';
-  });
-
-  refs.accommodationModal.querySelectorAll('[data-close]').forEach((button) => {
-    button.addEventListener('click', closeModal);
-  });
-
-  refs.accommodationModal.addEventListener('click', (event) => {
-    if (event.target === refs.accommodationModal) {
-      closeModal();
-    }
-  });
-
-  refs.accommodationForm.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const tripId = requireActiveTripId();
-    if (!tripId) return;
-
-    const name = refs.accommodationForm.elements.namedItem('name')?.value?.trim();
-    const address = refs.accommodationForm.elements.namedItem('address')?.value?.trim();
-    const startDate = refs.accommodationForm.elements.namedItem('start')?.value;
-    const endDate = refs.accommodationForm.elements.namedItem('end')?.value;
-    const priceRaw = refs.accommodationForm.elements.namedItem('price')?.value;
-    const priceValue = priceRaw ? Number(String(priceRaw).replace(',', '.')) : null;
-    const nights = computeNights(startDate, endDate);
-
-    refs.accommodationSaveNote.classList.remove('is-error', 'is-success');
-    refs.accommodationSaveNote.textContent = 'Enregistrement...';
-
-    if (!address || !startDate || !endDate) {
-      refs.accommodationSaveNote.classList.add('is-error');
-      refs.accommodationSaveNote.textContent = 'Merci de remplir les champs obligatoires.';
-      return;
-    }
-
-    if (nights <= 0) {
-      refs.accommodationSaveNote.classList.add('is-error');
-      refs.accommodationSaveNote.textContent = 'Les dates doivent couvrir au moins 1 nuit.';
-      return;
-    }
-
-    if (priceValue !== null && !Number.isFinite(priceValue)) {
-      refs.accommodationSaveNote.classList.add('is-error');
-      refs.accommodationSaveNote.textContent = 'Prix invalide.';
-      return;
-    }
-
-    try {
-      await createAccommodation({
-        trip_id: tripId,
-        name: name || null,
-        address,
-        price_per_night: priceValue,
-        start_date: startDate,
-        end_date: endDate,
-        nights
-      });
-
-      refs.accommodationSaveNote.classList.add('is-success');
-      refs.accommodationSaveNote.textContent = 'Logement ajoute.';
-      await loadRelatedEntries();
-      renderAll();
-      closeModal();
-    } catch (error) {
-      refs.accommodationSaveNote.classList.add('is-error');
-      refs.accommodationSaveNote.textContent = error?.message || 'Erreur lors de l\'ajout du logement.';
-    }
+  refs.accommodationPrice.addEventListener('input', () => {
+    refs.accommodationPrice.value = refs.accommodationPrice.value
+      .replace(/[^\d.,]/g, '')
+      .replace(/,(?=.*[,])/g, '')
+      .replace(/\.(?=.*\.)/g, '')
+      .replace(',', '.');
+    updateAccommodationNights();
   });
 }
 
 // Gere la logique principale de 'bindEvents'.
 function bindEvents() {
   refs.addButton?.addEventListener('click', handleSave);
-  refs.filterTrip?.addEventListener('change', () => {
-    if (refs.filterTrip?.value !== 'all') {
-      refs.inputTrip.value = refs.filterTrip.value;
-    }
-    renderAll();
+  refs.inputCategory?.addEventListener('change', () => {
+    state.editingId = null;
+    state.forcedFormMode = null;
+    clearFormValues();
+    setFormNote('');
+    applyBudgetFormMode(getBudgetFormMode());
   });
   refs.filterCategory?.addEventListener('change', renderAll);
 
@@ -1051,7 +1189,36 @@ function bindEvents() {
 
     const action = button.getAttribute('data-action');
     const id = button.getAttribute('data-id');
-    const item = state.budgetRows.find((entry) => String(entry.id) === String(id));
+
+    if (action === 'delete-transport') {
+      if (window.confirm('Supprimer ce transport ?')) {
+        try {
+          await deleteTransport(id);
+          await loadRelatedEntries();
+          renderAll();
+        } catch (error) {
+          window.alert('Erreur lors de la suppression du transport.');
+          console.error('Erreur suppression transport:', error);
+        }
+      }
+      return;
+    }
+
+    if (action === 'delete-accommodation') {
+      if (window.confirm('Supprimer ce logement ?')) {
+        try {
+          await deleteAccommodation(id);
+          await loadRelatedEntries();
+          renderAll();
+        } catch (error) {
+          window.alert('Erreur lors de la suppression du logement.');
+          console.error('Erreur suppression logement:', error);
+        }
+      }
+      return;
+    }
+
+    const item = state.entries.find((entry) => String(entry.id) === String(id) || String(entry.sourceId) === String(id));
 
     if (!item) return;
 
@@ -1064,6 +1231,22 @@ function bindEvents() {
     if (action === 'delete') {
       await handleDelete(item.id);
     }
+  });
+
+  refs.tableBody?.addEventListener('keydown', async (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement)) return;
+    if (target.getAttribute('data-action') !== 'actual-inline') return;
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    await updateActualInline(target.getAttribute('data-id'), target.value);
+  });
+
+  refs.tableBody?.addEventListener('change', async (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement)) return;
+    if (target.getAttribute('data-action') !== 'actual-inline') return;
+    await updateActualInline(target.getAttribute('data-id'), target.value);
   });
 }
 
@@ -1088,6 +1271,7 @@ async function initBudgetPage() {
   const params = new URLSearchParams(window.location.search || '');
   state.initialTripId = String(params.get('tripId') || '').trim();
 
+  resetForm();
   await loadTrips();
   await loadBudgets();
   await loadRelatedEntries();
@@ -1095,7 +1279,6 @@ async function initBudgetPage() {
   initTransportModal();
   initAccommodationModal();
   renderAll();
-  resetForm();
 }
 
 initBudgetPage();

@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Budget</title>
-    <link rel="stylesheet" href="../assets/css/style.css?v=20260329b">
-    <link rel="stylesheet" href="../assets/css/budget.css?v=20260329b">
+    <link rel="stylesheet" href="../assets/css/style.css?v=20260402a">
+    <link rel="stylesheet" href="../assets/css/budget.css?v=20260402a">
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 </head>
 <body>
@@ -40,83 +40,121 @@
                 <a href="budget.html" class="is-active" aria-current="page">Budget</a>
             </nav>
         </div>
-
         <section class="budget-hero">
             <div>
                 <p class="budget-kicker">Suivi financier</p>
                 <p class="budget-subtitle">Ajoutez vos lignes de budget et comparez en direct le prevu face au reel.</p>
             </div>
-            <div id="budget-mode" class="budget-mode" hidden></div>
+
         </section>
 
         <section class="budget-controls card">
             <div class="budget-row budget-row-form">
                 <div class="field">
-                    <label for="budget-label">Depense</label>
-                    <input id="budget-label" class="field-input" type="text" placeholder="Ex: Hotel, restaurant, billets" maxlength="120" required>
-                </div>
-                <div class="field">
                     <label for="budget-category">Categorie</label>
                     <select id="budget-category" class="field-input">
-                        <option value="transport">Transport</option>
-                        <option value="logement">Logement</option>
                         <option value="activites">Activites</option>
                         <option value="repas">Repas</option>
                         <option value="shopping">Shopping</option>
                         <option value="autre">Autre</option>
+                        <option value="transport">Transport</option>
+                        <option value="logement">Logement</option>
                     </select>
                 </div>
-                <div class="field">
-                    <label for="budget-planned">Prevu (EUR)</label>
-                    <input id="budget-planned" class="field-input" type="number" min="0" step="0.01" placeholder="0.00" required>
+            </div>
+
+            <div id="budget-form-budget" class="budget-form-mode">
+                <div class="budget-form-grid budget-form-grid-budget">
+                    <div class="field">
+                        <label for="budget-label">Depense</label>
+                        <input id="budget-label" class="field-input" type="text" placeholder="Ex: Hotel, restaurant, billets" maxlength="120" required>
+                    </div>
+                    <div class="field">
+                        <label for="budget-planned">Prevu (EUR)</label>
+                        <input id="budget-planned" class="field-input" type="number" min="0" step="0.01" placeholder="0.00" required>
+                    </div>
+                    <div class="field">
+                        <label for="budget-date">Date</label>
+                        <input id="budget-date" class="field-input" type="date">
+                    </div>
                 </div>
-                <div class="field">
-                    <label for="budget-actual">Depense (EUR)</label>
-                    <input id="budget-actual" class="field-input" type="number" min="0" step="0.01" placeholder="0.00">
+            </div>
+
+            <div id="budget-form-transport" class="budget-form-mode" hidden>
+                <div class="budget-form-grid budget-form-grid-travel">
+                    <div class="field-group">
+                        <label for="budget-transport-from">D'ou partez-vous ?</label>
+                        <input class="form-input" id="budget-transport-from" type="text" placeholder="Ex: Paris" required>
+                    </div>
+                    <div class="field-group">
+                        <label for="budget-transport-to">Ou voulez-vous aller ?</label>
+                        <input class="form-input" id="budget-transport-to" type="text" placeholder="Ex: Rome" required>
+                    </div>
+                    <div class="field-group">
+                        <label for="budget-transport-date">Quel jour ?</label>
+                        <input class="form-input" id="budget-transport-date" type="date" required>
+                    </div>
+                    <div class="field-group">
+                        <label for="budget-transport-time">A quelle heure ?</label>
+                        <input class="form-input" id="budget-transport-time" type="time" required>
+                    </div>
+                    <div class="field-group">
+                        <label for="budget-transport-duration">Temps de trajet (minutes)</label>
+                        <input class="form-input" id="budget-transport-duration" type="number" min="1" placeholder="Ex: 120" required>
+                    </div>
+                    <div class="field-group">
+                        <label for="budget-transport-price">Prix (EUR)</label>
+                        <input class="form-input" id="budget-transport-price" type="number" min="0" step="0.01" placeholder="Ex: 89.90">
+                    </div>
+                    <div class="field-group">
+                        <label for="budget-transport-mode">Mode de transport</label>
+                        <select class="form-input" id="budget-transport-mode" required>
+                            <option value="">Selectionner</option>
+                            <option>Avion</option>
+                            <option>Train</option>
+                            <option>Voiture</option>
+                            <option>Bus</option>
+                            <option>Bateau</option>
+                            <option>Autre</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="field">
-                    <label for="budget-date">Date</label>
-                    <input id="budget-date" class="field-input" type="date">
+            </div>
+
+            <div id="budget-form-accommodation" class="budget-form-mode" hidden>
+                <div class="budget-form-grid budget-form-grid-accommodation">
+                    <div class="field-group">
+                        <label for="budget-accommodation-name">Nom du logement</label>
+                        <input class="form-input" id="budget-accommodation-name" type="text" placeholder="Ex: Hotel Piazza">
+                    </div>
+                    <div class="field-group">
+                        <label for="budget-accommodation-address">Adresse du logement</label>
+                        <input class="form-input" id="budget-accommodation-address" type="text" placeholder="Ex: 12 rue des Fleurs, Rome" required>
+                    </div>
+                    <div class="field-group">
+                        <label for="budget-accommodation-price">Prix par nuit (EUR)</label>
+                        <input class="form-input" id="budget-accommodation-price" type="number" min="0" step="0.01" placeholder="Ex: 120">
+                    </div>
+                    <div class="field-group">
+                        <label for="budget-accommodation-start">Date d'arrivee</label>
+                        <input class="form-input" id="budget-accommodation-start" type="date" required>
+                    </div>
+                    <div class="field-group">
+                        <label for="budget-accommodation-end">Date de depart</label>
+                        <input class="form-input" id="budget-accommodation-end" type="date" required>
+                    </div>
+                    <div class="field-group">
+                        <label for="budget-accommodation-nights">Nombre de nuits</label>
+                        <input class="form-input" id="budget-accommodation-nights" type="number" min="1" readonly>
+                    </div>
                 </div>
-                <div class="field">
-                    <label for="budget-trip">Voyage</label>
-                    <select id="budget-trip" class="field-input">
-                        <option value="">General</option>
-                    </select>
-                </div>
+            </div>
+
+            <div class="budget-actions">
+                <span id="budget-form-note" class="settings-feedback"></span>
                 <button id="budget-add" class="btn-accent" type="button">Ajouter</button>
             </div>
 
-            <div class="budget-row budget-row-filters">
-                <div class="field field-filter">
-                    <label for="budget-filter-trip">Filtrer par voyage</label>
-                    <select id="budget-filter-trip" class="field-input">
-                        <option value="all">Tous les voyages</option>
-                    </select>
-                </div>
-                <div class="field field-filter">
-                    <label for="budget-filter-category">Filtrer par categorie</label>
-                    <select id="budget-filter-category" class="field-input">
-                        <option value="all">Toutes les categories</option>
-                        <option value="transport">Transport</option>
-                        <option value="logement">Logement</option>
-                        <option value="activites">Activites</option>
-                        <option value="repas">Repas</option>
-                        <option value="shopping">Shopping</option>
-                        <option value="autre">Autre</option>
-                    </select>
-                </div>
-                <div class="budget-quick-actions" aria-label="Actions rapides budget">
-                    <button type="button" class="btn-secondary" id="budget-add-transport">
-                        <i class='bx bx-transfer-alt'></i>
-                        Ajouter un transport
-                    </button>
-                    <button type="button" class="btn-secondary" id="budget-add-accommodation">
-                        <i class='bx bx-home-heart'></i>
-                        Ajouter un logement
-                    </button>
-                </div>
-            </div>
         </section>
 
         <section class="budget-summary-grid">
@@ -141,8 +179,22 @@
         <section class="budget-main-grid">
             <article class="card budget-table-card">
                 <div class="budget-card-header">
-                    <h2>Liste des depenses</h2>
-                    <p id="budget-count">0 ligne</p>
+                    <div class="budget-card-header-main">
+                        <h2>Liste des depenses</h2>
+                        <p id="budget-count">0 ligne</p>
+                    </div>
+                    <div class="field field-filter budget-card-filter">
+                        <label for="budget-filter-category">Filtrer par categorie</label>
+                        <select id="budget-filter-category" class="field-input">
+                            <option value="all">Toutes les categories</option>
+                            <option value="activites">Activites</option>
+                            <option value="repas">Repas</option>
+                            <option value="shopping">Shopping</option>
+                            <option value="autre">Autre</option>
+                            <option value="transport">Transport</option>
+                            <option value="logement">Logement</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="budget-table-wrap">
                     <table class="budget-table">
@@ -153,7 +205,6 @@
                                 <th>Prevu</th>
                                 <th>Depense</th>
                                 <th>Date</th>
-                                <th>Voyage</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -175,105 +226,7 @@
         </section>
     </main>
 
-    <div class="modal-backdrop" id="transport-modal" hidden>
-        <div class="modal">
-            <div class="modal-header">
-                <h2>Ajouter un transport</h2>
-                <button type="button" class="modal-close" data-close aria-label="Fermer">
-                    <i class='bx bx-x'></i>
-                </button>
-            </div>
-            <form class="modal-body" id="transport-form">
-                <input type="hidden" id="transport-id" name="transport_id">
-                <div class="field-group">
-                    <label for="transport-from">D'ou partez-vous ?</label>
-                    <input class="form-input" id="transport-from" name="from" type="text" placeholder="Ex: Paris" required>
-                </div>
-                <div class="field-group">
-                    <label for="transport-to">Ou voulez-vous aller ?</label>
-                    <input class="form-input" id="transport-to" name="to" type="text" placeholder="Ex: Rome" required>
-                </div>
-                <div class="field-group">
-                    <label for="transport-date">Quel jour ?</label>
-                    <input class="form-input" id="transport-date" name="date" type="date" required>
-                </div>
-                <div class="field-group">
-                    <label for="transport-time">A quelle heure ?</label>
-                    <input class="form-input" id="transport-time" name="time" type="time" required>
-                </div>
-                <div class="field-group">
-                    <label for="transport-duration">Temps de trajet (minutes)</label>
-                    <input class="form-input" id="transport-duration" name="duration" type="number" min="1" placeholder="Ex: 120" required>
-                </div>
-                <div class="field-group">
-                    <label for="transport-price">Prix (EUR)</label>
-                    <input class="form-input" id="transport-price" name="price" type="number" min="0" step="0.01" placeholder="Ex: 89.90">
-                </div>
-                <div class="field-group">
-                    <label for="transport-mode">Mode de transport</label>
-                    <select class="form-input" id="transport-mode" name="mode" required>
-                        <option value="">Selectionner</option>
-                        <option>Avion</option>
-                        <option>Train</option>
-                        <option>Voiture</option>
-                        <option>Bus</option>
-                        <option>Bateau</option>
-                        <option>Autre</option>
-                    </select>
-                </div>
-                <div class="modal-actions">
-                    <span class="settings-feedback" id="transport-save-note"></span>
-                    <button type="button" class="btn-ghost" data-close>Annuler</button>
-                    <button type="submit" class="btn-primary" id="transport-submit">Ajouter</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div class="modal-backdrop" id="accommodation-modal" hidden>
-        <div class="modal">
-            <div class="modal-header">
-                <h2>Ajouter un logement</h2>
-                <button type="button" class="modal-close" data-close aria-label="Fermer">
-                    <i class='bx bx-x'></i>
-                </button>
-            </div>
-            <form class="modal-body" id="accommodation-form">
-                <input type="hidden" id="accommodation-id" name="accommodation_id">
-                <div class="field-group">
-                    <label for="accommodation-name">Nom du logement</label>
-                    <input class="form-input" id="accommodation-name" name="name" type="text" placeholder="Ex: Hotel Piazza">
-                </div>
-                <div class="field-group">
-                    <label for="accommodation-address">Adresse du logement</label>
-                    <input class="form-input" id="accommodation-address" name="address" type="text" placeholder="Ex: 12 rue des Fleurs, Rome" required>
-                </div>
-                <div class="field-group">
-                    <label for="accommodation-price">Prix par nuit (EUR)</label>
-                    <input class="form-input" id="accommodation-price" name="price" type="number" min="0" step="0.01" placeholder="Ex: 120">
-                </div>
-                <div class="field-group">
-                    <label for="accommodation-start">Date d'arrivee</label>
-                    <input class="form-input" id="accommodation-start" name="start" type="date" required>
-                </div>
-                <div class="field-group">
-                    <label for="accommodation-end">Date de depart</label>
-                    <input class="form-input" id="accommodation-end" name="end" type="date" required>
-                </div>
-                <div class="field-group">
-                    <label for="accommodation-nights">Nombre de nuits</label>
-                    <input class="form-input" id="accommodation-nights" name="nights" type="number" min="1" readonly>
-                </div>
-                <div class="modal-actions">
-                    <span class="settings-feedback" id="accommodation-save-note"></span>
-                    <button type="button" class="btn-ghost" data-close>Annuler</button>
-                    <button type="submit" class="btn-primary" id="accommodation-submit">Ajouter</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script type="module" src="../controllers/budgetPageController.js"></script>
+    <script type="module" src="../controllers/budgetPageController.js?v=20260402a"></script>
 </body>
 </html>
 

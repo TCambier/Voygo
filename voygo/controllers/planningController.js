@@ -13,6 +13,7 @@ import {
   updateAccommodation,
   deleteAccommodation
 } from './accommodationController.js';
+import { deleteBudget } from './budgetController.js';
 
 // Formate la valeur traitee par 'formatDate'.
 function formatDate(dateValue) {
@@ -62,6 +63,78 @@ function addDaysToInput(value, days) {
   return date.toISOString().slice(0, 10);
 }
 
+// Retourne la cle locale des budgets pour un utilisateur donne.
+function getBudgetLocalStorageKey(userId) {
+  return `voygo_budget_local:${userId || 'anon'}`;
+}
+
+// Detecte les budgets lies a un voyage qui sont hors de la nouvelle periode.
+function getBudgetsOutsideTripDates(budgets, tripId, nextStartDate, nextEndDate) {
+  const normalizedTripId = String(tripId || '').trim();
+  const minDate = toDateInputValue(nextStartDate || '');
+  const maxDate = toDateInputValue(nextEndDate || '');
+
+  if (!normalizedTripId) return [];
+
+  return (Array.isArray(budgets) ? budgets : []).filter((item) => {
+    if (String(item?.trip_id || item?.tripId || '').trim() !== normalizedTripId) return false;
+    const itemDate = toDateInputValue(item?.spend_date || item?.date || '');
+    if (!itemDate) return true;
+    if (minDate && itemDate < minDate) return true;
+    if (maxDate && itemDate > maxDate) return true;
+    return false;
+  });
+}
+
+// Supprime les budgets associes a un voyage donne.
+async function deleteBudgetsOutsideTripDates({ tripId, nextStartDate, nextEndDate, deleteAllForTrip = false }) {
+  if (!tripId) return;
+
+  let budgets = [];
+  try {
+    const result = await api.get('/api/budgets');
+    budgets = Array.isArray(result?.data) ? result.data : [];
+  } catch (error) {
+    console.warn('Impossible de charger les budgets avant nettoyage.', error);
+  }
+
+  const budgetsToDelete = deleteAllForTrip
+    ? budgets.filter((item) => String(item?.trip_id || item?.tripId || '').trim() === String(tripId).trim())
+    : getBudgetsOutsideTripDates(budgets, tripId, nextStartDate, nextEndDate);
+
+  if (budgetsToDelete.length > 0) {
+    await Promise.all(
+      budgetsToDelete
+        .filter((budget) => budget?.id)
+        .map((budget) => deleteBudget(budget.id))
+    );
+  }
+
+  const localStorageKey = getBudgetLocalStorageKey(currentUserId);
+  const saved = localStorage.getItem(localStorageKey);
+  if (!saved) return;
+
+  try {
+    const parsed = JSON.parse(saved);
+    if (!Array.isArray(parsed)) return;
+
+    const nextBudgets = deleteAllForTrip
+      ? parsed.filter((item) => String(item?.tripId || item?.trip_id || '').trim() !== String(tripId).trim())
+      : parsed.filter((item) => {
+          if (String(item?.tripId || item?.trip_id || '').trim() !== String(tripId).trim()) return true;
+          const itemDate = toDateInputValue(item?.date || item?.spend_date || '');
+          if (!itemDate) return true;
+          if (nextStartDate && itemDate < toDateInputValue(nextStartDate)) return false;
+          if (nextEndDate && itemDate > toDateInputValue(nextEndDate)) return false;
+          return true;
+        });
+
+    localStorage.setItem(localStorageKey, JSON.stringify(nextBudgets));
+  } catch {
+    // Ignore local cache cleanup errors.
+  }
+}
+
 // Gere la logique principale de 'readFallbackTrip'.
 function readFallbackTrip() {
   const stored = localStorage.getItem('voygo_current_trip');
@@ -82,6 +155,8 @@ const tripState = {
   accessMode: 'owner',
   canEdit: true
 };
+
+let currentUserId = '';
 
 let transports = [];
 let accommodations = [];
@@ -1100,6 +1175,7 @@ async function initPlanningPage() {
       window.location.href = `login.html?returnTo=${encodeURIComponent(returnTo)}`;
       return;
     }
+    currentUserId = String(userId);
   } catch (error) {
     window.location.href = `login.html?returnTo=${encodeURIComponent(returnTo)}`;
     return;
@@ -1251,7 +1327,15 @@ function initTripEditor() {
       const activitiesOutsideDates = getActivitiesOutsideTripDates(payload.start_date, payload.end_date);
       const accommodationsOutsideDates = getAccommodationsOutsideTripDates(payload.start_date, payload.end_date);
       const transportsOutsideDates = getTransportsOutsideTripDates(payload.start_date, payload.end_date);
-      const impactedCount = activitiesOutsideDates.length + accommodationsOutsideDates.length + transportsOutsideDates.length;
+      let budgetsOutsideDates = [];
+      try {
+        const budgetResult = await api.get('/api/budgets');
+        budgetsOutsideDates = getBudgetsOutsideTripDates(budgetResult?.data || [], tripState.id, payload.start_date, payload.end_date);
+      } catch (error) {
+        console.warn('Impossible de verifier les budgets avant changement de dates.', error);
+      }
+
+      const impactedCount = activitiesOutsideDates.length + accommodationsOutsideDates.length + transportsOutsideDates.length + budgetsOutsideDates.length;
       if (impactedCount > 0) {
         const impactedParts = [];
         if (activitiesOutsideDates.length > 0) {
@@ -1262,6 +1346,9 @@ function initTripEditor() {
         }
         if (transportsOutsideDates.length > 0) {
           impactedParts.push(`${transportsOutsideDates.length} transport(s)`);
+        }
+        if (budgetsOutsideDates.length > 0) {
+          impactedParts.push(`${budgetsOutsideDates.length} budget(s)`);
         }
 
         const confirmed = window.confirm(
@@ -1328,6 +1415,13 @@ function initTripEditor() {
           const deletedTransportIds = new Set(transportsOutsideDates.map((transport) => String(transport.id)));
           transports = transports.filter((transport) => !deletedTransportIds.has(String(transport.id)));
         }
+
+        await deleteBudgetsOutsideTripDates({
+          tripId: tripState.id,
+          nextStartDate: payload.start_date,
+          nextEndDate: payload.end_date,
+          deleteAllForTrip: false
+        });
       }
 
       if (destinationChanged) {
