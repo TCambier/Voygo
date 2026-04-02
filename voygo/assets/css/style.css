@@ -2947,13 +2947,32 @@ body.dark-theme .favorite-trip-btn {
     background: var(--bg-tertiary);
     border-radius: 999px;
     overflow: hidden;
+    position: relative;
 }
 
-.progress-bar span {
-    display: block;
+.progress-segment {
+    position: absolute;
+    top: 0;
     height: 100%;
-    background: var(--accent);
     border-radius: 999px;
+}
+
+.progress-segment-pre {
+    left: 0;
+    background: #d1d5db;
+}
+
+.progress-segment-during {
+    left: 0;
+    background: #22c55e;
+}
+
+.progress-bar.is-during-trip .progress-segment-during {
+    background: #22c55e;
+}
+
+.progress-bar.is-passed .progress-segment-during {
+    background: var(--accent);
 }
 
 .progress-text {

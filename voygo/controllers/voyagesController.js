@@ -40,6 +40,28 @@ let currentTripShares = [];
 let activeQuickTag = quickFilterTags.find((tag) => tag.classList.contains('active'))?.textContent?.trim() || '';
 const localFavoriteTripIds = new Set(loadLocalFavoriteTripIds());
 
+function isAllTripsQuickTag(label) {
+    const normalizedLabel = normalizeText(label).trim();
+    return normalizedLabel === 'tous'
+        || normalizedLabel === 'tout'
+        || normalizedLabel === 'voir tous les voyages'
+        || normalizedLabel === 'voir tout les voyages';
+}
+
+function activateAllTripsQuickTag() {
+    const allTag = quickFilterTags.find((tag) => isAllTripsQuickTag(tag.textContent || ''));
+
+    quickFilterTags.forEach((tag) => tag.classList.remove('active'));
+
+    if (allTag) {
+        allTag.classList.add('active');
+        activeQuickTag = allTag.textContent?.trim() || '';
+        return;
+    }
+
+    activeQuickTag = '';
+}
+
 // Charge les donnees necessaires pour 'loadLocalFavoriteTripIds'.
 function loadLocalFavoriteTripIds() {
     try {
@@ -199,6 +221,7 @@ function resolveTripDurationNights(trip) {
 function matchesQuickFilter(trip, quickTagLabel) {
     const normalizedLabel = normalizeText(quickTagLabel);
     if (!normalizedLabel) return true;
+    if (isAllTripsQuickTag(quickTagLabel)) return true;
 
     const tags = resolveTripTags(trip);
     const searchableText = normalizeText(`${resolveTitle(trip)} ${trip.destination || ''} ${resolveSummary(trip)}`);
@@ -292,10 +315,138 @@ function normalizeDate(dateValue) {
     return parsed;
 }
 
+function normalizeDateTime(dateValue, options = {}) {
+    const { endOfDayForDateOnly = false } = options;
+
+    if (!dateValue) return null;
+
+    if (dateValue instanceof Date) {
+        const normalized = new Date(dateValue);
+        if (Number.isNaN(normalized.getTime())) return null;
+        return normalized;
+    }
+
+    if (typeof dateValue === 'string') {
+        const exactDateOnly = dateValue.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (exactDateOnly) {
+            const [, year, month, day] = exactDateOnly;
+            if (endOfDayForDateOnly) {
+                return new Date(Number(year), Number(month) - 1, Number(day), 23, 59, 59, 999);
+            }
+            return new Date(Number(year), Number(month) - 1, Number(day), 0, 0, 0, 0);
+        }
+    }
+
+    const parsed = new Date(dateValue);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return parsed;
+}
+
+function clamp(value, min, max) {
+    return Math.min(Math.max(value, min), max);
+}
+
+function pluralizeDays(days) {
+    return `${days} jour${days > 1 ? 's' : ''}`;
+}
+
+function resolveTripCreatedDate(trip) {
+    return normalizeDateTime(
+        trip.creation_date
+        ?? trip.created_at
+        ?? trip.createdAt
+        ?? trip.created
+        ?? trip.updated_at
+        ?? trip.updatedAt
+        ?? null
+    );
+}
+
+function resolveTripStartDate(trip) {
+    return normalizeDateTime(
+        trip.start_date
+        ?? trip.startDate
+        ?? trip.departure_date
+        ?? trip.departureDate
+        ?? null
+    );
+}
+
+function resolveTripEndDate(trip) {
+    return normalizeDateTime(
+        trip.end_date
+        ?? trip.endDate
+        ?? trip.return_date
+        ?? trip.returnDate
+        ?? null,
+        { endOfDayForDateOnly: true }
+    );
+}
+
+function computeTripProgressVisual(trip) {
+    const start = resolveTripStartDate(trip);
+    const resolvedEnd = resolveTripEndDate(trip);
+    const end = resolvedEnd && start && resolvedEnd < start ? start : (resolvedEnd || start);
+
+    if (!start || !end || end < start) {
+        const planningProgress = clamp(Number(trip.progress) || 0, 0, 100);
+        return {
+            preTripWidth: planningProgress,
+            inTripWidth: 0,
+            barClassName: 'is-planning',
+            text: planningProgress ? `Planification à ${planningProgress}%` : 'Planification à démarrer'
+        };
+    }
+
+    const now = new Date();
+
+    const oneDayAfterEnd = new Date(end);
+    oneDayAfterEnd.setDate(oneDayAfterEnd.getDate() + 1);
+
+    if (now >= oneDayAfterEnd) {
+        return {
+            preTripWidth: 0,
+            inTripWidth: 100,
+            barClassName: 'is-passed',
+            text: 'Voyage déjà passé'
+        };
+    }
+
+    if (now < start) {
+        const createdAt = resolveTripCreatedDate(trip);
+        const fallbackTimelineStart = new Date(start.getTime() - 86400000);
+        const timelineStart = createdAt && createdAt < start ? createdAt : fallbackTimelineStart;
+        const totalPreparationMs = Math.max(1, start.getTime() - timelineStart.getTime());
+        const elapsedPreparationMs = clamp(now.getTime() - timelineStart.getTime(), 0, totalPreparationMs);
+        const preTripRaw = clamp((elapsedPreparationMs / totalPreparationMs) * 100, 0, 100);
+        const preTripWidth = preTripRaw > 0 ? Math.max(preTripRaw, 1) : 0;
+        const daysUntilStart = Math.max(0, Math.ceil((start.getTime() - now.getTime()) / 86400000));
+
+        return {
+            preTripWidth,
+            inTripWidth: 0,
+            barClassName: 'is-before-trip',
+            text: `Préparation : ${Math.round(preTripRaw)}% · Départ dans ${pluralizeDays(daysUntilStart)}`
+        };
+    }
+
+    const totalTripMs = Math.max(1, end.getTime() - start.getTime());
+    const elapsedTripMs = clamp(now.getTime() - start.getTime(), 0, totalTripMs);
+    const inTripRaw = clamp((elapsedTripMs / totalTripMs) * 100, 0, 100);
+    const inTripCompletion = inTripRaw > 0 ? Math.max(inTripRaw, 1) : 0;
+
+    return {
+        preTripWidth: 100,
+        inTripWidth: inTripCompletion,
+        barClassName: 'is-during-trip',
+        text: `Voyage en cours : ${Math.round(inTripRaw)}%`
+    };
+}
+
 // Gere la logique principale de 'computeStatus'.
 function computeStatus(trip) {
-    const start = normalizeDate(trip.start_date);
-    const end = normalizeDate(trip.end_date);
+    const start = resolveTripStartDate(trip);
+    const end = resolveTripEndDate(trip);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -314,8 +465,9 @@ function buildTripCard(trip, index) {
     const budget = resolveBudget(trip);
     const summary = resolveSummary(trip);
     const title = resolveTitle(trip);
-    const startDate = formatDate(trip.start_date);
-    const endDate = formatDate(trip.end_date);
+    const startDate = formatDate(resolveTripStartDate(trip));
+    const endDate = formatDate(resolveTripEndDate(trip));
+    const progressVisual = computeTripProgressVisual(trip);
 
     const datesLabel = startDate && endDate ? `${startDate} \u2192 ${endDate}` : 'Dates à définir';
 
@@ -366,10 +518,11 @@ function buildTripCard(trip, index) {
             ${metaItems.join('')}
         </div>
         <div class="voyage-progress">
-            <div class="progress-bar">
-                <span style="width: ${trip.progress ?? 0}%;"></span>
+            <div class="progress-bar ${progressVisual.barClassName}">
+                <span class="progress-segment progress-segment-pre" style="width: ${progressVisual.preTripWidth}%;"></span>
+                <span class="progress-segment progress-segment-during" style="width: ${progressVisual.inTripWidth}%;"></span>
             </div>
-            <span class="progress-text">${trip.progress ? `Planification à ${trip.progress}%` : 'Planification à démarrer'}</span>
+            <span class="progress-text">${progressVisual.text}</span>
         </div>
         <div class="voyage-actions">
             <button class="btn-secondary" data-open="${query.toString()}">Ouvrir</button>
@@ -483,8 +636,7 @@ function resetFilters() {
         sortFilter.value = 'Dernière mise à jour';
     }
 
-    quickFilterTags.forEach((tag) => tag.classList.remove('active'));
-    activeQuickTag = '';
+    activateAllTripsQuickTag();
 
     applyFilters();
 }
@@ -678,6 +830,7 @@ async function initVoyagesPage() {
         }
 
         allTrips = await fetchTrips();
+        activateAllTripsQuickTag();
         updateStats(allTrips);
         applyFilters();
     } catch (err) {

@@ -163,6 +163,7 @@ export async function createTrip(req, res) {
 
   const insertPayload = {
     ...payload,
+    creation_date: payload.creation_date || new Date().toISOString(),
     user_id: req.user.id
   };
 
