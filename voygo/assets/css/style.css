@@ -114,7 +114,11 @@ body.is-read-only-trip .agenda-page .agenda-separator,
 body.is-read-only-trip .agenda-page [data-agenda-edit],
 body.is-read-only-trip .agenda-page [data-agenda-delete],
 body.is-read-only-trip .activity-explorer-page #explorer-add-custom,
-body.is-read-only-trip .activity-explorer-page [data-add-suggestion] {
+body.is-read-only-trip .activity-explorer-page [data-add-suggestion],
+body.is-read-only-trip .budget-page .budget-row-form,
+body.is-read-only-trip .budget-page .budget-actions,
+body.is-read-only-trip .budget-page .budget-table th:last-child,
+body.is-read-only-trip .budget-page .budget-table td:last-child {
     display: none !important;
 }
 
@@ -1058,6 +1062,15 @@ body.dark-theme .hero-plane img {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
+}
+
+.field-group--full {
+    grid-column: 1 / -1;
+}
+
+.planning-edit-grid .field-group--full .form-input {
+    min-height: 110px;
+    resize: vertical;
 }
 
 .panel {
@@ -2918,6 +2931,20 @@ body.dark-theme .favorite-trip-btn {
     color: var(--text-secondary);
     font-size: 14px;
     line-height: 1.7;
+}
+
+.voyage-description {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.voyage-description-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-strong);
 }
 
 .voyage-meta {

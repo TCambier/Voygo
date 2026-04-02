@@ -32,6 +32,7 @@ const shareTripSubmitButton = document.getElementById('share-trip-submit');
 const shareTripExistingEmpty = document.getElementById('share-trip-existing-empty');
 const shareTripSharesList = document.getElementById('share-trip-shares-list');
 const FAVORITES_STORAGE_KEY = 'voygo.favoriteTrips';
+const TRIP_NOTES_STORAGE_PREFIX = 'voygo_trip_notes:';
 
 let allTrips = [];
 let allBudgetRows = [];
@@ -85,6 +86,39 @@ function persistLocalFavoriteTripIds() {
     } catch {
         // Ignore storage quota and private mode errors.
     }
+}
+
+// Retourne la cle locale des notes de voyage.
+function getTripNotesLocalStorageKey(tripId) {
+    return `${TRIP_NOTES_STORAGE_PREFIX}${String(tripId || '').trim()}`;
+}
+
+// Charge la description locale associee a un voyage.
+function loadTripNotesLocal(tripId) {
+    if (!tripId) return '';
+
+    try {
+        const raw = window.localStorage.getItem(getTripNotesLocalStorageKey(tripId));
+        if (!raw) return '';
+        const parsed = JSON.parse(raw);
+        return String(parsed?.description || '').trim();
+    } catch {
+        return '';
+    }
+}
+
+// Applique la description locale sur les voyages charges.
+function mergeLocalTripNotes(trips) {
+    return (Array.isArray(trips) ? trips : []).map((trip) => {
+        const localDescription = loadTripNotesLocal(trip?.id);
+        if (!localDescription) return trip;
+        return {
+            ...trip,
+            notes: localDescription,
+            description: localDescription,
+            summary: localDescription
+        };
+    });
 }
 
 // Resout les informations calculees par 'resolveTripId'.
@@ -425,6 +459,14 @@ function resolveSummary(trip) {
     return trip.summary || trip.description || trip.notes || 'Aucune note pour ce voyage.';
 }
 
+// Resout les informations calculees par 'resolveDescriptionPreview'.
+function resolveDescriptionPreview(trip) {
+    const text = String(trip.summary || trip.description || trip.notes || '').trim();
+    if (!text) return 'Aucune description pour ce voyage.';
+    if (text.length <= 180) return text;
+    return `${text.slice(0, 177).trimEnd()}...`;
+}
+
 // Resout les informations calculees par 'resolveTitle'.
 function resolveTitle(trip) {
     return trip.name || trip.destination || 'Voyage';
@@ -601,7 +643,7 @@ function buildTripCard(trip, index) {
     const status = computeStatus(trip);
     const travelers = resolveTravelers(trip);
     const budget = resolveBudget(trip);
-    const summary = resolveSummary(trip);
+    const descriptionPreview = resolveDescriptionPreview(trip);
     const title = resolveTitle(trip);
     const startDate = formatDate(resolveTripStartDate(trip));
     const endDate = formatDate(resolveTripEndDate(trip));
@@ -651,7 +693,10 @@ function buildTripCard(trip, index) {
                 <span class="status ${status.className}">${status.label}</span>
             </div>
         </div>
-        <p class="voyage-summary">${summary}</p>
+        <div class="voyage-description">
+            <span class="voyage-description-label">Description</span>
+            <p class="voyage-summary">${descriptionPreview}</p>
+        </div>
         <div class="voyage-meta">
             ${metaItems.join('')}
         </div>
@@ -1017,7 +1062,7 @@ async function initVoyagesPage() {
             fetchAccommodations(),
             fetchTransportsByTrips(trips)
         ]);
-        allTrips = Array.isArray(trips) ? trips : [];
+        allTrips = mergeLocalTripNotes(Array.isArray(trips) ? trips : []);
         allBudgetRows = Array.isArray(budgets) ? budgets : [];
         allActivityRows = Array.isArray(activities) ? activities : [];
         allAccommodationRows = Array.isArray(accommodations) ? accommodations : [];

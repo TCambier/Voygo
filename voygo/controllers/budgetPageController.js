@@ -40,6 +40,8 @@ const state = {
   trips: [],
   transports: [],
   accommodations: [],
+  accessMode: 'owner',
+  canEdit: true,
   editingId: null,
   forcedFormMode: null,
   isLocalMode: false,
@@ -176,6 +178,16 @@ function setFormNote(message, isError = false) {
   refs.formNote.textContent = message || '';
 }
 
+// Verifie la condition exposee par 'isReadOnlyTrip'.
+function isReadOnlyTrip() {
+  return !state.canEdit;
+}
+
+// Gere la logique principale de 'applyReadOnlyUiState'.
+function applyReadOnlyUiState() {
+  document.body.classList.toggle('is-read-only-trip', isReadOnlyTrip());
+}
+
 // Gere la logique principale de 'getTripById'.
 function getTripById(tripId) {
   return state.trips.find((trip) => String(trip.id) === String(tripId));
@@ -259,6 +271,18 @@ function clearFormValues() {
 
 // Gere la logique principale de 'applyBudgetFormMode'.
 function applyBudgetFormMode(mode = getBudgetFormMode()) {
+  const readOnly = isReadOnlyTrip();
+
+  if (readOnly) {
+    setSectionDisabled(refs.budgetMode, true);
+    setSectionDisabled(refs.transportMode, true);
+    setSectionDisabled(refs.accommodationMode, true);
+
+    if (refs.addButton) refs.addButton.hidden = true;
+    if (refs.formNote) refs.formNote.hidden = true;
+    return;
+  }
+
   const normalizedMode = mode === 'transport' || mode === 'logement' ? mode : 'budget';
   const isBudget = normalizedMode === 'budget';
   const isTransport = normalizedMode === 'transport';
@@ -269,6 +293,7 @@ function applyBudgetFormMode(mode = getBudgetFormMode()) {
   setSectionDisabled(refs.accommodationMode, !isAccommodation);
 
   if (refs.addButton) {
+    refs.addButton.hidden = false;
     refs.addButton.textContent = isTransport
       ? 'Ajouter le transport'
       : isAccommodation
@@ -276,6 +301,10 @@ function applyBudgetFormMode(mode = getBudgetFormMode()) {
         : state.editingId
           ? 'Mettre a jour'
           : 'Ajouter';
+  }
+
+  if (refs.formNote) {
+    refs.formNote.hidden = false;
   }
 
 
@@ -495,6 +524,8 @@ function parseActualInlineValue(value) {
 
 // Gere la logique principale de 'updateActualInline'.
 async function updateActualInline(itemId, rawValue) {
+  if (!state.canEdit) return;
+
   const current = state.budgetRows.find((entry) => String(entry.id) === String(itemId));
   if (!current) return;
 
@@ -548,7 +579,7 @@ function renderTable(items) {
       row.appendChild(createCell(formatCurrency(item.planned)));
 
       const actualCell = document.createElement('td');
-      if (item.source === 'budget' || item.source === 'transport') {
+      if (state.canEdit && (item.source === 'budget' || item.source === 'transport')) {
         const wrapper = document.createElement('div');
         wrapper.className = 'budget-actual-wrapper';
 
@@ -572,7 +603,7 @@ function renderTable(items) {
 
       const actionCell = document.createElement('td');
 
-      if (item.source === 'budget' || item.source === 'transport' || item.source === 'accommodation') {
+      if (state.canEdit && (item.source === 'budget' || item.source === 'transport' || item.source === 'accommodation')) {
         const group = document.createElement('div');
         group.className = 'budget-action-group';
 
@@ -942,6 +973,8 @@ function removeBudgetRow(itemId) {
 
 // Gere la logique principale de 'handleSave'.
 async function handleSave() {
+  if (!state.canEdit) return;
+
   let formData;
   try {
     formData = validateForm();
@@ -1035,6 +1068,8 @@ async function handleSave() {
 
 // Gere la logique principale de 'handleDelete'.
 async function handleDelete(itemId) {
+  if (!state.canEdit) return;
+
   const confirmed = window.confirm('Supprimer cette depense ?');
   if (!confirmed) return;
 
@@ -1172,6 +1207,8 @@ function initAccommodationModal() {
 function bindEvents() {
   refs.addButton?.addEventListener('click', handleSave);
   refs.inputCategory?.addEventListener('change', () => {
+    if (!state.canEdit) return;
+
     state.editingId = null;
     state.forcedFormMode = null;
     clearFormValues();
@@ -1181,6 +1218,8 @@ function bindEvents() {
   refs.filterCategory?.addEventListener('change', renderAll);
 
   refs.tableBody?.addEventListener('click', async (event) => {
+    if (!state.canEdit) return;
+
     const target = event.target;
     if (!(target instanceof HTMLElement)) return;
 
@@ -1234,6 +1273,8 @@ function bindEvents() {
   });
 
   refs.tableBody?.addEventListener('keydown', async (event) => {
+    if (!state.canEdit) return;
+
     const target = event.target;
     if (!(target instanceof HTMLInputElement)) return;
     if (target.getAttribute('data-action') !== 'actual-inline') return;
@@ -1243,6 +1284,8 @@ function bindEvents() {
   });
 
   refs.tableBody?.addEventListener('change', async (event) => {
+    if (!state.canEdit) return;
+
     const target = event.target;
     if (!(target instanceof HTMLInputElement)) return;
     if (target.getAttribute('data-action') !== 'actual-inline') return;
@@ -1270,6 +1313,23 @@ async function initBudgetPage() {
 
   const params = new URLSearchParams(window.location.search || '');
   state.initialTripId = String(params.get('tripId') || '').trim();
+  state.accessMode = String(params.get('tripAccess') || '').trim() || 'owner';
+  state.canEdit = state.accessMode !== 'read';
+
+  if (state.initialTripId) {
+    try {
+      const result = await api.get(`/api/trips/${encodeURIComponent(state.initialTripId)}`);
+      const trip = result?.data;
+      if (trip) {
+        state.accessMode = trip.access_mode || state.accessMode || 'owner';
+        state.canEdit = trip.can_edit !== false;
+      }
+    } catch (error) {
+      console.warn('Impossible de charger les droits du voyage budget.', error);
+    }
+  }
+
+  applyReadOnlyUiState();
 
   resetForm();
   await loadTrips();
