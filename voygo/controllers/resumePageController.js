@@ -278,7 +278,7 @@ function updateMeta() {
   const datesNode = document.getElementById('resume-dates');
 
   if (nameNode) {
-    nameNode.textContent = tripState.name || tripState.destination || '-';
+    nameNode.textContent = tripState.destination || '-';
   }
 
   if (datesNode) {
