@@ -6,7 +6,7 @@
  * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
  */
 import { getSupabaseForUser, supabaseAdmin } from '../services/supabase.js';
-import { getAccessDbClient, getTripAccess, isMissingTableError } from '../utils/tripAccess.js';
+import { getAccessDbClient, getTripAccess, isMissingTableError, isTripPastEndDate } from '../utils/tripAccess.js';
 
 // Normalise les donnees pour 'normalizeEmail'.
 function normalizeEmail(value) {
@@ -113,7 +113,7 @@ export async function listTrips(req, res) {
       return {
         ...trip,
         access_mode: permission,
-        can_edit: permission === 'edit',
+        can_edit: permission === 'edit' && !isTripPastEndDate(trip),
         is_shared: true
       };
     });
@@ -122,7 +122,7 @@ export async function listTrips(req, res) {
   const ownTrips = (ownedTrips || []).map((trip) => ({
     ...trip,
     access_mode: 'owner',
-    can_edit: true,
+    can_edit: !isTripPastEndDate(trip),
     is_shared: false
   }));
 
@@ -238,6 +238,10 @@ export async function updateTrip(req, res) {
 
   if (!access) {
     return res.status(404).json({ error: 'Voyage introuvable.' });
+  }
+
+  if (isTripPastEndDate(access.trip)) {
+    return res.status(403).json({ error: 'Ce voyage est termine et ne peut plus etre modifie.' });
   }
 
   if (!access.canEdit) {

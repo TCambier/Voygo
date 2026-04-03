@@ -89,6 +89,13 @@ const refs = {
   tripDates: document.getElementById('budget-dates')
 };
 
+// Indique si le voyage est termine.
+function isTripPastEndDate(endDate) {
+  const normalizedEndDate = String(endDate || '').trim();
+  if (!normalizedEndDate) return false;
+  return normalizedEndDate < new Date().toISOString().slice(0, 10);
+}
+
 // Retourne l'information calculee par 'getLocalStorageKey'.
 function getLocalStorageKey() {
   return `${LOCAL_STORAGE_PREFIX}:${state.userId || 'anon'}`;
@@ -1312,7 +1319,7 @@ async function initBudgetPage() {
   const params = new URLSearchParams(window.location.search || '');
   state.initialTripId = String(params.get('tripId') || '').trim();
   state.accessMode = String(params.get('tripAccess') || '').trim() || 'owner';
-  state.canEdit = state.accessMode !== 'read';
+  state.canEdit = state.accessMode !== 'read' && !isTripPastEndDate(params.get('endDate') || '');
 
   if (state.initialTripId) {
     try {
@@ -1320,7 +1327,7 @@ async function initBudgetPage() {
       const trip = result?.data;
       if (trip) {
         state.accessMode = trip.access_mode || state.accessMode || 'owner';
-        state.canEdit = trip.can_edit !== false;
+        state.canEdit = trip.can_edit !== false && !isTripPastEndDate(trip.end_date);
       }
     } catch (error) {
       console.warn('Impossible de charger les droits du voyage budget.', error);

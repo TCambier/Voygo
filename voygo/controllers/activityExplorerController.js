@@ -31,6 +31,13 @@ const state = {
   tripActivities: []
 };
 
+// Indique si le voyage est termine.
+function isTripPastEndDate(endDate) {
+  const normalizedEndDate = String(endDate || '').trim();
+  if (!normalizedEndDate) return false;
+  return normalizedEndDate < new Date().toISOString().slice(0, 10);
+}
+
 // Verifie la condition exposee par 'isReadOnlyTrip'.
 function isReadOnlyTrip() {
   return !state.canEdit;
@@ -677,7 +684,7 @@ function initStateFromQuery() {
   state.startDate = params.get('startDate') || '';
   state.endDate = params.get('endDate') || '';
   state.accessMode = params.get('tripAccess') || 'owner';
-  state.canEdit = state.accessMode !== 'read';
+  state.canEdit = state.accessMode !== 'read' && !isTripPastEndDate(state.endDate);
 
   const destinationInput = document.getElementById('explorer-destination');
   if (destinationInput) destinationInput.value = destination;
@@ -695,7 +702,7 @@ async function resolveTripAccess() {
     const trip = result?.data;
     if (trip) {
       state.accessMode = trip.access_mode || state.accessMode || 'owner';
-      state.canEdit = trip.can_edit !== false;
+      state.canEdit = trip.can_edit !== false && !isTripPastEndDate(trip.end_date);
     }
   } catch {
     // Keep query-param fallback when request fails.

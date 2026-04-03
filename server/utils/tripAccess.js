@@ -13,6 +13,28 @@ function normalizePermission(value) {
   return raw === 'edit' ? 'edit' : 'read';
 }
 
+// Normalise une date pour les comparaisons cote serveur.
+function toDateKey(value) {
+  if (!value) return '';
+  const raw = String(value).trim();
+  if (!raw) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toISOString().slice(0, 10);
+}
+
+// Indique si le voyage est passe et donc verrouille en modification.
+export function isTripPastEndDate(trip, referenceDate = new Date()) {
+  const endDate = toDateKey(trip?.end_date || trip?.endDate || trip?.return_date || trip?.returnDate || '');
+  if (!endDate) return false;
+
+  const today = toDateKey(referenceDate);
+  if (!today) return false;
+
+  return endDate < today;
+}
+
 // Detecte les erreurs SQL/PostgREST liees a une table absente.
 export function isMissingTableError(error) {
   if (!error) return false;
@@ -49,7 +71,7 @@ export async function getTripAccess(db, tripId, userId) {
       trip,
       isOwner: true,
       permission: 'edit',
-      canEdit: true
+      canEdit: !isTripPastEndDate(trip)
     };
   }
 
@@ -72,6 +94,6 @@ export async function getTripAccess(db, tripId, userId) {
     trip,
     isOwner: false,
     permission,
-    canEdit: permission === 'edit'
+    canEdit: permission === 'edit' && !isTripPastEndDate(trip)
   };
 }

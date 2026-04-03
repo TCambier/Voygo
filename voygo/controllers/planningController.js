@@ -453,6 +453,13 @@ function normalizeDestination(value) {
   return String(value || '').trim().toLowerCase();
 }
 
+// Indique si le voyage est termine sur la base de sa date de fin.
+function isTripPastEndDate(endDate) {
+  const normalizedEndDate = toDateInputValue(endDate || '');
+  if (!normalizedEndDate) return false;
+  return normalizedEndDate < getTodayInputValue();
+}
+
 // Retourne l'information calculee par 'resolveTripPeople'.
 function resolveTripPeople(trip) {
   const raw = trip?.people ?? trip?.travelers ?? trip?.nb_people ?? trip?.passengers;
@@ -1291,6 +1298,9 @@ async function initPlanningPage() {
   tripState.destination = destination;
   tripState.startDate = toDateInputValue(startDate);
   tripState.endDate = toDateInputValue(endDate);
+  if (tripState.id && isTripPastEndDate(tripState.endDate)) {
+    tripState.canEdit = false;
+  }
   applyReadOnlyUiState();
 
   syncTripInputs();
@@ -1320,7 +1330,9 @@ function initTripEditor() {
       input.setAttribute('disabled', 'disabled');
     });
     saveNote.classList.add('is-success');
-    saveNote.textContent = 'Mode lecture seule: vous pouvez consulter ce voyage sans le modifier.';
+    saveNote.textContent = isTripPastEndDate(tripState.endDate)
+      ? 'Ce voyage est termine: les informations ne peuvent plus etre modifiees.'
+      : 'Mode lecture seule: vous pouvez consulter ce voyage sans le modifier.';
     return;
   }
 

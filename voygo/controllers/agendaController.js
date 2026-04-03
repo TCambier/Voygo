@@ -22,6 +22,13 @@ const tripState = {
   transports: []
 };
 
+// Indique si le voyage est termine.
+function isTripPastEndDate(endDate) {
+  const normalizedEndDate = String(endDate || '').trim();
+  if (!normalizedEndDate) return false;
+  return normalizedEndDate < new Date().toISOString().slice(0, 10);
+}
+
 let editMode = false;
 let openActivityModal = null;
 let openTransportModal = null;
@@ -1016,7 +1023,7 @@ async function loadTrip() {
   let endDate = toDateInputValue(params.get('endDate') || '');
 
   tripState.accessMode = requestedAccessMode || 'owner';
-  tripState.canEdit = requestedAccessMode !== 'read';
+  tripState.canEdit = requestedAccessMode !== 'read' && !isTripPastEndDate(endDate);
 
   if (tripIdParam) {
     try {
@@ -1026,7 +1033,7 @@ async function loadTrip() {
         tripState.id = trip.id;
         tripState.name = trip.name || '';
         tripState.accessMode = trip.access_mode || tripState.accessMode || 'owner';
-        tripState.canEdit = trip.can_edit !== false;
+        tripState.canEdit = trip.can_edit !== false && !isTripPastEndDate(trip.end_date);
         destination = trip.destination || destination;
         startDate = toDateInputValue(trip.start_date || startDate);
         endDate = toDateInputValue(trip.end_date || endDate);
@@ -1044,6 +1051,7 @@ async function loadTrip() {
       destination = destination || fallback.destination || '';
       startDate = startDate || toDateInputValue(fallback.start_date || '');
       endDate = endDate || toDateInputValue(fallback.end_date || '');
+      tripState.canEdit = tripState.canEdit && !isTripPastEndDate(endDate || fallback.end_date || '');
     }
   }
 
