@@ -26,14 +26,16 @@
     <h2>Créer un compte</h2>
     <form id="signup-form">
         <input type="text" placeholder="Prénom" id="first_name" required>
+        <div class="error-message" id="first-name-error-message"></div>
 
         <input type="text" placeholder="Nom" id="last_name" required>
+        <div class="error-message" id="last-name-error-message"></div>
 
         <input type="email" placeholder="Email" id="email" required>
-        <div class="error-message" id="email-error-message">Cette adresse email existe déjà</div>
+        <div class="error-message" id="email-error-message"></div>
 
         <input type="password" placeholder="Mot de passe" id="password" required>
-        <div class="error-message" id="password-error-message">Le mot de passe doit contenir au minimum une majuscule, une minuscule, un chiffre et un symbole</div>
+        <div class="error-message" id="password-error-message"></div>
 
         <button type="submit" id="signup-btn" class="email-btn">Créer un compte</button>
 

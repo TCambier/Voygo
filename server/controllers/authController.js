@@ -9,6 +9,11 @@ import { supabaseAuth, supabaseAdmin, getSupabaseForUser } from '../services/sup
 import { setAuthCookies, clearAuthCookies } from '../utils/cookies.js';
 import { config } from '../config.js';
 
+const NAME_MAX_LENGTH = 80;
+const EMAIL_MAX_LENGTH = 254;
+const PASSWORD_MIN_LENGTH = 12;
+const PASSWORD_MAX_LENGTH = 128;
+
 // Verifie la condition exposee par 'isMissingTableError'.
 function isMissingTableError(error) {
   if (!error) return false;
@@ -78,6 +83,124 @@ function isStrongPassword(password = '') {
   return hasUpperCase && hasLowerCase && hasNumbers && hasSymbols;
 }
 
+// Verifie si une chaine contient des motifs HTML/JS suspects.
+function hasScriptLikeContent(value = '') {
+  const input = String(value || '');
+  return (
+    /<[^>]*>/.test(input) ||
+    /javascript\s*:/i.test(input) ||
+    /on[a-z]+\s*=/i.test(input)
+  );
+}
+
+// Verifie la condition exposee par 'hasControlChars'.
+function hasControlChars(value = '') {
+  return /[\u0000-\u001F\u007F]/.test(String(value || ''));
+}
+
+// Gere la logique principale de 'sanitizeName'.
+function sanitizeName(value, fieldLabel) {
+  if (typeof value !== 'string') {
+    return { error: `${fieldLabel} invalide.` };
+  }
+
+  const name = value.trim();
+  if (!name) {
+    return { error: `${fieldLabel} requis.` };
+  }
+
+  if (name.length > NAME_MAX_LENGTH) {
+    return { error: `${fieldLabel} trop long.` };
+  }
+
+  if (hasControlChars(name) || hasScriptLikeContent(name)) {
+    return { error: `${fieldLabel} contient des caracteres interdits.` };
+  }
+
+  if (!/^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/.test(name)) {
+    return { error: `${fieldLabel} contient des caracteres non autorises.` };
+  }
+
+  return { value: name };
+}
+
+// Gere la logique principale de 'sanitizeEmail'.
+function sanitizeEmail(value) {
+  if (typeof value !== 'string') {
+    return { error: 'Email invalide.' };
+  }
+
+  const email = value.trim().toLowerCase();
+  if (!email) {
+    return { error: 'Email manquant.' };
+  }
+
+  if (email.length > EMAIL_MAX_LENGTH) {
+    return { error: 'Email trop long.' };
+  }
+
+  if (hasControlChars(email) || hasScriptLikeContent(email)) {
+    return { error: 'Email contient des caracteres interdits.' };
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { error: 'Format email invalide.' };
+  }
+
+  return { value: email };
+}
+
+// Gere la logique principale de 'sanitizeSignupPassword'.
+function sanitizeSignupPassword(value) {
+  if (typeof value !== 'string') {
+    return { error: 'Mot de passe invalide.' };
+  }
+
+  const password = value;
+
+  if (password.length < PASSWORD_MIN_LENGTH || password.length > PASSWORD_MAX_LENGTH) {
+    return {
+      error: `Le mot de passe doit contenir entre ${PASSWORD_MIN_LENGTH} et ${PASSWORD_MAX_LENGTH} caracteres.`
+    };
+  }
+
+  if (hasControlChars(password) || hasScriptLikeContent(password)) {
+    return { error: 'Mot de passe contient des caracteres interdits.' };
+  }
+
+  if (!isStrongPassword(password)) {
+    return {
+      error: 'Le mot de passe doit contenir au minimum une majuscule, une minuscule, un chiffre et un symbole.'
+    };
+  }
+
+  return { value: password };
+}
+
+// Applique les mises a jour de 'validateSignupPayload'.
+function validateSignupPayload(payload = {}) {
+  const firstNameCheck = sanitizeName(payload.first_name, 'Prenom');
+  if (firstNameCheck.error) return { error: firstNameCheck.error };
+
+  const lastNameCheck = sanitizeName(payload.last_name, 'Nom');
+  if (lastNameCheck.error) return { error: lastNameCheck.error };
+
+  const emailCheck = sanitizeEmail(payload.email);
+  if (emailCheck.error) return { error: emailCheck.error };
+
+  const passwordCheck = sanitizeSignupPassword(payload.password);
+  if (passwordCheck.error) return { error: passwordCheck.error };
+
+  return {
+    value: {
+      first_name: firstNameCheck.value,
+      last_name: lastNameCheck.value,
+      email: emailCheck.value,
+      password: passwordCheck.value
+    }
+  };
+}
+
 // Supprime les donnees ciblees par 'deleteAuthUserViaAdminRest'.
 async function deleteAuthUserViaAdminRest(userId) {
   const response = await fetch(`${config.supabaseUrl}/auth/v1/admin/users/${userId}`, {
@@ -102,10 +225,12 @@ async function deleteAuthUserViaAdminRest(userId) {
 
 // Gere la logique principale de 'signup'.
 export async function signup(req, res) {
-  const { first_name, last_name, email, password } = req.body || {};
-  if (!first_name || !last_name || !email || !password) {
-    return res.status(400).json({ error: 'Champs manquants.' });
+  const validation = validateSignupPayload(req.body);
+  if (validation.error) {
+    return res.status(400).json({ error: validation.error });
   }
+
+  const { first_name, last_name, email, password } = validation.value;
 
   const { data, error } = await supabaseAuth.auth.signUp({
     email,

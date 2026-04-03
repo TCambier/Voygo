@@ -9,6 +9,10 @@
 import { signup, checkEmailExists } from './userController.js';
 
 window.addEventListener('load', () => {
+    const firstNameInput = document.getElementById('first_name');
+    const firstNameErrorMessage = document.getElementById('first-name-error-message');
+    const lastNameInput = document.getElementById('last_name');
+    const lastNameErrorMessage = document.getElementById('last-name-error-message');
     const emailInput = document.getElementById('email');
     const emailErrorMessage = document.getElementById('email-error-message');
     const passwordInput = document.getElementById('password');
@@ -16,22 +20,61 @@ window.addEventListener('load', () => {
     const signupBtn = document.getElementById('signup-btn');
     const signupForm = document.getElementById('signup-form');
 
-    if (!emailInput || !emailErrorMessage || !passwordInput || !passwordErrorMessage || !signupBtn || !signupForm) {
+    if (
+        !firstNameInput ||
+        !firstNameErrorMessage ||
+        !lastNameInput ||
+        !lastNameErrorMessage ||
+        !emailInput ||
+        !emailErrorMessage ||
+        !passwordInput ||
+        !passwordErrorMessage ||
+        !signupBtn ||
+        !signupForm
+    ) {
         return;
     }
 
     let passwordCheckTimeout;
     let isSubmitting = false;
 
+    const SUSPICIOUS_PATTERNS = [
+        { label: '<script>', regex: /<\s*script\b[^>]*>/i },
+        { label: '</script>', regex: /<\s*\/\s*script\s*>/i },
+        { label: 'javascript:', regex: /javascript\s*:/i },
+        { label: 'on*= (event handler)', regex: /on[a-z]+\s*=/i },
+        { label: '<tag>', regex: /<[^>]+>/ }
+    ];
+
+    function findSuspiciousTerm(value = '') {
+        const input = String(value || '');
+        for (const pattern of SUSPICIOUS_PATTERNS) {
+            const match = input.match(pattern.regex);
+            if (match) {
+                return match[0] || pattern.label;
+            }
+        }
+        return null;
+    }
+
+    function setFieldError(inputElement, errorElement, message) {
+        inputElement.classList.add('error');
+        errorElement.textContent = message;
+        errorElement.classList.add('show');
+    }
+
+    function clearFieldError(inputElement, errorElement) {
+        inputElement.classList.remove('error');
+        errorElement.classList.remove('show');
+        errorElement.textContent = '';
+    }
+
     function setEmailError(message) {
-        emailInput.classList.add('error');
-        emailErrorMessage.textContent = message;
-        emailErrorMessage.classList.add('show');
+        setFieldError(emailInput, emailErrorMessage, message);
     }
 
     function clearEmailError() {
-        emailInput.classList.remove('error');
-        emailErrorMessage.classList.remove('show');
+        clearFieldError(emailInput, emailErrorMessage);
     }
 
     function isEmailConflictMessage(message = '') {
@@ -51,9 +94,19 @@ window.addEventListener('load', () => {
         const passwordToCheck = password !== null ? password : passwordInput.value;
 
         if (!passwordToCheck) {
-            passwordInput.classList.remove('error');
-            passwordErrorMessage.classList.remove('show');
+            clearFieldError(passwordInput, passwordErrorMessage);
             return true;
+        }
+
+        const suspiciousTerm = findSuspiciousTerm(passwordToCheck);
+        if (suspiciousTerm) {
+            setFieldError(
+                passwordInput,
+                passwordErrorMessage,
+                `Mot de passe refuse: terme suspect detecte (${suspiciousTerm}).`
+            );
+            signupBtn.disabled = true;
+            return false;
         }
 
         const hasUpperCase = /[A-Z]/.test(passwordToCheck);
@@ -64,22 +117,73 @@ window.addEventListener('load', () => {
         const isValid = hasUpperCase && hasLowerCase && hasNumbers && hasSymbols;
 
         if (!isValid) {
-            passwordInput.classList.add('error');
-            passwordErrorMessage.classList.add('show');
+            setFieldError(
+                passwordInput,
+                passwordErrorMessage,
+                'Le mot de passe doit contenir au minimum une majuscule, une minuscule, un chiffre et un symbole.'
+            );
             signupBtn.disabled = true;
             return false;
         }
 
-        passwordInput.classList.remove('error');
-        passwordErrorMessage.classList.remove('show');
+        clearFieldError(passwordInput, passwordErrorMessage);
+        return true;
+    }
+
+    function validateNameField(inputElement, errorElement, fieldLabel) {
+        const value = inputElement.value.trim();
+
+        if (!value) {
+            clearFieldError(inputElement, errorElement);
+            return false;
+        }
+
+        const suspiciousTerm = findSuspiciousTerm(value);
+        if (suspiciousTerm) {
+            setFieldError(
+                inputElement,
+                errorElement,
+                `${fieldLabel} refuse: terme suspect detecte (${suspiciousTerm}).`
+            );
+            return false;
+        }
+
+        clearFieldError(inputElement, errorElement);
+        return true;
+    }
+
+    function validateEmailField() {
+        const value = emailInput.value.trim();
+
+        if (!value) {
+            clearEmailError();
+            return false;
+        }
+
+        const suspiciousTerm = findSuspiciousTerm(value);
+        if (suspiciousTerm) {
+            setEmailError(`Email refuse: terme suspect detecte (${suspiciousTerm}).`);
+            return false;
+        }
+
+        const basicEmailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!basicEmailPattern.test(value)) {
+            setEmailError('Format email invalide.');
+            return false;
+        }
+
+        clearEmailError();
         return true;
     }
 
     // Active/desactive le bouton selon l'etat des champs.
     function updateSubmitButton() {
-        const emailValid = emailInput.value.trim();
-        const passwordValid = !passwordInput.classList.contains('error') && passwordInput.value;
-        signupBtn.disabled = !(emailValid && passwordValid);
+        const firstNameValid = firstNameInput.value.trim() && !firstNameInput.classList.contains('error');
+        const lastNameValid = lastNameInput.value.trim() && !lastNameInput.classList.contains('error');
+        const emailValid = emailInput.value.trim() && !emailInput.classList.contains('error');
+        const passwordValid = passwordInput.value && !passwordInput.classList.contains('error');
+
+        signupBtn.disabled = isSubmitting || !(firstNameValid && lastNameValid && emailValid && passwordValid);
     }
 
     // Validation debounce pour eviter des calculs a chaque frappe.
@@ -92,7 +196,27 @@ window.addEventListener('load', () => {
     });
 
     emailInput.addEventListener('input', () => {
-        clearEmailError();
+        validateEmailField();
+        updateSubmitButton();
+    });
+
+    firstNameInput.addEventListener('input', () => {
+        validateNameField(firstNameInput, firstNameErrorMessage, 'Prenom');
+        updateSubmitButton();
+    });
+
+    lastNameInput.addEventListener('input', () => {
+        validateNameField(lastNameInput, lastNameErrorMessage, 'Nom');
+        updateSubmitButton();
+    });
+
+    firstNameInput.addEventListener('blur', () => {
+        validateNameField(firstNameInput, firstNameErrorMessage, 'Prenom');
+        updateSubmitButton();
+    });
+
+    lastNameInput.addEventListener('blur', () => {
+        validateNameField(lastNameInput, lastNameErrorMessage, 'Nom');
         updateSubmitButton();
     });
 
@@ -111,17 +235,20 @@ window.addEventListener('load', () => {
         const first_name = document.getElementById('first_name').value.trim();
         const last_name = document.getElementById('last_name').value.trim();
         const email = emailInput.value.trim();
-        const password = passwordInput.value.trim();
+        const password = passwordInput.value;
 
         if (!first_name || !last_name || !email || !password) {
             alert('Veuillez remplir tous les champs');
             return;
         }
 
+        const firstNameValid = validateNameField(firstNameInput, firstNameErrorMessage, 'Prenom');
+        const lastNameValid = validateNameField(lastNameInput, lastNameErrorMessage, 'Nom');
+        const emailValid = validateEmailField();
         const passwordValid = validatePassword(password);
 
-        if (!passwordValid) {
-            alert('Le mot de passe n\'est pas assez robuste');
+        if (!firstNameValid || !lastNameValid || !emailValid || !passwordValid) {
+            updateSubmitButton();
             return;
         }
 
@@ -133,7 +260,7 @@ window.addEventListener('load', () => {
         if (emailCheck?.exists) {
             setEmailError('Cette adresse email existe deja');
             isSubmitting = false;
-            signupBtn.disabled = false;
+            updateSubmitButton();
             signupBtn.textContent = 'Creer un compte';
             return;
         }
@@ -157,15 +284,17 @@ window.addEventListener('load', () => {
                 alert('Erreur: ' + result.error);
             }
             isSubmitting = false;
-            signupBtn.disabled = false;
+            updateSubmitButton();
             signupBtn.textContent = 'Creer un compte';
             return;
         }
 
         isSubmitting = false;
-        signupBtn.disabled = false;
+        updateSubmitButton();
         signupBtn.textContent = 'Creer un compte';
     });
+
+    updateSubmitButton();
 });
 
 
