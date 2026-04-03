@@ -9,9 +9,13 @@ import { config } from './config.js';
 import { proxyFetch, proxyAgent } from './services/proxyFetch.js';
 import { setGlobalDispatcher } from 'undici';
 
-setGlobalDispatcher(proxyAgent);
+if (proxyAgent) {
+  setGlobalDispatcher(proxyAgent);
+  console.log('Global fetch proxy enabled');
+} else {
+  console.log('No proxy configured - using direct internet access');
+}
 globalThis.fetch = proxyFetch;
-console.log('Global fetch proxy enabled');
 
 const { default: app } = await import('./app.js');
 

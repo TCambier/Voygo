@@ -10,14 +10,18 @@ const proxyUrl =
   process.env.HTTPS_PROXY ||
   process.env.https_proxy ||
   process.env.HTTP_PROXY ||
-  process.env.http_proxy ||
-  'http://10.1.2.5:8080';
+  process.env.http_proxy;
 
-export const proxyAgent = new ProxyAgent(proxyUrl);
+export const proxyAgent = proxyUrl ? new ProxyAgent(proxyUrl) : null;
 
 export async function proxyFetch(input, init = {}) {
-  return undiciFetch(input, {
-    ...init,
-    dispatcher: proxyAgent
-  });
+  // Si un proxy est configuré, l'utiliser. Sinon, pas de proxy
+  if (proxyAgent) {
+    return undiciFetch(input, {
+      ...init,
+      dispatcher: proxyAgent
+    });
+  }
+  // Pas de proxy configuré, utiliser le fetch standard
+  return undiciFetch(input, init);
 }
