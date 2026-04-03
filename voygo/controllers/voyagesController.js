@@ -372,6 +372,28 @@ function resolveActivityAmountFromRow(row) {
     return 0;
 }
 
+// Calcule le nombre d'activites associees a un voyage.
+function countActivitiesForTrip(tripId) {
+    const normalizedTripId = String(tripId || '').trim();
+    if (!normalizedTripId) return 0;
+
+    return (Array.isArray(allActivityRows) ? allActivityRows : []).filter((row) => {
+        const rowTripId = String(row?.trip_id || row?.tripId || '').trim();
+        return rowTripId === normalizedTripId;
+    }).length;
+}
+
+// Calcule le nombre de logements associes a un voyage.
+function countAccommodationsForTrip(tripId) {
+    const normalizedTripId = String(tripId || '').trim();
+    if (!normalizedTripId) return 0;
+
+    return (Array.isArray(allAccommodationRows) ? allAccommodationRows : []).filter((row) => {
+        const rowTripId = String(row?.trip_id || row?.tripId || '').trim();
+        return rowTripId === normalizedTripId;
+    }).length;
+}
+
 // Calcule les nuits pour 'computeAccommodationNights'.
 function computeAccommodationNights(row) {
     const explicit = Number(row?.nights);
@@ -648,13 +670,16 @@ function buildTripCard(trip, index) {
     const startDate = formatDate(resolveTripStartDate(trip));
     const endDate = formatDate(resolveTripEndDate(trip));
     const progressVisual = computeTripProgressVisual(trip);
+    const activityCount = countActivitiesForTrip(trip.id);
+    const accommodationCount = countAccommodationsForTrip(trip.id);
 
     const datesLabel = startDate && endDate ? `${startDate} \u2192 ${endDate}` : 'Dates à définir';
 
     const metaItems = [];
     if (travelers) metaItems.push(`<span><i class='bx bx-user'></i> ${travelers} voyageur${travelers > 1 ? 's' : ''}</span>`);
     if (budget) metaItems.push(`<span><i class='bx bx-wallet'></i> ${formatCurrency(budget)}</span>`);
-    metaItems.push(`<span><i class='bx bx-map'></i> ${trip.steps_count ?? trip.steps ?? '0'} étape${(trip.steps_count ?? trip.steps ?? 0) > 1 ? 's' : ''}</span>`);
+    metaItems.push(`<span><i class='bx bx-map-pin'></i> ${activityCount} activité${activityCount > 1 ? 's' : ''}</span>`);
+    metaItems.push(`<span><i class='bx bx-building-house'></i> ${accommodationCount} logement${accommodationCount > 1 ? 's' : ''}</span>`);
 
     const accessMode = trip.access_mode || 'owner';
     const isOwner = accessMode === 'owner';
