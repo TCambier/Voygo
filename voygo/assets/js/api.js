@@ -29,9 +29,26 @@ function isUnsafeMethod(method = 'GET') {
   return normalizedMethod === 'POST' || normalizedMethod === 'PUT' || normalizedMethod === 'PATCH' || normalizedMethod === 'DELETE';
 }
 
+// Lance une rotation de session via le refresh token cookie.
+async function refreshAuthSession() {
+  const headers = { ...defaultHeaders };
+  const csrfToken = getCookie('voygo_csrf_token');
+  if (csrfToken) {
+    headers['X-CSRF-Token'] = csrfToken;
+  }
+
+  const response = await fetch('/api/auth/refresh', {
+    method: 'POST',
+    headers,
+    credentials: 'include'
+  });
+
+  return response.ok;
+}
+
 // Gere la logique principale de 'apiFetch'.
 async function apiFetch(path, options = {}) {
-  const { method = 'GET', body, headers } = options;
+  const { method = 'GET', body, headers, _retried = false } = options;
   const normalizedMethod = String(method || 'GET').toUpperCase();
   const nextHeaders = { ...defaultHeaders, ...(headers || {}) };
 
@@ -48,6 +65,13 @@ async function apiFetch(path, options = {}) {
     body: body ? JSON.stringify(body) : undefined,
     credentials: 'include'
   });
+
+  if (response.status === 401 && !_retried && path !== '/api/auth/refresh') {
+    const refreshed = await refreshAuthSession();
+    if (refreshed) {
+      return apiFetch(path, { method: normalizedMethod, body, headers, _retried: true });
+    }
+  }
 
   const contentType = response.headers.get('content-type') || '';
   const data = contentType.includes('application/json') ? await response.json() : null;

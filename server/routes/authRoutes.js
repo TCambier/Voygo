@@ -11,6 +11,7 @@ import {
   login,
   me,
   logout,
+  refreshSession,
   emailExists,
   forgotPassword,
   resetPassword,
@@ -31,6 +32,7 @@ router.get('/email-exists', emailExists);
 router.post('/email-exists', emailExists);
 router.get('/me', requireAuth, me);
 router.post('/logout', logout);
+router.post('/refresh', refreshSession);
 router.patch('/profile', requireAuth, updateProfile);
 router.post('/email', requireAuth, updateEmail);
 router.post('/password', requireAuth, updatePassword);

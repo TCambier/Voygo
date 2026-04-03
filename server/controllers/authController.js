@@ -201,6 +201,43 @@ function validateSignupPayload(payload = {}) {
   };
 }
 
+// Retourne les tokens d'auth presents dans la requete.
+function extractAuthTokens(req) {
+  const header = req.headers.authorization || '';
+  const bearerToken = header.startsWith('Bearer ') ? header.slice(7) : null;
+
+  return {
+    accessToken: req.cookies?.voygo_access_token || bearerToken || null,
+    refreshToken: req.cookies?.voygo_refresh_token || null
+  };
+}
+
+// Revoque la session cote fournisseur d'auth.
+async function revokeSessionViaAuthApi(accessToken) {
+  if (!accessToken) {
+    return { ok: false, reason: 'missing_access_token' };
+  }
+
+  const response = await fetch(`${config.supabaseUrl}/auth/v1/logout?scope=global`, {
+    method: 'POST',
+    headers: {
+      apikey: config.supabaseAnonKey,
+      Authorization: `Bearer ${accessToken}`
+    }
+  });
+
+  if (response.ok) {
+    return { ok: true };
+  }
+
+  const body = await response.json().catch(() => null);
+  return {
+    ok: false,
+    status: response.status,
+    error: body?.msg || body?.error_description || body?.error || `HTTP ${response.status}`
+  };
+}
+
 // Supprime les donnees ciblees par 'deleteAuthUserViaAdminRest'.
 async function deleteAuthUserViaAdminRest(userId) {
   const response = await fetch(`${config.supabaseUrl}/auth/v1/admin/users/${userId}`, {
@@ -280,8 +317,47 @@ export async function me(req, res) {
 
 // Gere la logique principale de 'logout'.
 export async function logout(req, res) {
+  const { accessToken } = extractAuthTokens(req);
+
+  if (accessToken) {
+    try {
+      const revokeResult = await revokeSessionViaAuthApi(accessToken);
+      if (!revokeResult.ok && revokeResult.reason !== 'missing_access_token') {
+        console.warn('[auth/logout] session revocation failed', revokeResult);
+      }
+    } catch (error) {
+      console.warn('[auth/logout] session revocation request failed', {
+        message: error?.message || 'unknown_error'
+      });
+    }
+  }
+
   clearAuthCookies(res);
   return res.json({ success: true });
+}
+
+// Gere la logique principale de 'refreshSession'.
+export async function refreshSession(req, res) {
+  const { refreshToken } = extractAuthTokens(req);
+  if (!refreshToken) {
+    clearAuthCookies(res);
+    return res.status(401).json({ error: 'Refresh token manquant.' });
+  }
+
+  const { data, error } = await supabaseAuth.auth.refreshSession({
+    refresh_token: refreshToken
+  });
+
+  if (error || !data?.session) {
+    clearAuthCookies(res);
+    return res.status(401).json({ error: 'Session expiree. Veuillez vous reconnecter.' });
+  }
+
+  setAuthCookies(res, data.session);
+  return res.json({
+    success: true,
+    user: buildUserPayload(data.user)
+  });
 }
 
 // Gere la logique principale de 'emailExists'.
