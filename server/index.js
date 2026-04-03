@@ -6,19 +6,12 @@
  * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
  */
 import { config } from './config.js';
-import { ProxyAgent, setGlobalDispatcher } from 'undici';
+import { proxyFetch, proxyAgent } from './services/proxyFetch.js';
+import { setGlobalDispatcher } from 'undici';
 
-const proxyUrl =
-  process.env.HTTPS_PROXY ||
-  process.env.https_proxy ||
-  process.env.HTTP_PROXY ||
-  process.env.http_proxy ||
-  '';
-
-if (proxyUrl) {
-  setGlobalDispatcher(new ProxyAgent(proxyUrl));
-  console.log(`Global fetch proxy enabled: ${proxyUrl}`);
-}
+setGlobalDispatcher(proxyAgent);
+globalThis.fetch = proxyFetch;
+console.log('Global fetch proxy enabled');
 
 const { default: app } = await import('./app.js');
 

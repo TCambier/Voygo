@@ -7,6 +7,7 @@
  */
 import { createClient } from '@supabase/supabase-js';
 import { config } from '../config.js';
+import { proxyFetch } from './proxyFetch.js';
 
 if (!config.supabaseUrl || !config.supabaseAnonKey) {
   console.warn('SUPABASE_URL or SUPABASE_ANON_KEY is missing. API calls will fail until configured.');
@@ -23,6 +24,9 @@ export const supabaseAuth = createClient(config.supabaseUrl, config.supabaseAnon
     persistSession: false,
     autoRefreshToken: false,
     detectSessionInUrl: false
+  },
+  global: {
+    fetch: proxyFetch
   }
 });
 
@@ -32,6 +36,9 @@ export const supabaseAdmin = config.supabaseServiceRoleKey
         persistSession: false,
         autoRefreshToken: false,
         detectSessionInUrl: false
+      },
+      global: {
+        fetch: proxyFetch
       }
     })
   : null;
@@ -47,6 +54,7 @@ export function getSupabaseForUser(accessToken) {
       detectSessionInUrl: false
     },
     global: {
+      fetch: proxyFetch,
       headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
     }
   });
