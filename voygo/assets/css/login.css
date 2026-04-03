@@ -254,7 +254,11 @@ body.dark-theme {
 }
 
 body.dark-theme .background {
-    background-image: url("../images/sombre.avif");
+    background-image: url("../images/noir.jpg");
+    background-size: 100% 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: none !important;
 }
 
 body.dark-theme .login-container {
