@@ -33,10 +33,9 @@ body > #header-container {
     position:fixed;
     width:100%;
     height:100%;
-    background-image: url("../images/background.PNG"); /* adjust path or filename to your desired background image */
+    background-image: url("../images/brume.jpg");
     background-size:cover;
     background-position:center;
-    filter:blur(6px);
     z-index:-1;
 }
 
@@ -247,6 +246,100 @@ input.error {
     font-size: 12px;
     margin: -4px 0 12px;
     color: #666;
+}
+
+/* Dark theme styles for login page */
+body.dark-theme {
+    background: #0f0f0f;
+}
+
+body.dark-theme .background {
+    background-image: url("../images/sombre.avif");
+}
+
+body.dark-theme .login-container {
+    background: rgba(26, 26, 26, 0.90);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-theme h2 {
+    color: #e0e0e0;
+}
+
+body.dark-theme .subtitle {
+    color: #b0b0b0;
+}
+
+body.dark-theme input {
+    background: #2d2d2d;
+    border-color: #444;
+    color: #e0e0e0;
+}
+
+body.dark-theme input::placeholder {
+    color: #888;
+}
+
+body.dark-theme input:focus {
+    border-color: #ff6b6b;
+    background: #333;
+}
+
+body.dark-theme input.error {
+    border-color: #dc3545;
+    background-color: #3a1f1f;
+}
+
+body.dark-theme .error-message {
+    color: #ff6b6b;
+}
+
+body.dark-theme .space,
+body.dark-theme .separator,
+body.dark-theme .terms {
+    color: #b0b0b0;
+}
+
+body.dark-theme .space a,
+body.dark-theme .separator a,
+body.dark-theme .terms a {
+    color: #ff6b6b;
+}
+
+body.dark-theme .auth-modal {
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+body.dark-theme .auth-modal-content {
+    background: rgba(26, 26, 26, 0.95);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-theme .auth-modal-content h2 {
+    color: #ff6b6b;
+}
+
+body.dark-theme .auth-modal-content p {
+    color: #b0b0b0;
+}
+
+body.dark-theme #forgot-email {
+    background: #2d2d2d;
+    border-color: #444;
+    color: #e0e0e0;
+}
+
+body.dark-theme #forgot-email::placeholder {
+    color: #888;
+}
+
+body.dark-theme .close {
+    color: #b0b0b0;
+}
+
+body.dark-theme .close:hover,
+body.dark-theme .close:focus {
+    color: #e0e0e0;
 }
 
 .forgot-feedback.is-success {
