@@ -47,7 +47,7 @@
                     <div class="planning-edit-header">
                         <div>
                             <h3>Infos du voyage</h3>
-                            <p class="muted">Mettez a jour le nom, la destination et les dates.</p>
+                            <p class="muted">Mettez a jour le nom, la destination, les dates, le nombre de personnes et la description.</p>
                         </div>
                         <button type="button" class="btn-primary" id="trip-save">Enregistrer</button>
                     </div>
@@ -55,6 +55,10 @@
                         <div class="field-group">
                             <label for="trip-name">Nom du voyage</label>
                             <input class="form-input" id="trip-name" type="text" placeholder="Ex: Voyage en Italie">
+                        </div>
+                        <div class="field-group">
+                            <label for="trip-people">Nombre de personnes</label>
+                            <input class="form-input" id="trip-people" type="number" min="1" step="1" placeholder="Ex: 4">
                         </div>
                         <div class="field-group">
                             <label for="pays">Destination</label>
@@ -68,6 +72,10 @@
                         <div class="field-group">
                             <label for="trip-end-date">Date de retour</label>
                             <input class="form-input" id="trip-end-date" type="date">
+                        </div>
+                        <div class="field-group field-group--full">
+                            <label for="trip-description">Description du voyage</label>
+                            <textarea class="form-input" id="trip-description" rows="4" placeholder="Ajoutez un descriptif libre du voyage, des envies ou des remarques utiles."></textarea>
                         </div>
                     </div>
                     <span class="settings-feedback" id="trip-save-note"></span>
