@@ -8,8 +8,12 @@
 import { api } from '../assets/js/api.js';
 
 // Budgets table helpers
-export async function listBudgets() {
-    const result = await api.get('/api/budgets');
+export async function listBudgets(tripId = '') {
+    const normalizedTripId = String(tripId || '').trim();
+    const endpoint = normalizedTripId
+        ? `/api/budgets?tripId=${encodeURIComponent(normalizedTripId)}`
+        : '/api/budgets';
+    const result = await api.get(endpoint);
     return result?.data || [];
 }
 

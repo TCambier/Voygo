@@ -496,11 +496,13 @@ function resolveTripLabel(tripId) {
 
 // Retourne l'information calculee par 'getFilteredEntries'.
 function getFilteredEntries() {
+  const selectedTripId = getSelectedTripId();
   const selectedCategory = refs.filterCategory?.value || 'all';
 
   return state.entries.filter((item) => {
+    const sameTrip = !selectedTripId || String(item.tripId || '') === String(selectedTripId);
     const categoryOk = selectedCategory === 'all' || item.category === selectedCategory;
-    return categoryOk;
+    return sameTrip && categoryOk;
   });
 }
 
@@ -1102,8 +1104,10 @@ async function loadTrips() {
 
 // Charge les donnees necessaires pour 'loadBudgets'.
 async function loadBudgets() {
+  const selectedTripId = getSelectedTripId();
+
   try {
-    const rows = await listBudgets();
+    const rows = await listBudgets(selectedTripId);
     state.budgetRows = Array.isArray(rows) ? rows.map((row, index) => normalizeBudgetItem(row, index)) : [];
   } catch (error) {
     setLocalMode('Mode local active (API budget indisponible)');
@@ -1114,42 +1118,36 @@ async function loadBudgets() {
   if (state.isLocalMode && !state.budgetRows.length) {
     state.budgetRows = readLocalBudgets();
   }
+
+  if (selectedTripId) {
+    state.budgetRows = state.budgetRows.filter((row) => String(row.tripId || '') === String(selectedTripId));
+  }
 }
 
 // Charge les donnees necessaires pour 'loadRelatedEntries'.
 async function loadRelatedEntries() {
-  const tripIds = state.trips.map((trip) => String(trip.id)).filter(Boolean);
-  if (!tripIds.length) {
+  const tripId = getSelectedTripId();
+  if (!tripId) {
     state.accommodations = [];
     state.transports = [];
     rebuildEntries();
     return;
   }
 
-  const accommodationResults = await Promise.all(
-    tripIds.map(async (tripId) => {
-      try {
-        const items = await listAccommodationsByTrip(tripId);
-        return Array.isArray(items) ? items : [];
-      } catch {
-        return [];
-      }
-    })
-  );
-  state.accommodations = accommodationResults.flat();
+  try {
+    const accommodations = await listAccommodationsByTrip(tripId);
+    state.accommodations = Array.isArray(accommodations) ? accommodations : [];
+  } catch {
+    state.accommodations = [];
+  }
 
-  const transportResults = await Promise.all(
-    tripIds.map(async (tripId) => {
-      try {
-        const items = await listTransports(tripId);
-        return Array.isArray(items) ? items : [];
-      } catch {
-        return [];
-      }
-    })
-  );
+  try {
+    const transports = await listTransports(tripId);
+    state.transports = Array.isArray(transports) ? transports : [];
+  } catch {
+    state.transports = [];
+  }
 
-  state.transports = transportResults.flat();
   rebuildEntries();
 }
 
