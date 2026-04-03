@@ -12,6 +12,7 @@ import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from './config.js';
+import { csrfProtection } from './middleware/csrf.js';
 import authRoutes from './routes/authRoutes.js';
 import tripRoutes from './routes/tripRoutes.js';
 import transportRoutes from './routes/transportRoutes.js';
@@ -20,13 +21,32 @@ import resourceRoutes from './routes/resourceRoutes.js';
 
 const app = express();
 
-app.use(helmet({ contentSecurityPolicy: false }));
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", 'https://unpkg.com', 'https://cdn.jsdelivr.net'],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://unpkg.com', 'https://cdnjs.cloudflare.com'],
+        imgSrc: ["'self'", 'data:', 'blob:', 'https://*.tile.openstreetmap.org'],
+        connectSrc: ["'self'", 'https://nominatim.openstreetmap.org'],
+        fontSrc: ["'self'", 'data:', 'https://unpkg.com', 'https://cdnjs.cloudflare.com'],
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+        frameAncestors: ["'none'"],
+        formAction: ["'self'"],
+        upgradeInsecureRequests: []
+      }
+    }
+  })
+);
 // Limit only API routes to avoid blocking static assets/pages
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 1000
 });
 app.use(cookieParser());
+app.use(csrfProtection);
 app.use(express.json({ limit: '1mb' }));
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

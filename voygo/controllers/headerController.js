@@ -5,7 +5,7 @@
  * Role: Module JavaScript du projet Voygo.
  * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
  */
-import { supabase } from '../assets/js/supabase.js';
+import { api } from '../assets/js/api.js';
 
 const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
  
@@ -127,17 +127,14 @@ function getStoredUser() {
 async function resolveAuthUser() {
     if (!isBrowser) return null;
     try {
-        const res = await fetch('/api/auth/me', { credentials: 'include' });
-        if (!res.ok) {
+        const data = await api.get('/api/auth/me');
+        if (!data?.user) {
             localStorage.removeItem('voygo_auth_user');
             localStorage.removeItem('voygo_jwt');
             return null;
         }
-        const data = await res.json();
-        if (data?.user) {
-            localStorage.setItem('voygo_auth_user', JSON.stringify(data.user));
-            return data.user;
-        }
+        localStorage.setItem('voygo_auth_user', JSON.stringify(data.user));
+        return data.user;
     } catch (error) {
         return null;
     }
@@ -228,13 +225,9 @@ function setupAccountMenu() {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async () => {
             try {
-                if (supabase?.auth?.signOut) {
-                    await supabase.auth.signOut();
-                } else if (typeof fetch === 'function') {
-                    await fetch('/api/auth/logout', { method: 'POST' });
-                }
+                await api.post('/api/auth/logout');
             } catch (error) {
-                console.warn('Supabase sign out failed:', error);
+                console.warn('Logout API call failed:', error);
             }
             localStorage.removeItem('voygo_auth_user');
             localStorage.removeItem('voygo_jwt');
