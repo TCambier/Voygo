@@ -61,10 +61,14 @@ function isAllTripsQuickTag(label) {
 function activateAllTripsQuickTag() {
     const allTag = quickFilterTags.find((tag) => isAllTripsQuickTag(tag.textContent || ''));
 
-    quickFilterTags.forEach((tag) => tag.classList.remove('active'));
+    quickFilterTags.forEach((tag) => {
+        tag.classList.remove('active');
+        tag.setAttribute('aria-pressed', 'false');
+    });
 
     if (allTag) {
         allTag.classList.add('active');
+        allTag.setAttribute('aria-pressed', 'true');
         activeQuickTag = allTag.textContent?.trim() || '';
         return;
     }
@@ -1297,8 +1301,12 @@ document.addEventListener('click', async (event) => {
 
     const quickTag = target.closest('.filter-tags .tag');
     if (quickTag) {
-        quickFilterTags.forEach((tag) => tag.classList.remove('active'));
+        quickFilterTags.forEach((tag) => {
+            tag.classList.remove('active');
+            tag.setAttribute('aria-pressed', 'false');
+        });
         quickTag.classList.add('active');
+        quickTag.setAttribute('aria-pressed', 'true');
         activeQuickTag = quickTag.textContent?.trim() || '';
         applyFilters();
         return;

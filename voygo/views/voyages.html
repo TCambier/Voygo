@@ -25,7 +25,7 @@
                     </button>
                     <div class="voyages-search">
                         <i class='bx bx-search'></i>
-                        <input type="text" placeholder="Rechercher une destination ou un nom">
+                            <input type="text" placeholder="Rechercher une destination ou un nom" aria-label="Rechercher un voyage">
                     </div>
                 </div>
             </div>
@@ -50,7 +50,7 @@
         <section class="voyages-toolbar">
             <div class="filter-group">
                 <label for="status-filter">Statut</label>
-                <select id="status-filter">
+                    <select id="status-filter" aria-label="Filtrer par statut">
                     <option value="all">Tous</option>
                     <option value="upcoming">À venir</option>
                     <option value="in-progress">En cours</option>
@@ -59,17 +59,17 @@
             </div>
             <div class="filter-group">
                 <label for="sort-filter">Trier par</label>
-                <select id="sort-filter">
+                    <select id="sort-filter" aria-label="Trier les voyages">
                     <option>Dernière mise à jour</option>
                     <option>Date de départ</option>
                     <option>Budget</option>
                 </select>
             </div>
-            <div class="filter-tags">
-                <span class="tag active">Tous</span>
-                <span class="tag">Favoris</span>
-                <span class="tag">Week-end</span>
-                <span class="tag">Long séjour</span>
+                <div class="filter-tags" role="group" aria-label="Filtres rapides">
+                    <span class="tag active" aria-pressed="true">Tous</span>
+                    <span class="tag" aria-pressed="false">Favoris</span>
+                    <span class="tag" aria-pressed="false">Week-end</span>
+                    <span class="tag" aria-pressed="false">Long séjour</span>
             </div>
         </section>
 
@@ -140,7 +140,7 @@
 
     <div class="modal-backdrop" id="trip-history-modal-backdrop" hidden aria-hidden="true">
         <section class="modal trip-history-modal" role="dialog" aria-modal="true" aria-labelledby="trip-history-heading">
-            <header class="modal-header">
+                <header class="modal-header" aria-describedby="trip-history-list">
                 <div>
                     <h2 id="trip-history-heading">Historique des changements</h2>
                     <p class="share-trip-subtitle">Voyage: <strong id="trip-history-title">-</strong></p>

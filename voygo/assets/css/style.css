@@ -3937,3 +3937,169 @@ body.dark-theme .favorite-trip-btn {
         animation: none !important;
     }
 }
+
+/* Global accessibility enhancements */
+.skip-to-content {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: 2000;
+    background: #111827;
+    color: #ffffff;
+    padding: 10px 14px;
+    border-radius: 10px;
+    transform: translateY(-150%);
+    transition: transform 180ms ease;
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.skip-to-content:focus {
+    transform: translateY(0);
+}
+
+button,
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+select,
+.btn-primary,
+.btn-secondary,
+.btn-ghost,
+.btn-danger,
+.btn-accent,
+.btn-connexion,
+.btn-creer,
+.btn-icon,
+.modal-close,
+.tag,
+.activity-filter-chip,
+.planning-nav a,
+.navbar-menu a,
+.account-dropdown a,
+.account-dropdown button {
+    min-height: 44px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--accent) 68%, #0ea5e9);
+    outline-offset: 2px;
+}
+
+.muted,
+.stat-note,
+.voyage-dates,
+.share-trip-subtitle,
+.trip-history-item-head span,
+.trip-history-actor,
+.trip-history-target,
+.trip-history-fields {
+    color: color-mix(in srgb, var(--text-secondary) 88%, #374151) !important;
+}
+
+/* Mobile filter drawer */
+.mobile-filter-trigger {
+    display: none !important;
+    width: 100%;
+    margin: 10px 0 0;
+    border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--border-color));
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-weight: 700;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.mobile-filter-backdrop {
+    display: none !important;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    z-index: 1200;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 12px;
+}
+
+.mobile-filter-drawer {
+    width: min(720px, 100%);
+    max-height: min(78vh, 720px);
+    background: var(--bg-secondary);
+    border-radius: 20px 20px 0 0;
+    border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border-color));
+    box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.22);
+    overflow: hidden;
+    animation: drawerUp 220ms var(--ui-ease) both;
+}
+
+.mobile-filter-drawer-header {
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.mobile-filter-drawer-header h2 {
+    font-size: 16px;
+}
+
+.mobile-filter-close {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.mobile-filter-drawer-body {
+    padding: 14px 16px 18px;
+    overflow-y: auto;
+}
+
+body.drawer-open {
+    overflow: hidden;
+}
+
+@keyframes drawerUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 768px) {
+    .is-mobile-drawer-content {
+        width: 100%;
+    }
+
+    .is-mobile-drawer-content .filter-group,
+    .is-mobile-drawer-content .field,
+    .is-mobile-drawer-content .budget-card-filter,
+    .is-mobile-drawer-content select,
+    .is-mobile-drawer-content .tag,
+    .is-mobile-drawer-content .activity-filter-chip {
+        width: 100%;
+    }
+
+    .is-mobile-drawer-content .filter-tags,
+    .is-mobile-drawer-content .activity-filter-bar {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+}

@@ -6,6 +6,7 @@
  * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
  */
 import { api } from '../assets/js/api.js';
+import { initAccessibilityEnhancements } from './accessibilityController.js';
 
 const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
  
@@ -32,6 +33,7 @@ async function loadHeader() {
         renderAccountSlot(user);
         updateNavForAuth(user);
         initMobileMenu(); // ✅ appelé ici, après injection du header
+        initAccessibilityEnhancements();
     } catch (err) {
         console.error('Failed to load header:', err);
     }
