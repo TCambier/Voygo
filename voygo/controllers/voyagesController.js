@@ -156,6 +156,59 @@ function normalizeText(value) {
         .replace(/[\u0300-\u036f]/g, '');
 }
 
+function toSearchTokens(value) {
+    return normalizeText(value)
+        .split(/\s+/)
+        .map((token) => token.trim())
+        .filter(Boolean);
+}
+
+function resolveTripSearchHaystack(trip) {
+    const title = resolveTitle(trip);
+    const destination = String(trip?.destination || '').trim();
+    const summary = resolveSummary(trip);
+    return normalizeText(`${title} ${destination} ${summary}`);
+}
+
+function computeTripSearchScore(trip, queryTokens) {
+    if (!Array.isArray(queryTokens) || !queryTokens.length) return 0;
+
+    const title = normalizeText(resolveTitle(trip));
+    const destination = normalizeText(trip?.destination || '');
+    const haystack = resolveTripSearchHaystack(trip);
+
+    let score = 0;
+    for (const token of queryTokens) {
+        if (!token) continue;
+
+        if (title === token) {
+            score += 120;
+            continue;
+        }
+        if (title.startsWith(token)) {
+            score += 60;
+            continue;
+        }
+        if (title.includes(token)) {
+            score += 35;
+            continue;
+        }
+        if (destination.startsWith(token)) {
+            score += 22;
+            continue;
+        }
+        if (destination.includes(token)) {
+            score += 16;
+            continue;
+        }
+        if (haystack.includes(token)) {
+            score += 8;
+        }
+    }
+
+    return score;
+}
+
 // Normalise les donnees pour 'toTagTokens'.
 function toTagTokens(value) {
     if (!value) return [];
@@ -894,12 +947,14 @@ function updateStats(trips) {
 function applyFilters() {
     let filtered = [...allTrips];
 
-    const searchValue = searchInput?.value.trim().toLowerCase() || '';
-    if (searchValue) {
-        filtered = filtered.filter((trip) => {
-            const target = `${trip.name || ''} ${trip.destination || ''}`.toLowerCase();
-            return target.includes(searchValue);
-        });
+    const queryTokens = toSearchTokens(searchInput?.value || '');
+    const hasSearchQuery = queryTokens.length > 0;
+    if (hasSearchQuery) {
+        filtered = filtered
+            .map((trip) => ({ trip, score: computeTripSearchScore(trip, queryTokens) }))
+            .filter((entry) => entry.score > 0)
+            .sort((a, b) => b.score - a.score)
+            .map((entry) => entry.trip);
     }
 
     const statusValue = statusFilter?.value || 'all';
@@ -1453,6 +1508,16 @@ document.addEventListener('keydown', (event) => {
 shareTripForm?.addEventListener('submit', submitTripShare);
 
 searchInput?.addEventListener('input', applyFilters);
+let searchDebounceTimer = null;
+searchInput?.removeEventListener('input', applyFilters);
+searchInput?.addEventListener('input', () => {
+    if (searchDebounceTimer) {
+        window.clearTimeout(searchDebounceTimer);
+    }
+    searchDebounceTimer = window.setTimeout(() => {
+        applyFilters();
+    }, 120);
+});
 statusFilter?.addEventListener('change', applyFilters);
 sortFilter?.addEventListener('change', applyFilters);
 resetFiltersButton?.addEventListener('click', resetFilters);
