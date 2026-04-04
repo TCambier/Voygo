@@ -27,6 +27,7 @@ async function loadHeader() {
         const container = document.getElementById('header-container');
         if (container) container.innerHTML = html;
         updateThemeIcon();
+        attachThemeButton(); // ✅ attach event listener after header injection
         const user = await resolveAuthUser();
         renderAccountSlot(user);
         updateNavForAuth(user);
@@ -236,6 +237,15 @@ function setupAccountMenu() {
     }
 }
  
+// Attache un event listener au bouton du thème
+function attachThemeButton() {
+    if (!isBrowser) return;
+    const btn = document.querySelector('.btn-theme');
+    if (!btn) return;
+    btn.removeEventListener('click', toggleTheme); // Évite les doublons
+    btn.addEventListener('click', toggleTheme);
+}
+
 // Applique les mises a jour de 'updateThemeIcon'.
 function updateThemeIcon() {
     if (!isBrowser) return;
@@ -268,6 +278,7 @@ export {
     initMobileMenu,
     renderAccountSlot,
     setupAccountMenu,
+    attachThemeButton,
     updateThemeIcon,
     toggleTheme
 };
