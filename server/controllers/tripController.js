@@ -7,17 +7,14 @@
  */
 import { getSupabaseForUser, supabaseAdmin } from '../services/supabase.js';
 import { getAccessDbClient, getTripAccess, isMissingTableError, isTripPastEndDate } from '../utils/tripAccess.js';
-
-// Normalise les donnees pour 'normalizeEmail'.
-function normalizeEmail(value) {
-  return String(value || '').trim().toLowerCase();
-}
+import { getTripHistoryError, logTripChange, normalizeEmail, resolveActorLabel } from '../utils/tripHistory.js';
 
 // Normalise les donnees pour 'normalizePermission'.
 function normalizePermission(value) {
   const raw = String(value || '').trim().toLowerCase();
   return raw === 'edit' ? 'edit' : 'read';
 }
+
 
 // Gere la logique principale de 'requireOwnedTrip'.
 async function requireOwnedTrip(db, tripId, ownerUserId) {
@@ -160,6 +157,7 @@ export async function getTrip(req, res) {
 export async function createTrip(req, res) {
   const payload = req.body || {};
   const client = getSupabaseForUser(req.accessToken);
+  const db = getAccessDbClient(client);
 
   const insertPayload = {
     ...payload,
@@ -171,6 +169,19 @@ export async function createTrip(req, res) {
   if (error) {
     return res.status(400).json({ error: error.message || 'Creation impossible.' });
   }
+
+  await logTripChange(db, {
+    trip_id: data.id,
+    actor_user_id: req.user.id,
+    actor_email: normalizeEmail(req.user.email),
+    action: 'trip_created',
+    target_type: 'trip',
+    target_id: String(data.id),
+    target_label: String(data.name || data.destination || 'Voyage').slice(0, 200),
+    details: {
+      actor_label: resolveActorLabel(req.user)
+    }
+  });
 
   return res.status(201).json({ data });
 }
@@ -253,6 +264,7 @@ export async function updateTrip(req, res) {
   }
 
   const existingTrip = access.trip;
+  const changedFields = Object.keys(payload).filter((key) => existingTrip?.[key] !== payload?.[key]);
 
   const nextDestination = Object.prototype.hasOwnProperty.call(payload, 'destination')
     ? payload.destination
@@ -280,6 +292,22 @@ export async function updateTrip(req, res) {
     }
   }
 
+  await logTripChange(db, {
+    trip_id: data.id,
+    actor_user_id: req.user.id,
+    actor_email: normalizeEmail(req.user.email),
+    action: 'trip_updated',
+    target_type: 'trip',
+    target_id: String(data.id),
+    target_label: String(data.name || data.destination || 'Voyage').slice(0, 200),
+    details: {
+      actor_label: resolveActorLabel(req.user),
+      changed_fields: changedFields,
+      cleared_planning_items: Boolean(destinationChanged && access.isOwner),
+      edited_as: access.isOwner ? 'owner' : 'shared_editor'
+    }
+  });
+
   return res.json({ data, clearedPlannedItems: destinationChanged && access.isOwner });
 }
 
@@ -303,6 +331,19 @@ export async function deleteTrip(req, res) {
   if (!access.isOwner) {
     return res.status(403).json({ error: 'Seul le proprietaire peut supprimer ce voyage.' });
   }
+
+  await logTripChange(db, {
+    trip_id: id,
+    actor_user_id: req.user.id,
+    actor_email: normalizeEmail(req.user.email),
+    action: 'trip_deleted',
+    target_type: 'trip',
+    target_id: String(id),
+    target_label: String(access.trip?.name || access.trip?.destination || 'Voyage').slice(0, 200),
+    details: {
+      actor_label: resolveActorLabel(req.user)
+    }
+  });
 
   try {
     await deleteTripPlanningData(client, id, req.user.id);
@@ -402,7 +443,70 @@ export async function shareTrip(req, res) {
     return res.status(400).json({ error: error.message || 'Partage impossible.' });
   }
 
+  await logTripChange(db, {
+    trip_id: id,
+    actor_user_id: req.user.id,
+    actor_email: normalizeEmail(req.user.email),
+    action: 'share_access_granted',
+    target_type: 'share',
+    target_id: String(targetUser.id),
+    target_label: String(targetUser.email || email).slice(0, 200),
+    details: {
+      actor_label: resolveActorLabel(req.user),
+      permission,
+      shared_with_user_id: String(targetUser.id),
+      shared_with_email: email
+    }
+  });
+
   return res.json({ data });
+}
+
+// Liste les elements retournes par 'listTripHistory'.
+export async function listTripHistory(req, res) {
+  const { id } = req.params;
+  const client = getSupabaseForUser(req.accessToken);
+  const db = getAccessDbClient(client);
+
+  let access;
+  try {
+    access = await getTripAccess(db, id, req.user.id);
+  } catch (error) {
+    return res.status(400).json({ error: error.message || 'Verification des droits impossible.' });
+  }
+
+  if (!access) {
+    return res.status(404).json({ error: 'Voyage introuvable.' });
+  }
+
+  const { data, error } = await db
+    .from('trip_change_history')
+    .select('id,trip_id,action,target_type,target_id,target_label,details,actor_user_id,actor_email,created_at')
+    .eq('trip_id', id)
+    .order('created_at', { ascending: false })
+    .limit(100);
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return res.json({
+        data: [],
+        unavailable: true,
+        message: "La table d'historique est absente. Executez Docs/sql/trip_change_history.sql puis reessayez."
+      });
+    }
+    return res.status(400).json({ error: error.message || 'Impossible de charger l\'historique.' });
+  }
+
+  const loggingError = getTripHistoryError(id);
+  if (loggingError) {
+    return res.json({
+      data: data || [],
+      warning: "L'historique rencontre des erreurs d'ecriture cote serveur.",
+      loggingError
+    });
+  }
+
+  return res.json({ data: data || [] });
 }
 
 // Liste les elements retournes par 'listTripShares'.
@@ -458,6 +562,20 @@ export async function updateTripShare(req, res) {
     return res.status(400).json({ error: error.message || 'Mise a jour du partage impossible.' });
   }
 
+  await logTripChange(db, {
+    trip_id: id,
+    actor_user_id: req.user.id,
+    actor_email: normalizeEmail(req.user.email),
+    action: 'share_permission_updated',
+    target_type: 'share',
+    target_id: String(sharedWithUserId),
+    target_label: String(data?.shared_with_email || sharedWithUserId).slice(0, 200),
+    details: {
+      actor_label: resolveActorLabel(req.user),
+      permission
+    }
+  });
+
   return res.json({ data });
 }
 
@@ -481,6 +599,19 @@ export async function deleteTripShare(req, res) {
   if (error) {
     return res.status(400).json({ error: error.message || 'Suppression du partage impossible.' });
   }
+
+  await logTripChange(db, {
+    trip_id: id,
+    actor_user_id: req.user.id,
+    actor_email: normalizeEmail(req.user.email),
+    action: 'share_revoked',
+    target_type: 'share',
+    target_id: String(sharedWithUserId),
+    target_label: String(sharedWithUserId).slice(0, 200),
+    details: {
+      actor_label: resolveActorLabel(req.user)
+    }
+  });
 
   return res.json({ success: true });
 }

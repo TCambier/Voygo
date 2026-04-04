@@ -8,6 +8,7 @@
 import { config } from '../config.js';
 import { getSupabaseForUser } from '../services/supabase.js';
 import { getAccessDbClient, getTripAccess } from '../utils/tripAccess.js';
+import { logTripChange, normalizeEmail, resolveActorLabel, resolveChangedFields } from '../utils/tripHistory.js';
 
 // Gere la logique principale de 'readScheduleMetadataFromDescription'.
 function readScheduleMetadataFromDescription(description) {
@@ -522,6 +523,20 @@ export async function createActivity(req, res) {
     return res.status(400).json({ error: error.message || 'Creation impossible.' });
   }
 
+  await logTripChange(db, {
+    trip_id: tripId,
+    actor_user_id: req.user.id,
+    actor_email: normalizeEmail(req.user.email),
+    action: 'activity_created',
+    target_type: 'activity',
+    target_id: String(data.id),
+    target_label: String(data.name || 'Activite').slice(0, 200),
+    details: {
+      actor_label: resolveActorLabel(req.user),
+      edited_as: access.isOwner ? 'owner' : 'shared_editor'
+    }
+  });
+
   return res.status(201).json({ data });
 }
 
@@ -534,7 +549,7 @@ export async function updateActivity(req, res) {
 
   const { data: existing, error: existingError } = await db
     .from('activities')
-    .select('id,trip_id')
+    .select('*')
     .eq('id', id)
     .single();
 
@@ -557,6 +572,8 @@ export async function updateActivity(req, res) {
     return res.status(403).json({ error: 'Ce voyage est en lecture seule.' });
   }
 
+  const changedFields = resolveChangedFields(existing, payload);
+
   const { data, error } = await db
     .from('activities')
     .update(payload)
@@ -567,6 +584,21 @@ export async function updateActivity(req, res) {
   if (error) {
     return res.status(400).json({ error: error.message || 'Mise a jour impossible.' });
   }
+
+  await logTripChange(db, {
+    trip_id: existing.trip_id,
+    actor_user_id: req.user.id,
+    actor_email: normalizeEmail(req.user.email),
+    action: 'activity_updated',
+    target_type: 'activity',
+    target_id: String(data.id),
+    target_label: String(data.name || 'Activite').slice(0, 200),
+    details: {
+      actor_label: resolveActorLabel(req.user),
+      changed_fields: changedFields,
+      edited_as: access.isOwner ? 'owner' : 'shared_editor'
+    }
+  });
 
   return res.json({ data });
 }
@@ -610,6 +642,20 @@ export async function deleteActivity(req, res) {
   if (error) {
     return res.status(400).json({ error: error.message || 'Suppression impossible.' });
   }
+
+  await logTripChange(db, {
+    trip_id: existing.trip_id,
+    actor_user_id: req.user.id,
+    actor_email: normalizeEmail(req.user.email),
+    action: 'activity_deleted',
+    target_type: 'activity',
+    target_id: String(existing.id),
+    target_label: 'Activite',
+    details: {
+      actor_label: resolveActorLabel(req.user),
+      edited_as: access.isOwner ? 'owner' : 'shared_editor'
+    }
+  });
 
   return res.json({ success: true });
 }

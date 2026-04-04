@@ -7,6 +7,48 @@
  */
 import { getSupabaseForUser } from '../services/supabase.js';
 import { getAccessDbClient, getTripAccess } from '../utils/tripAccess.js';
+import { logTripChange, normalizeEmail, resolveActorLabel, resolveChangedFields } from '../utils/tripHistory.js';
+
+function resolveResourceKind(resourceTable) {
+  const map = {
+    accommodations: 'accommodation',
+    activities: 'activity',
+    budgets: 'budget',
+    notes: 'note'
+  };
+
+  return map[resourceTable] || 'resource';
+}
+
+function resolveTripIdFromPayload(payload) {
+  const raw = payload?.trip_id ?? payload?.tripId ?? null;
+  const normalized = String(raw || '').trim();
+  return normalized || '';
+}
+
+function resolveResourceLabel(resourceKind, row) {
+  if (resourceKind === 'budget') {
+    const amount = row?.actual_amount ?? row?.amount ?? row?.planned_amount;
+    return amount ? `Budget ${amount}` : 'Budget';
+  }
+
+  if (resourceKind === 'note') {
+    const text = String(row?.title || row?.note || row?.content || '').trim();
+    return text ? `Note: ${text}`.slice(0, 200) : 'Note';
+  }
+
+  if (resourceKind === 'accommodation') {
+    const label = String(row?.name || row?.title || row?.address || '').trim();
+    return label ? label.slice(0, 200) : 'Logement';
+  }
+
+  if (resourceKind === 'activity') {
+    const label = String(row?.name || row?.title || '').trim();
+    return label ? label.slice(0, 200) : 'Activite';
+  }
+
+  return 'Element';
+}
 
 // Liste les elements retournes par 'listResource'.
 export async function listResource(req, res) {
@@ -49,11 +91,13 @@ export async function createResource(req, res) {
   const payload = req.body || {};
 
   let insertPayload = { ...payload, user_id: req.user.id };
+  let access = null;
 
-  if (payload.trip_id) {
-    let access;
+  const requestedTripId = resolveTripIdFromPayload(payload);
+
+  if (requestedTripId) {
     try {
-      access = await getTripAccess(db, payload.trip_id, req.user.id);
+      access = await getTripAccess(db, requestedTripId, req.user.id);
     } catch (error) {
       return res.status(400).json({ error: error.message || 'Verification des droits impossible.' });
     }
@@ -79,6 +123,25 @@ export async function createResource(req, res) {
     return res.status(400).json({ error: error.message || 'Creation impossible.' });
   }
 
+  const tripIdForHistory = String(data?.trip_id || requestedTripId || '').trim();
+
+  if (tripIdForHistory) {
+    const resourceKind = resolveResourceKind(req.resourceTable);
+    await logTripChange(db, {
+      trip_id: tripIdForHistory,
+      actor_user_id: req.user.id,
+      actor_email: normalizeEmail(req.user.email),
+      action: `${resourceKind}_created`,
+      target_type: resourceKind,
+      target_id: String(data.id),
+      target_label: resolveResourceLabel(resourceKind, data),
+      details: {
+        actor_label: resolveActorLabel(req.user),
+        edited_as: access?.isOwner ? 'owner' : 'shared_editor'
+      }
+    });
+  }
+
   return res.status(201).json({ data });
 }
 
@@ -90,7 +153,7 @@ export async function updateResource(req, res) {
 
   const { data: existing, error: existingError } = await db
     .from(req.resourceTable)
-    .select('id,trip_id,user_id')
+    .select('*')
     .eq('id', req.params.id)
     .single();
 
@@ -98,10 +161,12 @@ export async function updateResource(req, res) {
     return res.status(404).json({ error: 'Element introuvable.' });
   }
 
-  if (existing.trip_id) {
-    let access;
+  let access = null;
+  const existingTripId = String(existing?.trip_id || existing?.tripId || '').trim();
+
+  if (existingTripId) {
     try {
-      access = await getTripAccess(db, existing.trip_id, req.user.id);
+      access = await getTripAccess(db, existingTripId, req.user.id);
     } catch (error) {
       return res.status(400).json({ error: error.message || 'Verification des droits impossible.' });
     }
@@ -117,6 +182,8 @@ export async function updateResource(req, res) {
     return res.status(403).json({ error: 'Acces refuse.' });
   }
 
+  const changedFields = resolveChangedFields(existing, payload);
+
   const { data, error } = await db
     .from(req.resourceTable)
     .update(payload)
@@ -126,6 +193,24 @@ export async function updateResource(req, res) {
 
   if (error) {
     return res.status(400).json({ error: error.message || 'Mise a jour impossible.' });
+  }
+
+  if (existingTripId) {
+    const resourceKind = resolveResourceKind(req.resourceTable);
+    await logTripChange(db, {
+      trip_id: existingTripId,
+      actor_user_id: req.user.id,
+      actor_email: normalizeEmail(req.user.email),
+      action: `${resourceKind}_updated`,
+      target_type: resourceKind,
+      target_id: String(data.id),
+      target_label: resolveResourceLabel(resourceKind, data),
+      details: {
+        actor_label: resolveActorLabel(req.user),
+        changed_fields: changedFields,
+        edited_as: access?.isOwner ? 'owner' : 'shared_editor'
+      }
+    });
   }
 
   return res.json({ data });
@@ -138,7 +223,7 @@ export async function deleteResource(req, res) {
 
   const { data: existing, error: existingError } = await db
     .from(req.resourceTable)
-    .select('id,trip_id,user_id')
+    .select('*')
     .eq('id', req.params.id)
     .single();
 
@@ -146,10 +231,12 @@ export async function deleteResource(req, res) {
     return res.status(404).json({ error: 'Element introuvable.' });
   }
 
-  if (existing.trip_id) {
-    let access;
+  let access = null;
+  const existingTripId = String(existing?.trip_id || existing?.tripId || '').trim();
+
+  if (existingTripId) {
     try {
-      access = await getTripAccess(db, existing.trip_id, req.user.id);
+      access = await getTripAccess(db, existingTripId, req.user.id);
     } catch (error) {
       return res.status(400).json({ error: error.message || 'Verification des droits impossible.' });
     }
@@ -172,6 +259,23 @@ export async function deleteResource(req, res) {
 
   if (error) {
     return res.status(400).json({ error: error.message || 'Suppression impossible.' });
+  }
+
+  if (existingTripId) {
+    const resourceKind = resolveResourceKind(req.resourceTable);
+    await logTripChange(db, {
+      trip_id: existingTripId,
+      actor_user_id: req.user.id,
+      actor_email: normalizeEmail(req.user.email),
+      action: `${resourceKind}_deleted`,
+      target_type: resourceKind,
+      target_id: String(existing.id),
+      target_label: resolveResourceLabel(resourceKind, existing),
+      details: {
+        actor_label: resolveActorLabel(req.user),
+        edited_as: access?.isOwner ? 'owner' : 'shared_editor'
+      }
+    });
   }
 
   return res.json({ success: true });

@@ -14,6 +14,7 @@ import {
 	updateTrip,
 	deleteTrip,
 	shareTrip,
+	listTripHistory,
 	listTripShares,
 	updateTripShare,
 	deleteTripShare
@@ -25,6 +26,7 @@ router.use(requireAuth);
 router.get('/', listTrips);
 router.get('/:id', getTrip);
 router.post('/', createTrip);
+router.get('/:id/history', listTripHistory);
 router.get('/:id/share', listTripShares);
 router.post('/:id/share', shareTrip);
 router.patch('/:id/share/:sharedWithUserId', updateTripShare);

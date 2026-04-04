@@ -138,11 +138,29 @@
         </section>
     </div>
 
+    <div class="modal-backdrop" id="trip-history-modal-backdrop" hidden aria-hidden="true">
+        <section class="modal trip-history-modal" role="dialog" aria-modal="true" aria-labelledby="trip-history-heading">
+            <header class="modal-header">
+                <div>
+                    <h2 id="trip-history-heading">Historique des changements</h2>
+                    <p class="share-trip-subtitle">Voyage: <strong id="trip-history-title">-</strong></p>
+                </div>
+                <button type="button" class="modal-close" aria-label="Fermer" data-history-close>
+                    <i class='bx bx-x'></i>
+                </button>
+            </header>
+            <div class="modal-body">
+                <p id="trip-history-feedback" class="share-trip-feedback" hidden></p>
+                <div class="trip-history-list" id="trip-history-list"></div>
+            </div>
+        </section>
+    </div>
+
     <script type="module">
         import { requireAuth } from '../controllers/authGuardController.js';
         await requireAuth();
     </script>
-    <script type="module" src="../controllers/voyagesController.js?v=20260402d"></script>
+    <script type="module" src="../controllers/voyagesController.js?v=20260405a"></script>
 </body>
 </html>
 

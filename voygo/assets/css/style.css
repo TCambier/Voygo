@@ -2448,6 +2448,59 @@ body.dark-theme .hero-plane img {
     padding: 8px 12px;
 }
 
+.trip-history-modal {
+    width: min(640px, 100%);
+}
+
+.trip-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: min(60vh, 560px);
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.trip-history-loading,
+.trip-history-empty {
+    font-size: 13px;
+    color: var(--text-secondary);
+    border: 1px dashed color-mix(in srgb, var(--accent) 18%, var(--border-color));
+    border-radius: 12px;
+    padding: 12px;
+    background: color-mix(in srgb, var(--bg-secondary) 88%, var(--bg-tertiary));
+}
+
+.trip-history-item {
+    border: 1px solid color-mix(in srgb, var(--accent) 16%, var(--border-color));
+    border-radius: 12px;
+    padding: 12px;
+    background: color-mix(in srgb, var(--bg-secondary) 84%, var(--bg-tertiary));
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.trip-history-item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.trip-history-item-head strong {
+    font-size: 14px;
+}
+
+.trip-history-item-head span,
+.trip-history-actor,
+.trip-history-target,
+.trip-history-fields {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
 .settings-page {
     padding: 40px 50px 80px;
     display: flex;

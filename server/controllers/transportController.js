@@ -7,6 +7,7 @@
  */
 import { getSupabaseForUser } from '../services/supabase.js';
 import { getAccessDbClient, getTripAccess } from '../utils/tripAccess.js';
+import { logTripChange, normalizeEmail, resolveActorLabel, resolveChangedFields } from '../utils/tripHistory.js';
 
 // Normalise les donnees pour 'normalizeDate'.
 function normalizeDate(value) {
@@ -204,6 +205,20 @@ export async function createTransport(req, res) {
     return res.status(400).json({ error: error.message || 'Creation impossible.' });
   }
 
+  await logTripChange(db, {
+    trip_id: tripId,
+    actor_user_id: req.user.id,
+    actor_email: normalizeEmail(req.user.email),
+    action: 'transport_created',
+    target_type: 'transport',
+    target_id: String(data.id),
+    target_label: String(`${data.origin || '?'} -> ${data.destination || '?'}`).slice(0, 200),
+    details: {
+      actor_label: resolveActorLabel(req.user),
+      edited_as: access.isOwner ? 'owner' : 'shared_editor'
+    }
+  });
+
   return res.status(201).json({ data });
 }
 
@@ -216,7 +231,7 @@ export async function updateTransport(req, res) {
 
   const { data: currentTransport, error: currentError } = await db
     .from('transports')
-    .select('id,trip_id,origin,destination,travel_date,travel_time,mode,price,duration_minutes')
+    .select('*')
     .eq('id', id)
     .single();
 
@@ -238,6 +253,8 @@ export async function updateTransport(req, res) {
   if (!access.canEdit) {
     return res.status(403).json({ error: 'Ce voyage est en lecture seule.' });
   }
+
+  const changedFields = resolveChangedFields(currentTransport, payload);
 
   const nextTransport = { ...currentTransport, ...payload };
   nextTransport.travel_time = normalizeTransportTime(nextTransport.travel_time);
@@ -287,6 +304,21 @@ export async function updateTransport(req, res) {
     return res.status(400).json({ error: error.message || 'Mise a jour impossible.' });
   }
 
+  await logTripChange(db, {
+    trip_id: currentTransport.trip_id,
+    actor_user_id: req.user.id,
+    actor_email: normalizeEmail(req.user.email),
+    action: 'transport_updated',
+    target_type: 'transport',
+    target_id: String(data.id),
+    target_label: String(`${data.origin || '?'} -> ${data.destination || '?'}`).slice(0, 200),
+    details: {
+      actor_label: resolveActorLabel(req.user),
+      changed_fields: changedFields,
+      edited_as: access.isOwner ? 'owner' : 'shared_editor'
+    }
+  });
+
   return res.json({ data });
 }
 
@@ -329,6 +361,20 @@ export async function deleteTransport(req, res) {
   if (error) {
     return res.status(400).json({ error: error.message || 'Suppression impossible.' });
   }
+
+  await logTripChange(db, {
+    trip_id: existing.trip_id,
+    actor_user_id: req.user.id,
+    actor_email: normalizeEmail(req.user.email),
+    action: 'transport_deleted',
+    target_type: 'transport',
+    target_id: String(existing.id),
+    target_label: 'Transport',
+    details: {
+      actor_label: resolveActorLabel(req.user),
+      edited_as: access.isOwner ? 'owner' : 'shared_editor'
+    }
+  });
 
   return res.json({ success: true });
 }

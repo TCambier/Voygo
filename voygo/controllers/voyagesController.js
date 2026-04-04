@@ -31,6 +31,10 @@ const shareTripFeedback = document.getElementById('share-trip-feedback');
 const shareTripSubmitButton = document.getElementById('share-trip-submit');
 const shareTripExistingEmpty = document.getElementById('share-trip-existing-empty');
 const shareTripSharesList = document.getElementById('share-trip-shares-list');
+const historyModalBackdrop = document.getElementById('trip-history-modal-backdrop');
+const historyTripTitle = document.getElementById('trip-history-title');
+const historyFeedback = document.getElementById('trip-history-feedback');
+const historyList = document.getElementById('trip-history-list');
 const FAVORITES_STORAGE_KEY = 'voygo.favoriteTrips';
 const TRIP_NOTES_STORAGE_PREFIX = 'voygo_trip_notes:';
 
@@ -41,6 +45,8 @@ let allAccommodationRows = [];
 let allActivityRows = [];
 let selectedTripToShare = null;
 let currentTripShares = [];
+let selectedTripToHistory = null;
+let currentTripHistory = [];
 let activeQuickTag = quickFilterTags.find((tag) => tag.classList.contains('active'))?.textContent?.trim() || '';
 const localFavoriteTripIds = new Set(loadLocalFavoriteTripIds());
 
@@ -305,6 +311,56 @@ function formatCurrency(value) {
         currency: 'EUR',
         maximumFractionDigits: 0
     }).format(num);
+}
+
+function formatDateTime(dateValue) {
+    if (!dateValue) return 'Date inconnue';
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) return 'Date inconnue';
+    return date.toLocaleString('fr-FR', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function resolveHistoryActionLabel(action) {
+    const labels = {
+        trip_created: 'Voyage créé',
+        trip_updated: 'Voyage modifié',
+        trip_deleted: 'Voyage supprimé',
+        share_access_granted: 'Partage ajouté',
+        share_permission_updated: 'Permission modifiée',
+        share_revoked: 'Partage retiré',
+        activity_created: 'Activité ajoutée',
+        activity_updated: 'Activité modifiée',
+        activity_deleted: 'Activité supprimée',
+        transport_created: 'Transport ajouté',
+        transport_updated: 'Transport modifié',
+        transport_deleted: 'Transport supprimé',
+        accommodation_created: 'Logement ajouté',
+        accommodation_updated: 'Logement modifié',
+        accommodation_deleted: 'Logement supprimé',
+        budget_created: 'Budget ajouté',
+        budget_updated: 'Budget modifié',
+        budget_deleted: 'Budget supprimé',
+        note_created: 'Note ajoutée',
+        note_updated: 'Note modifiée',
+        note_deleted: 'Note supprimée'
+    };
+
+    return labels[action] || 'Changement enregistré';
+}
+
+function escapeHtml(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 // Resout les informations calculees par 'resolveTravelers'.
@@ -698,6 +754,7 @@ function buildTripCard(trip, index) {
 
     const canDelete = Boolean(trip.id) && isOwner;
     const canShare = Boolean(trip.id) && isOwner;
+    const canViewHistory = Boolean(trip.id);
 
     card.innerHTML = `
         <div class="voyage-card-header">
@@ -735,6 +792,7 @@ function buildTripCard(trip, index) {
         <div class="voyage-actions">
             <button class="btn-secondary" data-open="${query.toString()}">Ouvrir</button>
             <button class="btn-ghost" data-share="${trip.id || ''}" ${canShare ? '' : 'disabled'}>Partager</button>
+            <button class="btn-ghost" data-history="${trip.id || ''}" ${canViewHistory ? '' : 'disabled'}>Historique</button>
             <button class="btn-danger" data-delete="${trip.id || ''}" ${canDelete ? '' : 'disabled'}>Supprimer</button>
         </div>
     `;
@@ -916,6 +974,13 @@ function setShareFeedback(message, type = 'info') {
     shareTripFeedback.hidden = !message;
 }
 
+function setHistoryFeedback(message, type = 'info') {
+    if (!historyFeedback) return;
+    historyFeedback.textContent = message || '';
+    historyFeedback.dataset.type = type;
+    historyFeedback.hidden = !message;
+}
+
 // Construit le rendu pour 'renderTripShares'.
 function renderTripShares() {
     if (!shareTripExistingEmpty || !shareTripSharesList) return;
@@ -972,6 +1037,103 @@ async function updateSharePermission(sharedWithUserId, permission) {
 async function revokeShare(sharedWithUserId) {
     if (!selectedTripToShare?.id || !sharedWithUserId) return;
     await api.delete(`/api/trips/${encodeURIComponent(selectedTripToShare.id)}/share/${encodeURIComponent(sharedWithUserId)}`);
+}
+
+// Charge les donnees necessaires pour 'loadTripHistory'.
+async function loadTripHistory() {
+    if (!selectedTripToHistory?.id) return;
+
+    if (historyList) {
+        historyList.innerHTML = '<p class="trip-history-loading">Chargement de l\'historique...</p>';
+    }
+    setHistoryFeedback('', 'info');
+
+    try {
+        const result = await api.get(`/api/trips/${encodeURIComponent(selectedTripToHistory.id)}/history`);
+        currentTripHistory = Array.isArray(result?.data) ? result.data : [];
+
+        if (result?.unavailable) {
+            setHistoryFeedback(result?.message || 'Historique indisponible pour le moment.', 'error');
+        } else if (result?.warning) {
+            const details = result?.loggingError?.message || '';
+            const composed = details
+                ? `${result.warning} Détail: ${details}`
+                : result.warning;
+            setHistoryFeedback(composed, 'error');
+        }
+    } catch (error) {
+        currentTripHistory = [];
+        setHistoryFeedback(error?.message || 'Impossible de charger l\'historique.', 'error');
+    }
+
+    renderTripHistory();
+}
+
+// Construit le rendu pour 'renderTripHistory'.
+function renderTripHistory() {
+    if (!historyList) return;
+
+    if (!currentTripHistory.length) {
+        historyList.innerHTML = '<p class="trip-history-empty">Aucun changement enregistré pour ce voyage.</p>';
+        return;
+    }
+
+    historyList.innerHTML = currentTripHistory.map((entry) => {
+        const details = entry?.details || {};
+        const actorLabel = details?.actor_label || entry?.actor_email || 'Utilisateur inconnu';
+        const changedFields = Array.isArray(details?.changed_fields) ? details.changed_fields : [];
+        const fieldText = changedFields.length
+            ? `<p class="trip-history-fields">Champs: ${escapeHtml(changedFields.join(', '))}</p>`
+            : '';
+        const permissionText = details?.permission
+            ? `<p class="trip-history-fields">Permission: ${escapeHtml(details.permission)}</p>`
+            : '';
+        const editedAsText = details?.edited_as === 'shared_editor'
+            ? '<p class="trip-history-fields">Action faite en tant que collaborateur</p>'
+            : (details?.edited_as === 'owner' ? '<p class="trip-history-fields">Action faite en tant que propriétaire</p>' : '');
+
+        return `
+            <article class="trip-history-item">
+                <div class="trip-history-item-head">
+                    <strong>${escapeHtml(resolveHistoryActionLabel(entry?.action))}</strong>
+                    <span>${escapeHtml(formatDateTime(entry?.created_at))}</span>
+                </div>
+                <p class="trip-history-actor">Par ${escapeHtml(actorLabel)}</p>
+                ${entry?.target_label ? `<p class="trip-history-target">Cible: ${escapeHtml(entry.target_label)}</p>` : ''}
+                ${fieldText}
+                ${permissionText}
+                ${editedAsText}
+            </article>
+        `;
+    }).join('');
+}
+
+// Gere la logique principale de 'openHistoryModal'.
+function openHistoryModal(trip) {
+    if (!historyModalBackdrop || !trip) return;
+
+    selectedTripToHistory = trip;
+    currentTripHistory = [];
+    if (historyTripTitle) {
+        historyTripTitle.textContent = resolveTitle(trip);
+    }
+
+    historyModalBackdrop.hidden = false;
+    historyModalBackdrop.setAttribute('aria-hidden', 'false');
+    loadTripHistory();
+}
+
+// Gere la logique principale de 'closeHistoryModal'.
+function closeHistoryModal() {
+    if (!historyModalBackdrop) return;
+    historyModalBackdrop.hidden = true;
+    historyModalBackdrop.setAttribute('aria-hidden', 'true');
+    selectedTripToHistory = null;
+    currentTripHistory = [];
+    if (historyList) {
+        historyList.innerHTML = '';
+    }
+    setHistoryFeedback('', 'info');
 }
 
 // Gere la logique principale de 'openShareModal'.
@@ -1170,8 +1332,23 @@ document.addEventListener('click', async (event) => {
         return;
     }
 
+    const historyButton = target.closest('button[data-history]');
+    if (historyButton) {
+        const tripId = historyButton.getAttribute('data-history');
+        if (!tripId) return;
+
+        const trip = allTrips.find((item) => String(item.id) === String(tripId));
+        if (!trip) return;
+        openHistoryModal(trip);
+        return;
+    }
+
     if (target.closest('[data-share-close]')) {
         closeShareModal();
+    }
+
+    if (target.closest('[data-history-close]')) {
+        closeHistoryModal();
     }
 
     const removeShareButton = target.closest('button[data-share-remove-user]');
@@ -1221,9 +1398,19 @@ shareModalBackdrop?.addEventListener('click', (event) => {
     }
 });
 
+historyModalBackdrop?.addEventListener('click', (event) => {
+    if (event.target === historyModalBackdrop) {
+        closeHistoryModal();
+    }
+});
+
 document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && !shareModalBackdrop?.hidden) {
         closeShareModal();
+    }
+
+    if (event.key === 'Escape' && !historyModalBackdrop?.hidden) {
+        closeHistoryModal();
     }
 });
 
