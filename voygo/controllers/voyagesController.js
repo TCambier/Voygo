@@ -708,9 +708,9 @@ function computeStatus(trip) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    if (start && start > today) return { label: 'À venir', className: 'upcoming' };
-    if (end && end < today) return { label: 'Terminé', className: 'done' };
-    return { label: 'En cours', className: 'in-progress' };
+    if (start && start > today) return { label: 'À venir', className: 'upcoming', key: 'upcoming' };
+    if (end && end < today) return { label: 'Terminé', className: 'done', key: 'done' };
+    return { label: 'En cours', className: 'in-progress', key: 'in-progress' };
 }
 
 // Gere la logique principale de 'buildTripCard'.
@@ -853,7 +853,7 @@ function updateStats(trips) {
 
     statTotal.textContent = String(trips.length);
 
-    const upcomingTrips = trips.filter((trip) => computeStatus(trip).label === 'À venir');
+    const upcomingTrips = trips.filter((trip) => computeStatus(trip).key === 'upcoming');
     statUpcoming.textContent = String(upcomingTrips.length);
     const upcomingNames = upcomingTrips.slice(0, 2).map(resolveTitle);
     statUpcomingNotes.textContent = upcomingNames.length ? upcomingNames.join(' et ') : '-';
@@ -898,9 +898,9 @@ function applyFilters() {
         });
     }
 
-    const statusValue = statusFilter?.value || 'Tous';
-    if (statusValue !== 'Tous') {
-        filtered = filtered.filter((trip) => computeStatus(trip).label === statusValue);
+    const statusValue = statusFilter?.value || 'all';
+    if (statusValue !== 'all') {
+        filtered = filtered.filter((trip) => computeStatus(trip).key === statusValue);
     }
 
     if (activeQuickTag) {
@@ -926,7 +926,7 @@ function resetFilters() {
     }
 
     if (statusFilter) {
-        statusFilter.value = 'Tous';
+        statusFilter.value = 'all';
     }
 
     if (sortFilter) {
