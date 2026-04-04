@@ -717,6 +717,7 @@ function computeStatus(trip) {
 function buildTripCard(trip, index) {
     const card = document.createElement('article');
     card.className = `voyage-card${index === 0 ? ' featured' : ''}`;
+    card.style.setProperty('--stagger-index', String(index));
 
     const status = computeStatus(trip);
     const travelers = resolveTravelers(trip);
@@ -800,6 +801,29 @@ function buildTripCard(trip, index) {
     return card;
 }
 
+function renderLoadingSkeletons(count = 4) {
+    if (!grid || !emptyState) return;
+    emptyState.hidden = true;
+
+    const items = Array.from({ length: count }, (_, index) => `
+        <article class="voyage-card voyage-card-skeleton" aria-hidden="true" style="--stagger-index: ${index};">
+            <div class="skeleton-row skeleton-title"></div>
+            <div class="skeleton-row skeleton-subtitle"></div>
+            <div class="skeleton-row skeleton-paragraph"></div>
+            <div class="skeleton-row skeleton-paragraph short"></div>
+            <div class="skeleton-row skeleton-meta"></div>
+            <div class="skeleton-row skeleton-progress"></div>
+            <div class="skeleton-actions">
+                <span class="skeleton-btn"></span>
+                <span class="skeleton-btn"></span>
+                <span class="skeleton-btn"></span>
+            </div>
+        </article>
+    `).join('');
+
+    grid.innerHTML = items;
+}
+
 // Construit le rendu pour 'renderTrips'.
 function renderTrips(trips) {
     if (!grid || !emptyState) return;
@@ -813,7 +837,11 @@ function renderTrips(trips) {
     emptyState.hidden = true;
     if (!trips.length) return;
     trips.forEach((trip, index) => {
-        grid.appendChild(buildTripCard(trip, index));
+        const card = buildTripCard(trip, index);
+        grid.appendChild(card);
+        requestAnimationFrame(() => {
+            card.classList.add('is-visible');
+        });
     });
 }
 
@@ -1233,7 +1261,7 @@ async function submitTripShare(event) {
 // Initialise le bloc fonctionnel 'initVoyagesPage'.
 async function initVoyagesPage() {
     if (!grid || !emptyState) return;
-    grid.innerHTML = '<div class="voyages-loading">Chargement des voyages...</div>';
+    renderLoadingSkeletons(4);
     try {
         const me = await api.get('/api/auth/me');
         const userId = me?.user?.id;

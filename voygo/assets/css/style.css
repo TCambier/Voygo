@@ -2891,6 +2891,21 @@ body.dark-theme .hero-plane img {
     gap: 16px;
     border: 1px solid color-mix(in srgb, var(--accent) 10%, transparent);
     box-shadow: 0 14px 28px rgba(0, 0, 0, 0.08);
+    opacity: 0;
+    transform: translateY(12px) scale(0.99);
+    transition: transform 0.32s ease, box-shadow 0.28s ease, border-color 0.24s ease, opacity 0.32s ease;
+}
+
+.voyage-card.is-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    transition-delay: calc(var(--stagger-index, 0) * 40ms);
+}
+
+.voyage-card:hover {
+    transform: translateY(-5px);
+    border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+    box-shadow: 0 24px 38px rgba(0, 0, 0, 0.13);
 }
 
 .voyage-card.featured {
@@ -3040,11 +3055,13 @@ body.dark-theme .favorite-trip-btn {
 .progress-segment-pre {
     left: 0;
     background: #d1d5db;
+    transition: width 0.4s ease;
 }
 
 .progress-segment-during {
     left: 0;
     background: #22c55e;
+    transition: width 0.55s ease;
 }
 
 .progress-bar.is-during-trip .progress-segment-during {
@@ -3074,11 +3091,13 @@ body.dark-theme .favorite-trip-btn {
     border-radius: 10px;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: background 0.2s ease, transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 .btn-secondary:hover {
     background: color-mix(in srgb, var(--accent) 14%, var(--bg-secondary));
+    transform: translateY(-1px);
+    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.11);
 }
 
 .btn-ghost {
@@ -3088,6 +3107,105 @@ body.dark-theme .favorite-trip-btn {
     border-radius: 10px;
     font-weight: 600;
     cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.18s ease;
+}
+
+.btn-ghost:hover {
+    background: color-mix(in srgb, var(--accent) 9%, var(--bg-secondary));
+    border-color: color-mix(in srgb, var(--accent) 34%, var(--border-color));
+    transform: translateY(-1px);
+}
+
+.btn-danger {
+    transition: background 0.2s ease, transform 0.18s ease, box-shadow 0.2s ease;
+}
+
+.btn-danger:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 18px rgba(220, 38, 38, 0.24);
+}
+
+.voyage-card-skeleton {
+    pointer-events: none;
+    opacity: 1;
+    transform: none;
+    animation: skeletonFadeIn 0.35s ease both;
+    animation-delay: calc(var(--stagger-index, 0) * 60ms);
+}
+
+.skeleton-row,
+.skeleton-btn {
+    position: relative;
+    overflow: hidden;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--bg-tertiary) 85%, #e2e8f0);
+}
+
+.skeleton-row::after,
+.skeleton-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.58) 45%, transparent 100%);
+    animation: skeletonShimmer 1.35s infinite;
+}
+
+.skeleton-title {
+    height: 22px;
+    width: 62%;
+}
+
+.skeleton-subtitle {
+    height: 14px;
+    width: 42%;
+}
+
+.skeleton-paragraph {
+    height: 13px;
+    width: 100%;
+}
+
+.skeleton-paragraph.short {
+    width: 74%;
+}
+
+.skeleton-meta {
+    height: 14px;
+    width: 90%;
+}
+
+.skeleton-progress {
+    height: 8px;
+    width: 100%;
+    border-radius: 999px;
+}
+
+.skeleton-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.skeleton-btn {
+    height: 36px;
+    flex: 1;
+}
+
+@keyframes skeletonShimmer {
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+@keyframes skeletonFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .voyages-callout {
@@ -3658,4 +3776,164 @@ body.dark-theme .favorite-trip-btn {
     padding: 8px 14px;
     font-size: 13px;
   }
+}
+
+/* Global micro-interactions (all pages using style.css) */
+:root {
+    --ui-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.panel,
+.card,
+.settings-card,
+.stat-card,
+.feature-card,
+.tech-card,
+.team-card,
+.right-card,
+.origin-card,
+.hero-why-card,
+.contact-card,
+.modal {
+    transition: transform 240ms var(--ui-ease), box-shadow 240ms var(--ui-ease), border-color 220ms var(--ui-ease), background-color 220ms var(--ui-ease);
+}
+
+.panel:hover,
+.card:hover,
+.settings-card:hover,
+.stat-card:hover,
+.feature-card:hover,
+.tech-card:hover,
+.team-card:hover,
+.right-card:hover,
+.origin-card:hover,
+.hero-why-card:hover,
+.contact-card:hover {
+    transform: translateY(-3px);
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-ghost,
+.btn-danger,
+.btn-connexion,
+.btn-creer,
+.btn-icon,
+.modal-close {
+    transition: transform 180ms var(--ui-ease), box-shadow 180ms var(--ui-ease), border-color 180ms var(--ui-ease), background-color 180ms var(--ui-ease), color 180ms var(--ui-ease);
+}
+
+.btn-primary:hover,
+.btn-secondary:hover,
+.btn-ghost:hover,
+.btn-danger:hover,
+.btn-connexion:hover,
+.btn-creer:hover,
+.btn-icon:hover,
+.modal-close:hover {
+    transform: translateY(-1px);
+}
+
+.panel,
+.card,
+.settings-card,
+.stat-card,
+.feature-card,
+.tech-card,
+.team-card,
+.right-card,
+.origin-card,
+.hero-why-card,
+.contact-card {
+    animation: pageCardIn 360ms var(--ui-ease) both;
+}
+
+.panel:nth-of-type(2),
+.card:nth-of-type(2),
+.settings-card:nth-of-type(2),
+.stat-card:nth-of-type(2),
+.feature-card:nth-of-type(2),
+.tech-card:nth-of-type(2),
+.team-card:nth-of-type(2),
+.right-card:nth-of-type(2),
+.origin-card:nth-of-type(2),
+.hero-why-card:nth-of-type(2),
+.contact-card:nth-of-type(2) {
+    animation-delay: 35ms;
+}
+
+.panel:nth-of-type(3),
+.card:nth-of-type(3),
+.settings-card:nth-of-type(3),
+.stat-card:nth-of-type(3),
+.feature-card:nth-of-type(3),
+.tech-card:nth-of-type(3),
+.team-card:nth-of-type(3),
+.right-card:nth-of-type(3),
+.origin-card:nth-of-type(3),
+.hero-why-card:nth-of-type(3),
+.contact-card:nth-of-type(3) {
+    animation-delay: 70ms;
+}
+
+/* Reusable skeleton/loader blocks */
+.voyages-loading,
+.trip-history-loading,
+.ui-loading-block {
+    position: relative;
+    overflow: hidden;
+}
+
+.voyages-loading::after,
+.trip-history-loading::after,
+.ui-loading-block::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.55) 45%, transparent 100%);
+    animation: skeletonShimmer 1.35s infinite;
+}
+
+@keyframes pageCardIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .panel,
+    .card,
+    .settings-card,
+    .stat-card,
+    .feature-card,
+    .tech-card,
+    .team-card,
+    .right-card,
+    .origin-card,
+    .hero-why-card,
+    .contact-card,
+    .btn-primary,
+    .btn-secondary,
+    .btn-ghost,
+    .btn-danger,
+    .btn-connexion,
+    .btn-creer,
+    .btn-icon,
+    .modal-close,
+    .modal {
+        transition: none !important;
+        animation: none !important;
+    }
+
+    .voyages-loading::after,
+    .trip-history-loading::after,
+    .ui-loading-block::after {
+        animation: none !important;
+    }
 }
