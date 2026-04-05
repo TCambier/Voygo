@@ -135,7 +135,9 @@ body.is-read-only-trip .budget-page .budget-table td:last-child {
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    padding: 15px 50px 15px 20px;
+    gap: 18px;
+    padding: 14px 28px 14px 20px;
+    min-height: 86px;
     background: var(--header-bg);
     width: 100%;
     border-bottom: 1px solid var(--header-border);
@@ -147,25 +149,32 @@ body.is-read-only-trip .budget-page .budget-table td:last-child {
     flex: 0 0 auto;
     display: flex;
     align-items: center;
-    margin-right: 20px;
 }
 
 .navbar-left .logo {
-    height: 40px;
+    height: 58px;
     object-fit: contain;
 }
 
 .navbar-menu {
+    flex: 0 1 auto;
     display: flex;
     align-items: center;
     gap: 24px;
+    justify-content: flex-start;
+    min-width: 0;
+    height: 100%;
 }
 
 .navbar-menu a {
+    display: flex;
+    align-items: center;
     color: var(--text-primary);
     text-decoration: none;
     font-weight: 600;
     font-size: 15px;
+    line-height: 1;
+    height: 100%;
     transition: color 0.3s ease;
 }
 
