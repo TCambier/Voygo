@@ -50,12 +50,21 @@
             <div class="panel-title-row carte-toolbar">
                 <div>
                     <h2>Trace des activites</h2>
-                    <p class="muted">Choisissez un jour pour afficher uniquement son trace, ou tous les jours.</p>
+                    <p class="muted">Filtrez les lieux, regroupez les points proches et suivez l'itineraire estime entre les etapes.</p>
                 </div>
+            </div>
+
+            <div class="carte-filters-grid" aria-label="Filtres de carte">
                 <div class="carte-filter-wrap">
                     <label for="carte-day-filter">Jour</label>
                     <select id="carte-day-filter" class="form-input">
                         <option value="all">Tous les jours</option>
+                    </select>
+                </div>
+                <div class="carte-filter-wrap">
+                    <label for="carte-type-filter">Type de lieu</label>
+                    <select id="carte-type-filter" class="form-input">
+                        <option value="all">Tous les types</option>
                     </select>
                 </div>
             </div>

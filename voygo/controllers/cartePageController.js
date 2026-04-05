@@ -14,14 +14,32 @@ const tripState = {
   startDate: '',
   endDate: '',
   activities: [],
-  localizedActivities: []
+  localizedActivities: [],
+  filters: {
+    day: 'all',
+    type: 'all'
+  }
 };
 
 const DAY_COLORS = ['#ff6b6b', '#ff3d71', '#2ec4b6', '#ffd166', '#6c63ff', '#ff8fab'];
 
+const PLACE_CATEGORY_DEFINITIONS = [
+  { key: 'culture', label: 'Culture', keywords: /(museum|musee|gallery|art|theatre|theater|monument|historic|heritage|castle|palace|church|cathedral|temple|mosque|synagogue|memorial|archaeolog|cultural)/i },
+  { key: 'nature', label: 'Nature', keywords: /(park|garden|forest|beach|waterfall|trail|viewpoint|view point|lookout|scenic|nature|hill|peak|mountain)/i },
+  { key: 'food', label: 'Restauration', keywords: /(restaurant|cafe|coffee|bar|pub|bakery|bistro|brasserie|fast food|food court|ice cream|pizzeria|trattoria)/i },
+  { key: 'lodging', label: 'Logement', keywords: /(hotel|hostel|guest house|guesthouse|motel|accommodation|lodging|airbnb|apartment)/i },
+  { key: 'transport', label: 'Transport', keywords: /(station|airport|bus station|bus stop|tram|metro|subway|train|ferry|parking|transport)/i },
+  { key: 'shopping', label: 'Shopping', keywords: /(shop|market|mall|supermarket|retail|boutique|store)/i },
+  { key: 'viewpoint', label: 'Point de vue', keywords: /(viewpoint|view point|panorama|lookout|scenic|observatory)/i }
+];
+
+const PROXIMITY_CLUSTER_KM = 0.35;
+const WALKING_SPEED_KMH = 4.5;
+
 let map = null;
 let markerLayer = null;
 let traceLayer = null;
+let renderSequence = 0;
 
 // Gere la logique principale de 'escapeHtml'.
 function escapeHtml(value) {
@@ -49,6 +67,17 @@ function formatDate(dateValue) {
   const date = new Date(`${dateValue}T00:00:00`);
   if (Number.isNaN(date.getTime())) return dateValue;
   return date.toLocaleDateString('fr-FR');
+}
+
+// Formate une duree en minutes pour l'affichage.
+function formatDuration(value) {
+  const minutes = Number(value);
+  if (!Number.isFinite(minutes) || minutes <= 0) return '0 min';
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  if (hours && remainingMinutes) return `${hours}h ${remainingMinutes}min`;
+  if (hours) return `${hours}h`;
+  return `${remainingMinutes}min`;
 }
 
 // Gere la logique principale de 'toDateInputValue'.
@@ -150,6 +179,202 @@ function toMinuteOfDay(timeValue) {
   return (hours * 60) + minutes;
 }
 
+// Normalise un texte pour la recherche de mots-clés.
+function normalizeForMatch(value) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Retourne la categorie de lieu la plus probable.
+function inferPlaceCategory(activity, geocodeData) {
+  const text = normalizeForMatch([
+    activity?.name,
+    activity?.address,
+    activity?.description,
+    geocodeData?.className,
+    geocodeData?.typeName,
+    geocodeData?.displayName
+  ].filter(Boolean).join(' '));
+
+  const match = PLACE_CATEGORY_DEFINITIONS.find((definition) => definition.keywords.test(text));
+  return match?.key || 'other';
+}
+
+// Retourne l'etiquette conviviale d'une categorie de lieu.
+function getPlaceCategoryLabel(key) {
+  return PLACE_CATEGORY_DEFINITIONS.find((definition) => definition.key === key)?.label || 'Autre';
+}
+
+// Calcule la distance entre deux points geographiques.
+function haversineKm(left, right) {
+  if (!left || !right) return 0;
+  const lat1 = Number(left.lat);
+  const lon1 = Number(left.lon);
+  const lat2 = Number(right.lat);
+  const lon2 = Number(right.lon);
+  if (![lat1, lon1, lat2, lon2].every(Number.isFinite)) return 0;
+
+  const earthRadiusKm = 6371;
+  const toRadians = (value) => (value * Math.PI) / 180;
+  const deltaLat = toRadians(lat2 - lat1);
+  const deltaLon = toRadians(lon2 - lon1);
+  const sinLat = Math.sin(deltaLat / 2);
+  const sinLon = Math.sin(deltaLon / 2);
+  const a = (sinLat * sinLat) + Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * (sinLon * sinLon);
+  return 2 * earthRadiusKm * Math.asin(Math.min(1, Math.sqrt(a)));
+}
+
+// Estime un temps de trajet en minutes a partir de la distance.
+function estimateTravelMinutes(distanceKm) {
+  const distance = Number(distanceKm);
+  if (!Number.isFinite(distance) || distance <= 0) return 0;
+  return Math.max(1, Math.round((distance / WALKING_SPEED_KMH) * 60));
+}
+
+// Formate une distance pour l'affichage.
+function formatDistanceKm(distanceKm) {
+  const distance = Number(distanceKm);
+  if (!Number.isFinite(distance) || distance <= 0) return '0 km';
+  if (distance < 1) {
+    return `${Math.round(distance * 1000)} m`;
+  }
+  return `${distance.toFixed(1).replace('.', ',')} km`;
+}
+
+// Cree un segment estime en ligne droite si le calcul d'itineraire echoue.
+function buildEstimatedRouteLeg(fromCoords, toCoords) {
+  const distanceKm = haversineKm(fromCoords, toCoords);
+  const minutes = estimateTravelMinutes(distanceKm);
+  const path = [
+    [Number(fromCoords?.lat), Number(fromCoords?.lon)],
+    [Number(toCoords?.lat), Number(toCoords?.lon)]
+  ];
+
+  return {
+    distanceKm,
+    minutes,
+    path,
+    source: 'estimate'
+  };
+}
+
+// Calcule un segment simple A -> B sans suivi de route externe.
+async function fetchRouteLeg(fromCoords, toCoords) {
+  return buildEstimatedRouteLeg(fromCoords, toCoords);
+}
+
+// Retourne une valeur de filtre normalisee.
+function getSelectValue(node, fallback = 'all') {
+  if (!(node instanceof HTMLSelectElement)) return fallback;
+  return node.value || fallback;
+}
+
+// Filtre les activites selon le jour, le type et le temps de trajet.
+async function applySelectedFilters(items) {
+  const dayFilter = tripState.filters.day || 'all';
+  const typeFilter = tripState.filters.type || 'all';
+
+  const grouped = groupActivitiesByDay(items);
+  const filtered = [];
+
+  const dayEntries = Array.from(grouped.entries());
+  for (const [dayKey, dayItems] of dayEntries) {
+    if (dayFilter !== 'all' && dayKey !== dayFilter) continue;
+
+    let previousKeptItem = null;
+    for (const item of dayItems) {
+      if (typeFilter !== 'all' && item.placeCategory !== typeFilter) {
+        continue;
+      }
+
+      const routeLeg = previousKeptItem
+        ? await fetchRouteLeg(previousKeptItem.coords, item.coords)
+        : null;
+
+      filtered.push({
+        ...item,
+        routeLeg
+      });
+      previousKeptItem = item;
+    }
+  }
+
+  return filtered;
+}
+
+// Regroupe les activites proches les unes des autres.
+function clusterNearbyActivities(items) {
+  const grouped = groupActivitiesByDay(items);
+  const clusters = [];
+
+  grouped.forEach((dayItems, dayKey) => {
+    let previousCluster = null;
+
+    dayItems.forEach((item) => {
+      const current = {
+        dayKey,
+        items: [item],
+        coords: { lat: item.coords.lat, lon: item.coords.lon },
+        schedule: { ...item.schedule },
+        routeLeg: item.routeLeg || null
+      };
+
+      if (
+        previousCluster &&
+        haversineKm(previousCluster.coords, current.coords) <= PROXIMITY_CLUSTER_KM
+      ) {
+        previousCluster.items.push(item);
+        const count = previousCluster.items.length;
+        previousCluster.coords = {
+          lat: ((previousCluster.coords.lat * (count - 1)) + item.coords.lat) / count,
+          lon: ((previousCluster.coords.lon * (count - 1)) + item.coords.lon) / count
+        };
+        previousCluster.routeLeg = previousCluster.routeLeg || current.routeLeg;
+        previousCluster.items.sort((left, right) => {
+          const leftTime = toMinuteOfDay(left.schedule.startTime);
+          const rightTime = toMinuteOfDay(right.schedule.startTime);
+          if (leftTime === null && rightTime === null) return 0;
+          if (leftTime === null) return 1;
+          if (rightTime === null) return -1;
+          return leftTime - rightTime;
+        });
+        return;
+      }
+
+      clusters.push(current);
+      previousCluster = current;
+    });
+  });
+
+  const groupedClusters = new Map();
+  clusters.forEach((cluster) => {
+    const bucket = groupedClusters.get(cluster.dayKey) || [];
+    bucket.push(cluster);
+    groupedClusters.set(cluster.dayKey, bucket);
+  });
+
+  groupedClusters.forEach((dayClusters) => {
+    dayClusters.forEach((cluster, index) => {
+      if (index === 0) {
+        cluster.routeLeg = null;
+        return;
+      }
+
+      if (!cluster.routeLeg) {
+        const previous = dayClusters[index - 1];
+        cluster.routeLeg = buildEstimatedRouteLeg(previous.coords, cluster.coords);
+      }
+    });
+  });
+
+  return Array.from(groupedClusters.values()).flat();
+}
+
 // Retourne l'information calculee par 'getActivitySchedule'.
 function getActivitySchedule(item) {
   const metadata = readScheduleMetadata(item?.description);
@@ -214,7 +439,7 @@ async function geocodeAddress(address, destination, cache) {
 
   const cached = cache[key];
   if (cached && Number.isFinite(Number(cached.lat)) && Number.isFinite(Number(cached.lon))) {
-    return { lat: Number(cached.lat), lon: Number(cached.lon) };
+    return { lat: Number(cached.lat), lon: Number(cached.lon), className: cached.className || '', typeName: cached.typeName || '', displayName: cached.displayName || '' };
   }
 
   const queryParts = [String(address || '').trim(), String(destination || '').trim()].filter(Boolean);
@@ -223,7 +448,7 @@ async function geocodeAddress(address, destination, cache) {
   const url =
     'https://nominatim.openstreetmap.org/search?' +
     `q=${encodeURIComponent(queryParts.join(', '))}` +
-    '&format=jsonv2&limit=1';
+    '&format=jsonv2&addressdetails=1&namedetails=1&extratags=1&limit=1';
 
   try {
     const response = await fetch(url, {
@@ -241,8 +466,16 @@ async function geocodeAddress(address, destination, cache) {
     const lon = Number(top?.lon);
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
 
-    cache[key] = { lat, lon };
-    return { lat, lon };
+    const result = {
+      lat,
+      lon,
+      className: String(top?.class || '').trim(),
+      typeName: String(top?.type || '').trim(),
+      displayName: String(top?.display_name || '').trim()
+    };
+
+    cache[key] = result;
+    return result;
   } catch {
     return null;
   }
@@ -315,6 +548,34 @@ function populateDayFilter() {
   });
 }
 
+// Gere la logique principale de 'populateTypeFilter'.
+function populateTypeFilter() {
+  const filter = document.getElementById('carte-type-filter');
+  if (!(filter instanceof HTMLSelectElement)) return;
+
+  const availableTypes = new Set(
+    (tripState.localizedActivities || [])
+      .map((item) => item.placeCategory)
+      .filter(Boolean)
+  );
+
+  filter.innerHTML = '<option value="all">Tous les types</option>';
+  PLACE_CATEGORY_DEFINITIONS.forEach((definition) => {
+    if (!availableTypes.has(definition.key)) return;
+    const option = document.createElement('option');
+    option.value = definition.key;
+    option.textContent = definition.label;
+    filter.appendChild(option);
+  });
+
+  if (availableTypes.has('other')) {
+    const option = document.createElement('option');
+    option.value = 'other';
+    option.textContent = getPlaceCategoryLabel('other');
+    filter.appendChild(option);
+  }
+}
+
 // Gere la logique principale de 'ensureMap'.
 function ensureMap() {
   if (map) return;
@@ -357,6 +618,62 @@ function groupActivitiesByDay(list) {
   return grouped;
 }
 
+// Construit les informations textuelles d'un cluster.
+function buildClusterPopup(cluster, dayKey, color, index) {
+  const items = cluster.items || [];
+  const title = items.length > 1
+    ? `${items.length} lieux regroupes`
+    : (items[0]?.name || 'Activite');
+  const routeLabel = cluster.routeLeg
+    ? `Trajet estime: ${formatDuration(cluster.routeLeg.minutes)} (${formatDistanceKm(cluster.routeLeg.distanceKm)})`
+    : 'Premier point de la journee';
+
+  const listHtml = items.map((item) => {
+    const scheduleLabel = item.schedule.startTime ? item.schedule.startTime : 'Heure non precisee';
+    const typeLabel = getPlaceCategoryLabel(item.placeCategory);
+    return `
+      <li>
+        <strong>${escapeHtml(item.name || 'Activite')}</strong><br>
+        ${escapeHtml(item.address || 'Adresse non renseignee')}<br>
+        ${escapeHtml(typeLabel)} · ${escapeHtml(scheduleLabel)}
+      </li>
+    `;
+  }).join('');
+
+  return `
+    <strong>${escapeHtml(title)}</strong><br>
+    ${escapeHtml(dayKey === 'no-date' ? 'Date non renseignee' : formatDate(dayKey))}<br>
+    ${items.length > 1 ? `<span class="carte-cluster-count">${items.length} points regroupes</span>` : ''}
+    <ol class="carte-cluster-list">${listHtml}</ol>
+    <div class="carte-route-summary"><strong>Etape ${index + 1}</strong><br>${escapeHtml(routeLabel)}</div>
+  `;
+}
+
+// Construit un marqueur adapte selon le nombre d'activites regroupees.
+function createClusterMarker(cluster, color, dayKey, index) {
+  if (cluster.items.length > 1) {
+    return window.L.marker([cluster.coords.lat, cluster.coords.lon], {
+      icon: window.L.divIcon({
+        className: 'carte-cluster-wrapper',
+        html: `<span class="carte-cluster-icon carte-cluster-icon--wide">${cluster.items.length}</span>`,
+        iconSize: [42, 42],
+        iconAnchor: [21, 21]
+      })
+    }).bindPopup(buildClusterPopup(cluster, dayKey, color, index));
+  }
+
+  const marker = window.L.circleMarker([cluster.coords.lat, cluster.coords.lon], {
+    radius: 7,
+    color,
+    weight: 2,
+    fillColor: color,
+    fillOpacity: 0.85
+  });
+
+  marker.bindPopup(buildClusterPopup(cluster, dayKey, color, index));
+  return marker;
+}
+
 // Applique les mises a jour de 'updateStats'.
 function updateStats(entries) {
   const statsNode = document.getElementById('carte-stats');
@@ -367,15 +684,21 @@ function updateStats(entries) {
     return;
   }
 
-  const tracedDays = new Set(entries.map((item) => item.schedule.date).filter(Boolean)).size;
+  const tracedDays = new Set(entries.map((item) => item.schedule?.date).filter((dayKey) => dayKey && dayKey !== 'no-date')).size;
+  const totalDistanceKm = entries.reduce((sum, item) => sum + Number(item.routeLeg?.distanceKm || 0), 0);
+  const totalTravelMinutes = entries.reduce((sum, item) => sum + Number(item.routeLeg?.minutes || 0), 0);
+
   statsNode.innerHTML = `
     <span class="carte-chip"><i class='bx bx-map-pin'></i> ${entries.length} activite(s)</span>
     <span class="carte-chip"><i class='bx bx-route'></i> ${tracedDays} jour(s) traces</span>
+    <span class="carte-chip"><i class='bx bx-time-five'></i> ${formatDuration(totalTravelMinutes)} de trajet estime</span>
+    <span class="carte-chip"><i class='bx bx-street-view'></i> ${formatDistanceKm(totalDistanceKm)} d'itineraire</span>
   `;
 }
 
 // Construit le rendu pour 'renderMap'.
-function renderMap(filterValue = 'all') {
+async function renderMap() {
+  const currentRenderSequence = ++renderSequence;
   ensureMap();
   if (!map || !markerLayer || !traceLayer) return;
 
@@ -384,23 +707,27 @@ function renderMap(filterValue = 'all') {
 
   const emptyNode = document.getElementById('carte-empty');
   const allItems = tripState.localizedActivities || [];
-  const selected = filterValue === 'all'
-    ? allItems
-    : allItems.filter((item) => item.schedule.date === filterValue);
+  const withCoords = allItems.filter((item) => Number.isFinite(item.coords?.lat) && Number.isFinite(item.coords?.lon));
+  const filteredItems = await applySelectedFilters(withCoords);
+  if (currentRenderSequence !== renderSequence) return;
 
-  const withCoords = selected.filter((item) => Number.isFinite(item.coords?.lat) && Number.isFinite(item.coords?.lon));
-  if (emptyNode) emptyNode.hidden = withCoords.length > 0;
-  updateStats(withCoords);
+  if (emptyNode) {
+    emptyNode.hidden = filteredItems.length > 0;
+    emptyNode.textContent = filteredItems.length > 0
+      ? 'Aucun point ne correspond aux filtres selectionnes.'
+      : 'Aucune activite localisable pour ce voyage.';
+  }
 
-  if (!withCoords.length) return;
+  updateStats(filteredItems);
 
-  const grouped = groupActivitiesByDay(withCoords);
+  if (!filteredItems.length) return;
+
+  const grouped = groupActivitiesByDay(filteredItems);
   const bounds = [];
   const dayKeys = Array.from(grouped.keys()).sort((a, b) => a.localeCompare(b));
 
   dayKeys.forEach((dayKey, dayIndex) => {
     const dayItems = grouped.get(dayKey) || [];
-    const points = dayItems.map((item) => [item.coords.lat, item.coords.lon]);
     const color = DAY_COLORS[dayIndex % DAY_COLORS.length];
 
     dayItems.forEach((item, index) => {
@@ -409,10 +736,10 @@ function renderMap(filterValue = 'all') {
         color,
         weight: 2,
         fillColor: color,
-        fillOpacity: 0.8
+        fillOpacity: 0.85
       });
 
-      const timeLabel = item.schedule.startTime ? `${item.schedule.startTime}` : 'Heure non precisee';
+      const timeLabel = item.schedule?.startTime ? item.schedule.startTime : 'Heure non precisee';
       marker.bindPopup(`
         <strong>${escapeHtml(item.name || 'Activite')}</strong><br>
         ${escapeHtml(item.address || 'Adresse non renseignee')}<br>
@@ -425,8 +752,18 @@ function renderMap(filterValue = 'all') {
       bounds.push([item.coords.lat, item.coords.lon]);
     });
 
-    if (points.length >= 2) {
-      const polyline = window.L.polyline(points, {
+    for (let index = 1; index < dayItems.length; index += 1) {
+      const segment = dayItems[index]?.routeLeg || null;
+      const previous = dayItems[index - 1];
+      const current = dayItems[index];
+      const path = Array.isArray(segment?.path) && segment.path.length >= 2
+        ? segment.path
+        : [
+            [previous.coords.lat, previous.coords.lon],
+            [current.coords.lat, current.coords.lon]
+          ];
+
+      const polyline = window.L.polyline(path, {
         color,
         weight: 4,
         opacity: 0.85
@@ -437,7 +774,7 @@ function renderMap(filterValue = 'all') {
 
   if (bounds.length === 1) {
     map.setView(bounds[0], 13);
-  } else {
+  } else if (bounds.length > 1) {
     map.fitBounds(bounds, { padding: [40, 40] });
   }
 }
@@ -492,13 +829,15 @@ async function loadActivities() {
   for (const activity of activities) {
     const schedule = getActivitySchedule(activity);
     const coordsFromUrl = parseCoordsFromMapUrl(activity?.map_url);
-    const coords = coordsFromUrl || await geocodeAddress(activity?.address, tripState.destination, geocodeCache);
+    const geocodeData = coordsFromUrl || await geocodeAddress(activity?.address, tripState.destination, geocodeCache);
+    const coords = geocodeData;
     if (!coords) continue;
 
     localized.push({
       ...activity,
       schedule,
-      coords
+      coords,
+      placeCategory: inferPlaceCategory(activity, coordsFromUrl ? null : geocodeData)
     });
   }
 
@@ -506,14 +845,27 @@ async function loadActivities() {
   tripState.localizedActivities = localized;
 }
 
-// Gere la logique principale de 'bindFilter'.
-function bindFilter() {
-  const filter = document.getElementById('carte-day-filter');
-  if (!(filter instanceof HTMLSelectElement)) return;
+// Synchronise les filtres de la carte avec l'etat courant.
+function bindFilters() {
+  const dayFilter = document.getElementById('carte-day-filter');
+  const typeFilter = document.getElementById('carte-type-filter');
 
-  filter.addEventListener('change', () => {
-    renderMap(filter.value || 'all');
-  });
+  if (dayFilter instanceof HTMLSelectElement) {
+    dayFilter.addEventListener('change', () => {
+      tripState.filters.day = getSelectValue(dayFilter, 'all');
+      void renderMap();
+    });
+  }
+
+  if (typeFilter instanceof HTMLSelectElement) {
+    typeFilter.addEventListener('change', () => {
+      tripState.filters.type = getSelectValue(typeFilter, 'all');
+      void renderMap();
+    });
+  }
+
+  tripState.filters.day = getSelectValue(dayFilter, 'all');
+  tripState.filters.type = getSelectValue(typeFilter, 'all');
 }
 
 // Initialise le bloc fonctionnel 'initCartePage'.
@@ -525,11 +877,10 @@ export async function initCartePage() {
 
     await loadActivities();
     populateDayFilter();
-    bindFilter();
+    populateTypeFilter();
+    bindFilters();
 
-    const filter = document.getElementById('carte-day-filter');
-    const currentFilter = filter instanceof HTMLSelectElement ? filter.value : 'all';
-    renderMap(currentFilter || 'all');
+    await renderMap();
 
     const localizedCount = tripState.localizedActivities.length;
     if (!localizedCount) {

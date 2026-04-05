@@ -2035,20 +2035,69 @@ body.dark-theme .hero-plane img {
     font-size: 22px;
 }
 
+.carte-filters-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
 .carte-filter-wrap {
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-wrap: wrap;
 }
 
 .carte-filter-wrap label {
+    flex: 0 0 auto;
     font-size: 13px;
     font-weight: 700;
     color: var(--text-secondary);
 }
 
 .carte-filter-wrap .form-input {
-    min-width: 210px;
+    flex: 1 1 0;
+    min-width: 180px;
+}
+
+.carte-filter-wrap select.form-input {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    min-height: 44px;
+    padding: 10px 44px 10px 14px;
+    border-radius: 12px;
+    border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border-color));
+    background-color: var(--bg-secondary);
+    background-image:
+        linear-gradient(45deg, transparent 50%, var(--text-secondary) 50%),
+        linear-gradient(135deg, var(--text-secondary) 50%, transparent 50%),
+        linear-gradient(to right, color-mix(in srgb, var(--accent) 12%, var(--bg-secondary)), color-mix(in srgb, var(--accent) 12%, var(--bg-secondary)));
+    background-position:
+        calc(100% - 18px) calc(50% - 3px),
+        calc(100% - 12px) calc(50% - 3px),
+        calc(100% - 34px) 50%;
+    background-size: 6px 6px, 6px 6px, 1px 62%;
+    background-repeat: no-repeat;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    cursor: pointer;
+}
+
+.carte-filter-wrap select.form-input:hover {
+    border-color: color-mix(in srgb, var(--accent) 44%, var(--border-color));
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.1);
+}
+
+.carte-filter-wrap select.form-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 24%, transparent), 0 10px 22px rgba(15, 23, 42, 0.12);
+    transform: translateY(-1px);
+}
+
+.carte-filter-wrap select.form-input::-ms-expand {
+    display: none;
 }
 
 .carte-stats {
@@ -2098,6 +2147,53 @@ body.dark-theme .hero-plane img {
 
 .carte-map .leaflet-control-attribution a {
     color: var(--accent-strong);
+}
+
+.carte-cluster-icon {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.88);
+    background: linear-gradient(135deg, var(--accent-cool), var(--accent-strong));
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 800;
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.16);
+}
+
+.carte-cluster-icon--wide {
+    width: 42px;
+    height: 42px;
+}
+
+.carte-cluster-wrapper {
+    background: transparent;
+    border: none;
+}
+
+.carte-cluster-list {
+    margin: 8px 0 0;
+    padding-left: 18px;
+    display: grid;
+    gap: 6px;
+}
+
+.carte-cluster-list li {
+    line-height: 1.35;
+}
+
+.carte-route-summary {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.carte-route-summary strong {
+    color: var(--text-primary);
 }
 
 /* ---- Agenda edit mode ---- */
@@ -2714,6 +2810,10 @@ body.dark-theme .hero-plane img {
 
     .carte-toolbar {
         align-items: stretch;
+    }
+
+    .carte-filters-grid {
+        grid-template-columns: 1fr;
     }
 
     .carte-filter-wrap {
