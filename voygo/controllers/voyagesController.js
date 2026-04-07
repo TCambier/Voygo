@@ -890,8 +890,25 @@ function updateStats(trips) {
 
     const upcomingTrips = trips.filter((trip) => computeStatus(trip).key === 'upcoming');
     statUpcoming.textContent = String(upcomingTrips.length);
-    const upcomingNames = upcomingTrips.slice(0, 2).map(resolveTitle);
-    statUpcomingNotes.textContent = upcomingNames.length ? upcomingNames.join(' et ') : '-';
+    const nextUpcomingTrip = [...upcomingTrips]
+        .sort((leftTrip, rightTrip) => {
+            const leftStart = resolveTripStartDate(leftTrip);
+            const rightStart = resolveTripStartDate(rightTrip);
+
+            if (!leftStart && !rightStart) return 0;
+            if (!leftStart) return 1;
+            if (!rightStart) return -1;
+            return leftStart.getTime() - rightStart.getTime();
+        })[0] || null;
+    if (!nextUpcomingTrip) {
+        statUpcomingNotes.textContent = '-';
+    } else {
+        const nextUpcomingStartDate = formatDate(resolveTripStartDate(nextUpcomingTrip));
+        const nextUpcomingTitle = resolveTitle(nextUpcomingTrip);
+        statUpcomingNotes.textContent = nextUpcomingStartDate
+            ? `${nextUpcomingTitle} · ${nextUpcomingStartDate}`
+            : nextUpcomingTitle;
+    }
 
     const totalsByTrip = buildBudgetTotalsByTrip(
         allBudgetRows,
