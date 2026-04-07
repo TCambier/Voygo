@@ -9,6 +9,7 @@ import { config } from '../config.js';
 import { getSupabaseForUser } from '../services/supabase.js';
 import { getAccessDbClient, getTripAccess } from '../utils/tripAccess.js';
 import { logTripChange, normalizeEmail, resolveActorLabel, resolveChangedFields } from '../utils/tripHistory.js';
+import { touchTripModificationDate } from '../utils/tripModification.js';
 
 // Gere la logique principale de 'readScheduleMetadataFromDescription'.
 function readScheduleMetadataFromDescription(description) {
@@ -523,6 +524,8 @@ export async function createActivity(req, res) {
     return res.status(400).json({ error: error.message || 'Creation impossible.' });
   }
 
+  await touchTripModificationDate(db, tripId);
+
   await logTripChange(db, {
     trip_id: tripId,
     actor_user_id: req.user.id,
@@ -585,6 +588,8 @@ export async function updateActivity(req, res) {
     return res.status(400).json({ error: error.message || 'Mise a jour impossible.' });
   }
 
+  await touchTripModificationDate(db, existing.trip_id);
+
   await logTripChange(db, {
     trip_id: existing.trip_id,
     actor_user_id: req.user.id,
@@ -642,6 +647,8 @@ export async function deleteActivity(req, res) {
   if (error) {
     return res.status(400).json({ error: error.message || 'Suppression impossible.' });
   }
+
+  await touchTripModificationDate(db, existing.trip_id);
 
   await logTripChange(db, {
     trip_id: existing.trip_id,

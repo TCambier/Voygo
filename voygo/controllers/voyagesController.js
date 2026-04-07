@@ -698,6 +698,18 @@ function resolveTripEndDate(trip) {
     );
 }
 
+function resolveTripLastModificationDate(trip) {
+    return normalizeDateTime(
+        trip.modification_date
+        ?? trip.updated_at
+        ?? trip.updatedAt
+        ?? trip.creation_date
+        ?? trip.created_at
+        ?? trip.createdAt
+        ?? null
+    );
+}
+
 function computeTripProgressVisual(trip) {
     const start = resolveTripStartDate(trip);
     const resolvedEnd = resolveTripEndDate(trip);
@@ -972,7 +984,11 @@ function applyFilters() {
     } else if (sortValue === 'Budget') {
         filtered.sort((a, b) => (resolveBudget(b) || 0) - (resolveBudget(a) || 0));
     } else {
-        filtered.sort((a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0));
+        filtered.sort((a, b) => {
+            const dateA = resolveTripLastModificationDate(a);
+            const dateB = resolveTripLastModificationDate(b);
+            return (dateB?.getTime() || 0) - (dateA?.getTime() || 0);
+        });
     }
 
     renderTrips(filtered);

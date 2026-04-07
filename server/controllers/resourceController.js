@@ -8,6 +8,7 @@
 import { getSupabaseForUser } from '../services/supabase.js';
 import { getAccessDbClient, getTripAccess } from '../utils/tripAccess.js';
 import { logTripChange, normalizeEmail, resolveActorLabel, resolveChangedFields } from '../utils/tripHistory.js';
+import { touchTripModificationDate } from '../utils/tripModification.js';
 
 function resolveResourceKind(resourceTable) {
   const map = {
@@ -126,6 +127,8 @@ export async function createResource(req, res) {
   const tripIdForHistory = String(data?.trip_id || requestedTripId || '').trim();
 
   if (tripIdForHistory) {
+    await touchTripModificationDate(db, tripIdForHistory);
+
     const resourceKind = resolveResourceKind(req.resourceTable);
     await logTripChange(db, {
       trip_id: tripIdForHistory,
@@ -196,6 +199,8 @@ export async function updateResource(req, res) {
   }
 
   if (existingTripId) {
+    await touchTripModificationDate(db, existingTripId);
+
     const resourceKind = resolveResourceKind(req.resourceTable);
     await logTripChange(db, {
       trip_id: existingTripId,
@@ -262,6 +267,8 @@ export async function deleteResource(req, res) {
   }
 
   if (existingTripId) {
+    await touchTripModificationDate(db, existingTripId);
+
     const resourceKind = resolveResourceKind(req.resourceTable);
     await logTripChange(db, {
       trip_id: existingTripId,

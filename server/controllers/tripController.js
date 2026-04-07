@@ -8,6 +8,7 @@
 import { getSupabaseForUser, supabaseAdmin } from '../services/supabase.js';
 import { getAccessDbClient, getTripAccess, isMissingTableError, isTripPastEndDate } from '../utils/tripAccess.js';
 import { getTripHistoryError, logTripChange, normalizeEmail, resolveActorLabel } from '../utils/tripHistory.js';
+import { touchTripModificationDate } from '../utils/tripModification.js';
 
 // Normalise les donnees pour 'normalizePermission'.
 function normalizePermission(value) {
@@ -116,7 +117,11 @@ export async function listTrips(req, res) {
     });
   }
 
-  const ownTrips = (ownedTrips || []).map((trip) => ({
+  const ownedTripsWithModificationDate = await Promise.all(
+    (ownedTrips || []).map((trip) => ensureTripModificationDate(db, trip))
+  );
+
+  const ownTrips = ownedTripsWithModificationDate.map((trip) => ({
     ...trip,
     access_mode: 'owner',
     can_edit: !isTripPastEndDate(trip),
@@ -158,10 +163,12 @@ export async function createTrip(req, res) {
   const payload = req.body || {};
   const client = getSupabaseForUser(req.accessToken);
   const db = getAccessDbClient(client);
+  const modificationDate = buildTripModificationDate();
 
   const insertPayload = {
     ...payload,
     creation_date: payload.creation_date || new Date().toISOString(),
+    modification_date: payload.modification_date || modificationDate,
     user_id: req.user.id
   };
 
@@ -233,6 +240,41 @@ function normalizeDestination(value) {
   return String(value || '').trim().toLowerCase();
 }
 
+function buildTripModificationDate() {
+  return new Date().toISOString();
+}
+
+async function ensureTripModificationDate(db, trip) {
+  if (!trip || !trip.id) {
+    return trip;
+  }
+
+  if (trip.modification_date) {
+    return trip;
+  }
+
+  const fallbackDate = trip.updated_at || trip.updatedAt || trip.creation_date || trip.created_at || trip.createdAt || buildTripModificationDate();
+
+  const { data, error } = await db
+    .from('trips')
+    .update({ modification_date: fallbackDate })
+    .eq('id', trip.id)
+    .select('*')
+    .single();
+
+  if (error) {
+    return {
+      ...trip,
+      modification_date: fallbackDate
+    };
+  }
+
+  return data || {
+    ...trip,
+    modification_date: fallbackDate
+  };
+}
+
 // Applique les mises a jour de 'updateTrip'.
 export async function updateTrip(req, res) {
   const { id } = req.params;
@@ -270,10 +312,14 @@ export async function updateTrip(req, res) {
     ? payload.destination
     : existingTrip.destination;
   const destinationChanged = normalizeDestination(nextDestination) !== normalizeDestination(existingTrip.destination);
+  const payloadWithModificationDate = {
+    ...payload,
+    modification_date: buildTripModificationDate()
+  };
 
   const { data, error } = await db
     .from('trips')
-    .update(payload)
+    .update(payloadWithModificationDate)
     .eq('id', id)
     .select('*')
     .single();
@@ -443,6 +489,8 @@ export async function shareTrip(req, res) {
     return res.status(400).json({ error: error.message || 'Partage impossible.' });
   }
 
+  await touchTripModificationDate(db, id);
+
   await logTripChange(db, {
     trip_id: id,
     actor_user_id: req.user.id,
@@ -562,6 +610,8 @@ export async function updateTripShare(req, res) {
     return res.status(400).json({ error: error.message || 'Mise a jour du partage impossible.' });
   }
 
+  await touchTripModificationDate(db, id);
+
   await logTripChange(db, {
     trip_id: id,
     actor_user_id: req.user.id,
@@ -599,6 +649,8 @@ export async function deleteTripShare(req, res) {
   if (error) {
     return res.status(400).json({ error: error.message || 'Suppression du partage impossible.' });
   }
+
+  await touchTripModificationDate(db, id);
 
   await logTripChange(db, {
     trip_id: id,
