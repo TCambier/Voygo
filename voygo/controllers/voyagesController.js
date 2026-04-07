@@ -36,7 +36,6 @@ const historyTripTitle = document.getElementById('trip-history-title');
 const historyFeedback = document.getElementById('trip-history-feedback');
 const historyList = document.getElementById('trip-history-list');
 const FAVORITES_STORAGE_KEY = 'voygo.favoriteTrips';
-const TRIP_NOTES_STORAGE_PREFIX = 'voygo_trip_notes:';
 
 let allTrips = [];
 let allBudgetRows = [];
@@ -96,39 +95,6 @@ function persistLocalFavoriteTripIds() {
     } catch {
         // Ignore storage quota and private mode errors.
     }
-}
-
-// Retourne la cle locale des notes de voyage.
-function getTripNotesLocalStorageKey(tripId) {
-    return `${TRIP_NOTES_STORAGE_PREFIX}${String(tripId || '').trim()}`;
-}
-
-// Charge la description locale associee a un voyage.
-function loadTripNotesLocal(tripId) {
-    if (!tripId) return '';
-
-    try {
-        const raw = window.localStorage.getItem(getTripNotesLocalStorageKey(tripId));
-        if (!raw) return '';
-        const parsed = JSON.parse(raw);
-        return String(parsed?.description || '').trim();
-    } catch {
-        return '';
-    }
-}
-
-// Applique la description locale sur les voyages charges.
-function mergeLocalTripNotes(trips) {
-    return (Array.isArray(trips) ? trips : []).map((trip) => {
-        const localDescription = loadTripNotesLocal(trip?.id);
-        if (!localDescription) return trip;
-        return {
-            ...trip,
-            notes: localDescription,
-            description: localDescription,
-            summary: localDescription
-        };
-    });
 }
 
 // Resout les informations calculees par 'resolveTripId'.
@@ -1352,7 +1318,7 @@ async function initVoyagesPage() {
             fetchAccommodations(),
             fetchTransportsByTrips(trips)
         ]);
-        allTrips = mergeLocalTripNotes(Array.isArray(trips) ? trips : []);
+        allTrips = Array.isArray(trips) ? trips : [];
         allBudgetRows = Array.isArray(budgets) ? budgets : [];
         allActivityRows = Array.isArray(activities) ? activities : [];
         allAccommodationRows = Array.isArray(accommodations) ? accommodations : [];

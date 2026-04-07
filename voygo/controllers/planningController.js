@@ -68,47 +68,6 @@ function getBudgetLocalStorageKey(userId) {
   return `voygo_budget_local:${userId || 'anon'}`;
 }
 
-// Retourne la cle locale des notes de voyage pour un voyage donne.
-function getTripNotesLocalStorageKey(tripId) {
-  return `voygo_trip_notes:${String(tripId || '').trim()}`;
-}
-
-// Charge la description locale associee a un voyage.
-function loadTripNotesLocal(tripId) {
-  const key = getTripNotesLocalStorageKey(tripId);
-  if (!tripId) return '';
-
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return '';
-    const parsed = JSON.parse(raw);
-    return String(parsed?.description || '').trim();
-  } catch {
-    return '';
-  }
-}
-
-// Sauvegarde la description locale associee a un voyage.
-function saveTripNotesLocal(tripId, description) {
-  const key = getTripNotesLocalStorageKey(tripId);
-  if (!tripId) return;
-
-  const payload = {
-    tripId: String(tripId).trim(),
-    description: String(description || '').trim()
-  };
-
-  try {
-    if (!payload.description) {
-      localStorage.removeItem(key);
-      return;
-    }
-    localStorage.setItem(key, JSON.stringify(payload));
-  } catch {
-    // Ignore local storage failures.
-  }
-}
-
 // Detecte les budgets lies a un voyage qui sont hors de la nouvelle periode.
 function getBudgetsOutsideTripDates(budgets, tripId, nextStartDate, nextEndDate) {
   const normalizedTripId = String(tripId || '').trim();
@@ -470,11 +429,6 @@ function resolveTripPeople(trip) {
 // Retourne l'information calculee par 'resolveTripDescription'.
 function resolveTripDescription(trip) {
   return String(trip?.summary || trip?.description || trip?.notes || '').trim();
-}
-
-// Retourne la description resolue avec un fallback local.
-function resolveTripDescriptionWithLocalFallback(trip, tripId) {
-  return resolveTripDescription(trip) || loadTripNotesLocal(tripId);
 }
 
 // Verifie la condition exposee par 'isReadOnlyTrip'.
@@ -1270,7 +1224,7 @@ async function initPlanningPage() {
         tripState.id = data.id;
         tripState.name = data.name || '';
         tripState.people = resolveTripPeople(data);
-        tripState.description = resolveTripDescriptionWithLocalFallback(data, data.id);
+        tripState.description = resolveTripDescription(data);
         tripState.accessMode = data.access_mode || tripState.accessMode || 'owner';
         tripState.canEdit = data.can_edit !== false;
         destination = data.destination || destination;
@@ -1288,7 +1242,7 @@ async function initPlanningPage() {
       tripState.id = tripState.id || fallback.id || null;
       tripState.name = tripState.name || fallback.name || '';
       tripState.people = tripState.people || resolveTripPeople(fallback);
-      tripState.description = tripState.description || resolveTripDescriptionWithLocalFallback(fallback, tripState.id || fallback.id);
+      tripState.description = tripState.description || resolveTripDescription(fallback);
       destination = destination || fallback.destination || '';
       startDate = startDate || toDateInputValue(fallback.start_date || '');
       endDate = endDate || toDateInputValue(fallback.end_date || '');
@@ -1373,6 +1327,7 @@ function initTripEditor() {
     const payload = {
       name: nextName,
       people: Number.isFinite(nextPeople) && nextPeople > 0 ? nextPeople : null,
+      description: nextDescription || null,
       destination: destinationInput.value.trim() || null,
       start_date: startInput.value || null,
       end_date: endInput.value || null
@@ -1544,13 +1499,12 @@ function initTripEditor() {
       tripState.id = data?.id || tripState.id;
       tripState.name = data?.name || '';
       tripState.people = resolveTripPeople(data);
-      tripState.description = nextDescription;
+      tripState.description = resolveTripDescription(data);
       tripState.destination = data?.destination || '';
       tripState.startDate = toDateInputValue(data?.start_date || '');
       tripState.endDate = toDateInputValue(data?.end_date || '');
 
       localStorage.setItem('voygo_current_trip', JSON.stringify(data));
-      saveTripNotesLocal(tripState.id || data?.id, nextDescription);
       syncTripInputs();
       syncPlanningUrl();
       await loadTransports();
