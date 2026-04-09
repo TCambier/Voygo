@@ -6,9 +6,15 @@
  * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
  */
 import { supabaseAuth } from '../services/supabase.js';
+import { clearAuthCookies, isServerSessionValid } from '../utils/cookies.js';
 
 // Gere la logique principale de 'requireAuth'.
 export async function requireAuth(req, res, next) {
+  if (!isServerSessionValid(req)) {
+    clearAuthCookies(res);
+    return res.status(401).json({ error: 'Session redemarree. Veuillez vous reconnecter.' });
+  }
+
   const header = req.headers.authorization || '';
   const bearer = header.startsWith('Bearer ') ? header.slice(7) : null;
   const token = req.cookies?.voygo_access_token || bearer;

@@ -112,20 +112,6 @@ function initMobileMenu() {
     }
 }
  
-// Retourne l'information calculee par 'getStoredUser'.
-function getStoredUser() {
-    if (!isBrowser) return null;
-    try {
-        const raw = localStorage.getItem('voygo_auth_user');
-        if (!raw) return null;
-        const user = JSON.parse(raw);
-        if (!user || typeof user !== 'object') return null;
-        return user;
-    } catch (error) {
-        return null;
-    }
-}
-
 // Resout les informations calculees par 'resolveAuthUser'.
 async function resolveAuthUser() {
     if (!isBrowser) return null;
@@ -139,6 +125,8 @@ async function resolveAuthUser() {
         localStorage.setItem('voygo_auth_user', JSON.stringify(data.user));
         return data.user;
     } catch (error) {
+        localStorage.removeItem('voygo_auth_user');
+        localStorage.removeItem('voygo_jwt');
         return null;
     }
     return null;
@@ -149,10 +137,7 @@ function renderAccountSlot(user) {
     if (!isBrowser) return;
     const slot = document.getElementById('header-account-slot');
     if (!slot) return;
- 
-    if (!user) {
-        user = getStoredUser();
-    }
+
     if (!user) {
         slot.innerHTML = '<a href="login.html" class="btn-connexion" id="header-login-link">Connexion</a>';
         return;
@@ -185,9 +170,6 @@ function updateNavForAuth(user) {
     if (!isBrowser) return;
     const link = document.getElementById('nav-my-trips');
     if (!link) return;
-    if (!user) {
-        user = getStoredUser();
-    }
     link.style.display = user ? '' : 'none';
 }
 

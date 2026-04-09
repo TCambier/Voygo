@@ -6,7 +6,7 @@
  * Note: Ajouter les changements metier ici et garder la coherence avec les modules dependants.
  */
 import { supabaseAuth, supabaseAdmin, getSupabaseForUser } from '../services/supabase.js';
-import { setAuthCookies, clearAuthCookies } from '../utils/cookies.js';
+import { setAuthCookies, clearAuthCookies, isServerSessionValid } from '../utils/cookies.js';
 import { config } from '../config.js';
 
 const NAME_MAX_LENGTH = 80;
@@ -70,6 +70,12 @@ function buildUserPayload(user) {
 function isUserAlreadyDeleted(errorMessage = '') {
   const message = String(errorMessage || '').toLowerCase();
   return message.includes('user not found') || message.includes('not found');
+}
+
+// Verifie la condition exposee par 'isAuthSessionMissingError'.
+function isAuthSessionMissingError(error) {
+  const message = String(error?.message || error || '').toLowerCase();
+  return message.includes('auth session missing');
 }
 
 // Verifie la condition exposee par 'isStrongPassword'.
@@ -260,6 +266,87 @@ async function deleteAuthUserViaAdminRest(userId) {
   };
 }
 
+// Met a jour l'utilisateur auth via REST avec un access token utilisateur.
+async function updateAuthUserViaRest(accessToken, payload) {
+  const response = await fetch(`${config.supabaseUrl}/auth/v1/user`, {
+    method: 'PUT',
+    headers: {
+      apikey: config.supabaseAnonKey,
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload || {})
+  });
+
+  const body = await response.json().catch(() => null);
+  const errorMessage =
+    body?.msg || body?.error_description || body?.error || `HTTP ${response.status}`;
+
+  return {
+    ok: response.ok,
+    status: response.status,
+    body,
+    errorMessage
+  };
+}
+
+// Rafraichit la session courante via le refresh token cookie.
+async function refreshAccessTokenFromRequest(req, res) {
+  const { refreshToken } = extractAuthTokens(req);
+  if (!refreshToken) {
+    return { ok: false, error: 'Refresh token manquant.' };
+  }
+
+  const { data, error } = await supabaseAuth.auth.refreshSession({
+    refresh_token: refreshToken
+  });
+
+  if (error || !data?.session?.access_token) {
+    clearAuthCookies(res);
+    return {
+      ok: false,
+      error: error?.message || 'Session expiree. Veuillez vous reconnecter.'
+    };
+  }
+
+  setAuthCookies(res, data.session);
+  return {
+    ok: true,
+    accessToken: data.session.access_token,
+    user: data.user || null
+  };
+}
+
+// Met a jour l'utilisateur auth et retente apres refresh en cas de session manquante.
+async function updateAuthUserWithAutoRefresh(req, res, payload) {
+  const firstTry = await updateAuthUserViaRest(req.accessToken, payload);
+  if (firstTry.ok) {
+    return firstTry;
+  }
+
+  if (!isAuthSessionMissingError(firstTry.errorMessage)) {
+    return firstTry;
+  }
+
+  const refreshed = await refreshAccessTokenFromRequest(req, res);
+  if (!refreshed.ok) {
+    return {
+      ok: false,
+      status: 401,
+      errorMessage: refreshed.error,
+      body: null
+    };
+  }
+
+  const secondTry = await updateAuthUserViaRest(refreshed.accessToken, payload);
+  if (secondTry.ok) {
+    req.accessToken = refreshed.accessToken;
+    return secondTry;
+  }
+
+  return secondTry;
+}
+
 // Gere la logique principale de 'signup'.
 export async function signup(req, res) {
   const validation = validateSignupPayload(req.body);
@@ -338,6 +425,11 @@ export async function logout(req, res) {
 
 // Gere la logique principale de 'refreshSession'.
 export async function refreshSession(req, res) {
+  if (!isServerSessionValid(req)) {
+    clearAuthCookies(res);
+    return res.status(401).json({ error: 'Session redemarree. Veuillez vous reconnecter.' });
+  }
+
   const { refreshToken } = extractAuthTokens(req);
   if (!refreshToken) {
     clearAuthCookies(res);
@@ -468,16 +560,18 @@ export async function updateProfile(req, res) {
     return res.status(400).json({ error: 'Prenom et nom requis.' });
   }
 
-  const client = getSupabaseForUser(req.accessToken);
-  const { data, error } = await client.auth.updateUser({
+  const fallback = await updateAuthUserWithAutoRefresh(req, res, {
     data: { first_name, last_name }
   });
 
-  if (error) {
-    return res.status(400).json({ error: error.message || 'Mise a jour impossible.' });
+  if (!fallback.ok) {
+    const status = fallback.status === 401 ? 401 : 400;
+    return res.status(status).json({
+      error: fallback.errorMessage || 'Mise a jour impossible.'
+    });
   }
 
-  return res.json({ user: buildUserPayload(data?.user) });
+  return res.json({ user: buildUserPayload(fallback.body) });
 }
 
 // Applique les mises a jour de 'updateEmail'.
@@ -487,11 +581,12 @@ export async function updateEmail(req, res) {
     return res.status(400).json({ error: 'Email requis.' });
   }
 
-  const client = getSupabaseForUser(req.accessToken);
-  const { error } = await client.auth.updateUser({ email });
-
-  if (error) {
-    return res.status(400).json({ error: error.message || 'Mise a jour impossible.' });
+  const fallback = await updateAuthUserWithAutoRefresh(req, res, { email });
+  if (!fallback.ok) {
+    const status = fallback.status === 401 ? 401 : 400;
+    return res.status(status).json({
+      error: fallback.errorMessage || 'Mise a jour impossible.'
+    });
   }
 
   return res.json({ success: true });
@@ -510,11 +605,12 @@ export async function updatePassword(req, res) {
     });
   }
 
-  const client = getSupabaseForUser(req.accessToken);
-  const { error } = await client.auth.updateUser({ password });
-
-  if (error) {
-    return res.status(400).json({ error: error.message || 'Mise a jour impossible.' });
+  const fallback = await updateAuthUserWithAutoRefresh(req, res, { password });
+  if (!fallback.ok) {
+    const status = fallback.status === 401 ? 401 : 400;
+    return res.status(status).json({
+      error: fallback.errorMessage || 'Mise a jour impossible.'
+    });
   }
 
   return res.json({ success: true });

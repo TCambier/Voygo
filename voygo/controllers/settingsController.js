@@ -32,6 +32,22 @@ function setFeedback(node, message, type = 'info') {
   if (type === 'error') node.classList.add('is-error');
 }
 
+function normalizeSettingsError(error, fallbackMessage) {
+  const message = String(error?.message || fallbackMessage || '').trim();
+  const lowered = message.toLowerCase();
+
+  if (
+    lowered.includes('session expiree') ||
+    lowered.includes('session invalide') ||
+    lowered.includes('auth session missing') ||
+    lowered.includes('non authentifie')
+  ) {
+    return 'Session expiree. Merci de vous reconnecter puis de reessayer.';
+  }
+
+  return message || fallbackMessage || 'Une erreur est survenue.';
+}
+
 // Charge les donnees necessaires pour 'loadUserProfile'.
 async function loadUserProfile() {
   try {
@@ -64,7 +80,11 @@ profileForm?.addEventListener('submit', async (event) => {
     await api.patch('/api/auth/profile', { first_name, last_name });
     setFeedback(profileFeedback, 'Profil mis a jour.', 'success');
   } catch (error) {
-    setFeedback(profileFeedback, error.message || 'Impossible de mettre a jour le profil.', 'error');
+    setFeedback(
+      profileFeedback,
+      normalizeSettingsError(error, 'Impossible de mettre a jour le profil.'),
+      'error'
+    );
   }
 });
 
@@ -83,7 +103,11 @@ emailForm?.addEventListener('submit', async (event) => {
     await api.post('/api/auth/email', { email });
     setFeedback(emailFeedback, 'Un email de confirmation a ete envoye.', 'success');
   } catch (error) {
-    setFeedback(emailFeedback, error.message || 'Impossible de mettre a jour l\'email.', 'error');
+    setFeedback(
+      emailFeedback,
+      normalizeSettingsError(error, 'Impossible de mettre a jour l\'email.'),
+      'error'
+    );
   }
 });
 
@@ -111,7 +135,11 @@ passwordForm?.addEventListener('submit', async (event) => {
     confirmPasswordInput.value = '';
     setFeedback(passwordFeedback, 'Mot de passe mis a jour.', 'success');
   } catch (error) {
-    setFeedback(passwordFeedback, error.message || 'Impossible de mettre a jour le mot de passe.', 'error');
+    setFeedback(
+      passwordFeedback,
+      normalizeSettingsError(error, 'Impossible de mettre a jour le mot de passe.'),
+      'error'
+    );
   }
 });
 
@@ -123,6 +151,8 @@ deleteButton?.addEventListener('click', async () => {
 
   try {
     await api.post('/api/auth/delete');
+    localStorage.removeItem('voygo_auth_user');
+    localStorage.removeItem('voygo_jwt');
     window.location.href = 'signup.html';
   } catch (error) {
     setFeedback(
