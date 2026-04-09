@@ -900,14 +900,14 @@ function validateForm() {
     const nights = computeNights(startDate, endDate);
 
     if (!tripId) throw new Error('Selectionnez un voyage avant d\'ajouter un logement.');
-    if (!address || !startDate || !endDate) {
+    if (!name || !address || !startDate || !endDate) {
       throw new Error('Merci de remplir les champs obligatoires du logement.');
     }
     if (nights <= 0) {
       throw new Error('Les dates doivent couvrir au moins 1 nuit.');
     }
-    if (priceValue !== null && !Number.isFinite(priceValue)) {
-      throw new Error('Prix invalide.');
+    if (priceValue === null || !Number.isFinite(priceValue) || priceValue <= 0) {
+      throw new Error('Prix par nuit invalide (superieur a 0).');
     }
 
     return {
@@ -915,7 +915,7 @@ function validateForm() {
       tripId,
       payload: {
         trip_id: tripId,
-        name: name || null,
+        name,
         address,
         price_per_night: priceValue,
         start_date: startDate,
@@ -1193,7 +1193,7 @@ function initTransportModal() {
 
 // Initialise le bloc fonctionnel 'initAccommodationModal'.
 function initAccommodationModal() {
-  if (!refs.accommodationStart || !refs.accommodationEnd || !refs.accommodationPrice || !refs.accommodationNights) return;
+  if (!refs.accommodationName || !refs.accommodationStart || !refs.accommodationEnd || !refs.accommodationPrice || !refs.accommodationNights) return;
 
   refs.accommodationStart.addEventListener('change', updateAccommodationNights);
   refs.accommodationEnd.addEventListener('change', updateAccommodationNights);

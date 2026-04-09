@@ -30,6 +30,7 @@ function isTripPastEndDate(endDate) {
 }
 
 let editMode = false;
+let agendaLayoutMode = 'calendar';
 let openActivityModal = null;
 let openTransportModal = null;
 let openAccommodationModal = null;
@@ -133,6 +134,121 @@ function formatDuration(value) {
   if (hours) return `${hours}h`;
   return `${mins}min`;
 }
+
+// Retourne le libelle metier pour un element de l'agenda.
+function getAgendaEntryLabel(entry) {
+  if (!entry) return '';
+
+  if (entry.type === 'transport') {
+    return `Transport · ${entry.item?.mode || 'Transport'}`;
+  }
+
+  if (entry.type === 'accommodation') {
+    const prefix = entry.accommodationType === 'check-out' ? 'Depart logement' : 'Arrivee logement';
+    return `${prefix} · ${entry.item?.name || entry.item?.address || 'Logement'}`;
+  }
+
+  return `Activite · ${entry.item?.name || 'Activite'}`;
+}
+
+// Retourne le detail lisible d'un element de l'agenda.
+function getAgendaEntryMeta(entry) {
+  if (!entry?.schedule) return '';
+
+  const dayLabel = formatDayLabel(entry.schedule.date || '');
+  const timeLabel = entry.schedule.startTime || '--:--';
+  const durationLabel = formatDuration(entry.schedule.durationMinutes);
+  return `${dayLabel} · ${timeLabel} · ${durationLabel}`;
+}
+
+// Compare deux elements de l'agenda pour l'affichage chronologique.
+function compareAgendaEntries(left, right) {
+  const dayComparison = String(left?.schedule?.date || '').localeCompare(String(right?.schedule?.date || ''));
+  if (dayComparison !== 0) return dayComparison;
+
+  const leftMinute = toMinuteOfDay(left?.schedule?.startTime);
+  const rightMinute = toMinuteOfDay(right?.schedule?.startTime);
+  if (leftMinute === null && rightMinute === null) return 0;
+  if (leftMinute === null) return 1;
+  if (rightMinute === null) return -1;
+  return leftMinute - rightMinute;
+}
+
+// Calcule les indicateurs visibles dans l'entete de la page.
+function computeAgendaSummary(grouped) {
+  const entries = [];
+  let daysWithEntries = 0;
+  let activities = 0;
+  let transports = 0;
+  let accommodationsCount = 0;
+
+  grouped.forEach((list) => {
+    if (!list.length) return;
+    daysWithEntries += 1;
+    list.forEach((entry) => {
+      entries.push(entry);
+      if (entry.type === 'transport') {
+        transports += 1;
+      } else if (entry.type === 'accommodation') {
+        accommodationsCount += 1;
+      } else {
+        activities += 1;
+      }
+    });
+  });
+
+  entries.sort(compareAgendaEntries);
+
+  return {
+    totalEntries: entries.length,
+    daysWithEntries,
+    activities,
+    transports,
+    accommodationsCount,
+    nextEntry: entries[0] || null
+  };
+}
+
+// Met a jour les cartes de synthese de l'entete.
+function updateHeroSummary(summary) {
+  const setText = (id, value) => {
+    const node = document.getElementById(id);
+    if (node) node.textContent = value;
+  };
+
+  setText('agenda-total-count', String(summary?.totalEntries ?? 0));
+  setText('agenda-day-count', String(summary?.daysWithEntries ?? 0));
+  setText('agenda-activity-count', String(summary?.activities ?? 0));
+  setText('agenda-transport-count', String(summary?.transports ?? 0));
+  setText('agenda-accommodation-count', String(summary?.accommodationsCount ?? 0));
+
+  const nextEntryTitle = document.getElementById('agenda-next-item');
+  const nextEntryMeta = document.getElementById('agenda-next-item-meta');
+  if (nextEntryTitle) {
+    nextEntryTitle.textContent = summary?.nextEntry ? getAgendaEntryLabel(summary.nextEntry) : 'Aucune etape planifiee';
+  }
+  if (nextEntryMeta) {
+    nextEntryMeta.textContent = summary?.nextEntry ? getAgendaEntryMeta(summary.nextEntry) : 'Ajoutez un premier element pour structurer la journee.';
+  }
+}
+
+// Applique l'etat visuel du mode de disposition.
+function updateLayoutModeUi() {
+  const board = document.querySelector('.agenda-board');
+  const daysNode = document.getElementById('agenda-days');
+
+  if (board) {
+    board.dataset.layout = agendaLayoutMode;
+    board.classList.remove('is-horizontal');
+    board.classList.add('is-calendar');
+  }
+
+  if (daysNode) {
+    daysNode.classList.remove('is-horizontal');
+    daysNode.classList.add('is-calendar');
+  }
+}
+
 
 // Gere la logique principale de 'stripScheduleMetadata'.
 function stripScheduleMetadata(description) {
@@ -310,6 +426,7 @@ function renderAgenda() {
   if (!daysNode || !emptyNode) return;
 
   if (board) board.classList.toggle('is-edit-mode', editMode);
+  updateLayoutModeUi();
 
   const grouped = new Map();
   (tripState.activities || []).forEach((activity) => {
@@ -382,6 +499,8 @@ function renderAgenda() {
     grouped.set(key, list);
   });
 
+  updateHeroSummary(computeAgendaSummary(grouped));
+
   let dayKeys = createDateRange(tripState.startDate, tripState.endDate);
   if (!dayKeys.length) {
     dayKeys = Array.from(grouped.keys()).sort((a, b) => a.localeCompare(b));
@@ -390,8 +509,18 @@ function renderAgenda() {
   const hasPlannedEntries = Array.from(grouped.values()).some((list) => list.length > 0);
   emptyNode.hidden = hasPlannedEntries || editMode;
 
-  daysNode.innerHTML = dayKeys.map((day) => {
+  daysNode.innerHTML = dayKeys.map((day, dayIndex) => {
     const entries = grouped.get(day) || [];
+    const counts = entries.reduce((accumulator, entry) => {
+      accumulator[entry.type] = (accumulator[entry.type] || 0) + 1;
+      return accumulator;
+    }, {});
+    const firstTime = entries[0]?.schedule?.startTime || '';
+    const lastTime = entries[entries.length - 1]?.schedule?.startTime || '';
+    const daySummaryParts = [];
+    if (counts.activity) daySummaryParts.push(`<span class="agenda-day-tag is-activity">${counts.activity} activite${counts.activity > 1 ? 's' : ''}</span>`);
+    if (counts.transport) daySummaryParts.push(`<span class="agenda-day-tag is-transport">${counts.transport} transport${counts.transport > 1 ? 's' : ''}</span>`);
+    if (counts.accommodation) daySummaryParts.push(`<span class="agenda-day-tag is-accommodation">${counts.accommodation} logement${counts.accommodation > 1 ? 's' : ''}</span>`);
 
     let itemsHtml;
     if (entries.length === 0) {
@@ -453,7 +582,7 @@ function renderAgenda() {
           const safeAddress = escapeHtml(item?.address || 'Adresse indisponible');
           const safeDescription = escapeHtml(stripScheduleMetadata(item?.description || ''));
           parts.push(`
-            <article class="agenda-item" data-item-type="activity" data-item-id="${itemId}">
+            <article class="agenda-item is-activity" data-item-type="activity" data-item-id="${itemId}">
               <div class="agenda-time">${escapeHtml(timeLabel)}</div>
               <div class="agenda-item-content">
                 <span class="agenda-badge">Activite</span>
@@ -475,11 +604,23 @@ function renderAgenda() {
       itemsHtml = parts.join('');
     }
 
+    const dayCardLayoutClass = agendaLayoutMode === 'calendar' ? 'is-calendar' : 'is-horizontal';
+
     return `
-      <article class="agenda-day-card">
+      <article class="agenda-day-card ${dayCardLayoutClass}">
         <header class="agenda-day-head">
-          <h3>${escapeHtml(formatDayLabel(day))}</h3>
+          <div class="agenda-day-title-block">
+            <span class="agenda-day-kicker">Jour ${String(dayIndex + 1).padStart(2, '0')}</span>
+            <h3>${escapeHtml(formatDayLabel(day))}</h3>
+          </div>
+          <span class="agenda-day-count">${entries.length} element${entries.length > 1 ? 's' : ''}</span>
         </header>
+        <div class="agenda-day-summary">
+          ${entries.length ? `
+            <span class="agenda-day-range">${escapeHtml(firstTime || '--:--')} - ${escapeHtml(lastTime || '--:--')}</span>
+            ${daySummaryParts.join('')}
+          ` : '<span class="agenda-day-range">Jour libre</span>'}
+        </div>
         <div class="agenda-day-list">
           ${itemsHtml}
         </div>
@@ -833,6 +974,24 @@ function initTransportModal() {
   modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.hidden) close(); });
 
+  const transportDurationInput = document.getElementById('agenda-transport-duration');
+  if (transportDurationInput instanceof HTMLInputElement) {
+    transportDurationInput.addEventListener('input', () => {
+      transportDurationInput.value = transportDurationInput.value.replace(/[^\d]/g, '');
+    });
+  }
+
+  const transportPriceInput = document.getElementById('agenda-transport-price');
+  if (transportPriceInput instanceof HTMLInputElement) {
+    transportPriceInput.addEventListener('input', () => {
+      transportPriceInput.value = transportPriceInput.value
+        .replace(/[^\d.,]/g, '')
+        .replace(/,(?=.*[,])/g, '')
+        .replace(/\.(?=.*\.)/g, '')
+        .replace(',', '.');
+    });
+  }
+
   return (prefill = {}) => {
     form.reset();
     note.textContent = '';
@@ -950,6 +1109,17 @@ function initAccommodationModal() {
   modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.hidden) close(); });
 
+  const accommodationPriceInput = document.getElementById('agenda-accommodation-price');
+  if (accommodationPriceInput instanceof HTMLInputElement) {
+    accommodationPriceInput.addEventListener('input', () => {
+      accommodationPriceInput.value = accommodationPriceInput.value
+        .replace(/[^\d.,]/g, '')
+        .replace(/,(?=.*[,])/g, '')
+        .replace(/\.(?=.*\.)/g, '')
+        .replace(',', '.');
+    });
+  }
+
   return (prefill = {}) => {
     form.reset();
     note.textContent = '';
@@ -978,13 +1148,40 @@ function initAccommodationModal() {
       const checkin = g('agenda-accommodation-checkin').value;
       const checkout = g('agenda-accommodation-checkout').value;
       const priceRaw = g('agenda-accommodation-price').value;
-      const price = priceRaw !== '' ? Number(priceRaw) : null;
+      const price = priceRaw !== '' ? Number(String(priceRaw).replace(',', '.')) : null;
+
+      if (!name) {
+        note.classList.add('is-error');
+        note.textContent = 'Nom du logement requis.';
+        return;
+      }
 
       if (!address || !checkin || !checkout) {
         note.classList.add('is-error');
         note.textContent = "Merci de renseigner l'adresse et les dates.";
         return;
       }
+
+      if (checkout <= checkin) {
+        note.classList.add('is-error');
+        note.textContent = 'Les dates doivent couvrir au moins 1 nuit.';
+        return;
+      }
+
+      if (!Number.isFinite(price) || price <= 0) {
+        note.classList.add('is-error');
+        note.textContent = 'Prix par nuit invalide (superieur a 0).';
+        return;
+      }
+
+      const tripStart = normalizeActivityDate(tripState.startDate || '');
+      const tripEnd = normalizeActivityDate(tripState.endDate || '');
+      if ((tripStart && checkin < tripStart) || (tripEnd && checkout > tripEnd)) {
+        note.classList.add('is-error');
+        note.textContent = 'Les dates doivent etre dans les dates du voyage.';
+        return;
+      }
+
       if (!tripState.id) {
         note.classList.add('is-error');
         note.textContent = 'Aucun voyage selectionne.';
@@ -994,7 +1191,7 @@ function initAccommodationModal() {
 
       try {
         await api.post('/api/accommodations', {
-          name: name || address,
+          name,
           address,
           start_date: checkin,
           end_date: checkout,

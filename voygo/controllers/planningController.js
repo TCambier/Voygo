@@ -1296,6 +1296,10 @@ function initTripEditor() {
     return;
   }
 
+  peopleInput.addEventListener('input', () => {
+    peopleInput.value = peopleInput.value.replace(/[^\d]/g, '');
+  });
+
   const handleDateChange = () => {
     const today = getTodayInputValue();
     if (startInput.value && startInput.value < today) {
@@ -1835,6 +1839,17 @@ function initAccommodationModal() {
   form.elements.namedItem('start')?.addEventListener('change', updateNights);
   form.elements.namedItem('end')?.addEventListener('change', updateNights);
 
+  const priceInput = form.elements.namedItem('price');
+  if (priceInput instanceof HTMLInputElement) {
+    priceInput.addEventListener('input', () => {
+      priceInput.value = priceInput.value
+        .replace(/[^\d.,]/g, '')
+        .replace(/,(?=.*[,])/g, '')
+        .replace(/\.(?=.*\.)/g, '')
+        .replace(',', '.');
+    });
+  }
+
   const list = document.getElementById('accommodation-list');
   if (list) {
     list.addEventListener('click', async (event) => {
@@ -1908,6 +1923,12 @@ function initAccommodationModal() {
     const nights = computeNights(startDate, endDate);
     const accommodationId = form.elements.namedItem('accommodation_id')?.value;
 
+    if (!name) {
+      saveNote.classList.add('is-error');
+      saveNote.textContent = 'Nom du logement requis.';
+      return;
+    }
+
     if (!address) {
       saveNote.classList.add('is-error');
       saveNote.textContent = 'Adresse requise.';
@@ -1933,15 +1954,15 @@ function initAccommodationModal() {
       return;
     }
 
-    if (priceValue !== null && !Number.isFinite(priceValue)) {
+    if (priceValue === null || !Number.isFinite(priceValue) || priceValue <= 0) {
       saveNote.classList.add('is-error');
-      saveNote.textContent = 'Prix invalide.';
+      saveNote.textContent = 'Prix par nuit invalide (superieur a 0).';
       return;
     }
 
     const payload = {
       trip_id: tripState.id,
-      name: name || null,
+      name,
       address,
       price_per_night: priceValue,
       start_date: startDate,

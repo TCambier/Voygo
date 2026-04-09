@@ -12,20 +12,49 @@
     <script type="module" src="../controllers/headerController.js"></script>
 
     <main class="planning-page agenda-page">
-        <section class="planning-hero">
+        <section class="planning-hero agenda-hero">
             <div class="planning-hero-text">
-                <span class="planning-eyebrow">Planification</span>
-                <h1>Agenda de votre voyage</h1>
-                <p>Retrouvez chaque jour de votre sejour sous forme de carte, avec les activites prevues et leurs horaires.</p>
-            </div>
-            <div class="planning-hero-meta">
-                <div class="meta-item">
-                    <span class="meta-label">Destination</span>
-                    <span id="agenda-trip-name">-</span>
+                <span class="planning-eyebrow">Chronologie</span>
+                <h1>Votre voyage, jour après jour</h1>
+                <p>Une vue plus lisible pour suivre la journée, avec des cartes différenciées par type et une hiérarchie claire entre les étapes.</p>
+                <div class="agenda-type-legend" aria-label="Légende des types d'éléments">
+                    <span class="agenda-type-chip is-activity"><i class='bx bx-map-pin'></i> Activité</span>
+                    <span class="agenda-type-chip is-transport"><i class='bx bx-car'></i> Transport</span>
+                    <span class="agenda-type-chip is-accommodation"><i class='bx bx-building-house'></i> Logement</span>
                 </div>
-                <div class="meta-item">
-                    <span class="meta-label">Dates</span>
-                    <span id="agenda-dates">-</span>
+            </div>
+            <div class="agenda-hero-side">
+                <div class="planning-hero-meta agenda-hero-meta">
+                    <div class="meta-item">
+                        <span class="meta-label">Destination</span>
+                        <span id="agenda-trip-name">-</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Dates</span>
+                        <span id="agenda-dates">-</span>
+                    </div>
+                </div>
+                <div class="agenda-hero-stats">
+                    <article class="agenda-stat-card">
+                        <span class="agenda-stat-label">Éléments planifiés</span>
+                        <strong id="agenda-total-count">0</strong>
+                        <span class="agenda-stat-hint">sur l’ensemble du séjour</span>
+                    </article>
+                    <article class="agenda-stat-card">
+                        <span class="agenda-stat-label">Jours occupés</span>
+                        <strong id="agenda-day-count">0</strong>
+                        <span class="agenda-stat-hint">avec au moins une étape</span>
+                    </article>
+                    <article class="agenda-stat-card agenda-stat-card-wide">
+                        <span class="agenda-stat-label">Prochaine étape</span>
+                        <strong id="agenda-next-item">Aucune étape planifiée</strong>
+                        <span class="agenda-stat-hint" id="agenda-next-item-meta">Ajoutez un premier élément pour structurer la journée.</span>
+                    </article>
+                    <div class="agenda-type-strip" aria-label="Répartition des types">
+                        <span class="agenda-type-metric is-activity"><i class='bx bx-map-pin'></i><strong id="agenda-activity-count">0</strong><span>activités</span></span>
+                        <span class="agenda-type-metric is-transport"><i class='bx bx-car'></i><strong id="agenda-transport-count">0</strong><span>transports</span></span>
+                        <span class="agenda-type-metric is-accommodation"><i class='bx bx-building-house'></i><strong id="agenda-accommodation-count">0</strong><span>logements</span></span>
+                    </div>
                 </div>
             </div>
         </section>
@@ -42,7 +71,10 @@
 
         <section class="panel agenda-board" aria-live="polite">
             <div class="panel-title-row">
-                <h2>Votre agenda jour par jour</h2>
+                <div>
+                    <h2>Vue chronologique</h2>
+                    <p class="agenda-board-intro">Vue calendrier compacte pour visualiser rapidement chaque jour et ses etapes.</p>
+                </div>
                 <button type="button" class="btn-secondary agenda-edit-toggle" id="agenda-edit-toggle" hidden>
                     <i class='bx bx-edit-alt'></i>
                     Modifier
@@ -157,7 +189,7 @@
             <form class="modal-body" id="agenda-accommodation-form">
                 <div class="field-group">
                     <label for="agenda-accommodation-name">Nom du logement</label>
-                    <input class="form-input" id="agenda-accommodation-name" type="text" placeholder="Ex: Hotel Roma">
+                    <input class="form-input" id="agenda-accommodation-name" type="text" placeholder="Ex: Hotel Roma" required>
                 </div>
                 <div class="field-group">
                     <label for="agenda-accommodation-address">Adresse</label>
@@ -173,7 +205,7 @@
                 </div>
                 <div class="field-group">
                     <label for="agenda-accommodation-price">Prix par nuit (EUR)</label>
-                    <input class="form-input" id="agenda-accommodation-price" type="number" min="0" step="0.01" placeholder="Ex: 120">
+                    <input class="form-input" id="agenda-accommodation-price" type="number" min="0.01" step="0.01" placeholder="Ex: 120" required>
                 </div>
                 <div class="modal-actions">
                     <span class="settings-feedback" id="agenda-accommodation-note"></span>
