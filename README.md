@@ -228,7 +228,7 @@ Améliorations possibles du projet :
 - export PDF ou Excel
 - partage de voyages
 
-# Backend Node.js (nouveau)
+# Backend Node.js 
 
 1. Copier `.env.example` vers `.env` et renseigner `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` et `OPENTRIPMAP_API_KEY`.
 2. Installer les dependances : `npm install`
