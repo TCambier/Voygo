@@ -117,6 +117,48 @@ Supabase permet :
 - Leaflet – affichage de la carte
 - OpenStreetMap – données cartographiques
 
+## API utilisées
+
+### 1. Supabase API (PostgreSQL + Auth)
+
+Utilisation principale : persistance des données et authentification.
+
+- stockage des voyages, activités, logements, budgets, notes
+- gestion de session utilisateur et opérations Auth
+- accès via le client Supabase côté front et côté serveur Node.js
+
+### 2. Nominatim (OpenStreetMap)
+
+Utilisation principale : géocodage et aide à la saisie des destinations.
+
+- autocomplétion de destination (villes, pays, quartiers) pendant la saisie
+- conversion destination texte -> coordonnées géographiques (lat/lon)
+- base utilisée pour centrer la recherche d'activités
+
+### 3. GeoDB Cities API
+
+Utilisation principale : enrichir les propositions de destination.
+
+- suggestions complémentaires de villes et pays
+- fusion et dédoublonnage avec les résultats Nominatim
+
+### 4. OpenTripMap API
+
+Utilisation principale : recommandations de lieux et activités autour d'une destination.
+
+- recherche des coordonnées d'une destination (fallback)
+- récupération des lieux proches (endpoint radius)
+- enrichissement des lieux via les détails par identifiant (endpoint xid)
+- utilisé par la route backend de suggestions d'activités
+
+### 5. OpenStreetMap Tiles + Leaflet
+
+Utilisation principale : affichage cartographique.
+
+- rendu de la carte interactive
+- affichage de marqueurs et visualisation des déplacements
+- génération de liens de localisation OpenStreetMap pour les activités
+
 ---
 
 # Structure du projet
